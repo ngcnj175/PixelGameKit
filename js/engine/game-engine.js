@@ -1,5 +1,5 @@
 /**
- * PixelGameKit - ゲームエンジン（新UI対応）
+ * PixelGameKit - ゲームエンジン（Start/Pause対応）
  */
 
 const GameEngine = {
@@ -7,6 +7,8 @@ const GameEngine = {
     ctx: null,
     animationId: null,
     isRunning: false,
+    isPaused: false,
+    hasStarted: false,  // 初回スタートしたかどうか
 
     player: null,
     enemies: [],
@@ -27,6 +29,8 @@ const GameEngine = {
         if (this.isRunning) return;
 
         this.isRunning = true;
+        this.isPaused = false;
+        this.hasStarted = true;
         this.resize();
         this.initGame();
         this.gameLoop();
@@ -38,6 +42,45 @@ const GameEngine = {
             cancelAnimationFrame(this.animationId);
             this.animationId = null;
         }
+    },
+
+    // 一時停止トグル（Startボタン用）
+    togglePause() {
+        if (!this.hasStarted) {
+            // 初回はゲームを開始
+            this.start();
+            return;
+        }
+
+        if (this.isPaused) {
+            // 再開
+            this.isPaused = false;
+            if (!this.isRunning) {
+                this.isRunning = true;
+                this.gameLoop();
+            }
+        } else if (this.isRunning) {
+            // 一時停止
+            this.isPaused = true;
+        }
+    },
+
+    // リスタート（Startボタン長押し用）
+    restart() {
+        this.stop();
+        this.hasStarted = false;
+        this.isPaused = false;
+        this.initGame();
+        this.resize();
+        this.render();
+        console.log('Game restarted');
+    },
+
+    // プレビュー表示（ゲーム開始前）
+    showPreview() {
+        this.resize();
+        this.initGame();
+        this.render();
     },
 
     resize() {
@@ -77,7 +120,10 @@ const GameEngine = {
     gameLoop() {
         if (!this.isRunning) return;
 
-        this.update();
+        // 一時停止中はupdateをスキップ（描画は続行）
+        if (!this.isPaused) {
+            this.update();
+        }
         this.render();
 
         this.animationId = requestAnimationFrame(() => this.gameLoop());

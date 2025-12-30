@@ -127,72 +127,62 @@ const App = {
     },
 
     initMenu() {
-        const menuBtn = document.getElementById('menu-btn');
-        const editBtn = document.getElementById('edit-btn');
-        const menuPanel = document.getElementById('menu-panel');
-        const closeMenu = document.getElementById('close-menu');
-        const overlay = document.querySelector('.menu-overlay');
-
-        menuBtn?.addEventListener('click', () => {
-            menuPanel.classList.remove('hidden');
-        });
-
-        // EDITボタン - ペイント画面へ切り替え
-        editBtn?.addEventListener('click', () => {
-            if (this.currentScreen === 'play') {
-                this.switchScreen('paint');
-            } else {
-                this.switchScreen('play');
-            }
-        });
-
-        closeMenu?.addEventListener('click', () => {
-            menuPanel.classList.add('hidden');
-        });
-
-        overlay?.addEventListener('click', () => {
-            menuPanel.classList.add('hidden');
-        });
-
-        // メニューアクション
-        document.getElementById('share-btn')?.addEventListener('click', () => {
-            const url = Share.createUrl(this.projectData);
-            if (navigator.share) {
-                navigator.share({
-                    title: 'PixelGameKit - ' + this.projectData.meta.name,
-                    url: url
-                });
-            } else {
-                navigator.clipboard.writeText(url).then(() => {
-                    alert('URLをコピーしました！');
-                });
-            }
-            menuPanel.classList.add('hidden');
-        });
-
-        document.getElementById('save-btn')?.addEventListener('click', () => {
-            Storage.save('currentProject', this.projectData);
-            alert('保存しました！');
-            menuPanel.classList.add('hidden');
-        });
-
-        document.getElementById('load-btn')?.addEventListener('click', () => {
+        // ファイル操作
+        document.getElementById('load-icon-btn')?.addEventListener('click', () => {
             const data = Storage.load('currentProject');
             if (data) {
                 this.projectData = data;
+                this.updateGameInfo();
                 this.refreshCurrentScreen();
                 alert('読み込みました！');
             }
-            menuPanel.classList.add('hidden');
         });
 
-        document.getElementById('new-btn')?.addEventListener('click', () => {
-            if (confirm('現在のプロジェクトを破棄して新規作成しますか？')) {
-                this.projectData = this.createDefaultProject();
-                this.refreshCurrentScreen();
-            }
-            menuPanel.classList.add('hidden');
+        document.getElementById('save-icon-btn')?.addEventListener('click', () => {
+            Storage.save('currentProject', this.projectData);
+            alert('保存しました！');
         });
+
+        // ナビゲーション切り替え
+        const screens = ['play', 'paint', 'stage', 'sound'];
+        screens.forEach(screen => {
+            const btn = document.getElementById(`nav-${screen}-btn`);
+            btn?.addEventListener('click', () => {
+                this.switchScreen(screen);
+                // アイコンのアクティブ状態更新
+                document.querySelectorAll('#toolbar-nav .toolbar-icon').forEach(b => b.classList.remove('active-nav'));
+                btn.classList.add('active-nav');
+            });
+        });
+
+        // タイトル・サブタイトル編集
+        const titleInput = document.getElementById('game-title');
+        const subtitleInput = document.getElementById('game-subtitle');
+
+        titleInput?.addEventListener('change', (e) => {
+            if (this.projectData) {
+                this.projectData.meta.name = e.target.value;
+            }
+        });
+
+        subtitleInput?.addEventListener('change', (e) => {
+            if (this.projectData) {
+                // サブタイトルはauthor扱い（または拡張）
+                this.projectData.meta.author = e.target.value;
+            }
+        });
+    },
+
+    updateGameInfo() {
+        const titleInput = document.getElementById('game-title');
+        const subtitleInput = document.getElementById('game-subtitle');
+
+        if (titleInput && this.projectData) {
+            titleInput.value = this.projectData.meta.name || 'My Game';
+        }
+        if (subtitleInput && this.projectData) {
+            subtitleInput.value = this.projectData.meta.author || 'Stage 1';
+        }
     },
 
     initScreenNav() {
@@ -225,9 +215,10 @@ const App = {
     refreshCurrentScreen() {
         switch (this.currentScreen) {
             case 'play':
+                this.updateGameInfo();
                 if (typeof GameEngine !== 'undefined') {
                     GameEngine.resize();
-                    GameEngine.start();
+                    // ゲームはStartボタンで開始するので自動スタートしない
                 }
                 break;
             case 'paint':

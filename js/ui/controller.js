@@ -1,5 +1,5 @@
 /**
- * PixelGameKit - ゲームコントローラー（新UI対応）
+ * PixelGameKit - ゲームコントローラー（Start/Select対応）
  */
 
 const GameController = {
@@ -12,9 +12,14 @@ const GameController = {
         b: false
     },
 
+    // Startボタン長押し検出
+    startPressTimer: null,
+    startLongPressThreshold: 800, // ミリ秒
+
     init() {
         this.initDpad();
         this.initActionButtons();
+        this.initSystemButtons();
         this.initKeyboard();
     },
 
@@ -74,6 +79,55 @@ const GameController = {
         });
     },
 
+    initSystemButtons() {
+        const startBtn = document.getElementById('btn-start');
+
+        if (startBtn) {
+            // マウス操作
+            startBtn.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                this.onStartPress();
+            });
+            startBtn.addEventListener('mouseup', () => this.onStartRelease());
+            startBtn.addEventListener('mouseleave', () => this.onStartRelease());
+
+            // タッチ操作
+            startBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                this.onStartPress();
+            }, { passive: false });
+            startBtn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                this.onStartRelease();
+            }, { passive: false });
+            startBtn.addEventListener('touchcancel', () => this.onStartRelease());
+        }
+    },
+
+    onStartPress() {
+        // 長押しタイマー開始
+        this.startPressTimer = setTimeout(() => {
+            // 長押し: ゲームをリスタート
+            if (typeof GameEngine !== 'undefined') {
+                GameEngine.restart();
+            }
+            this.startPressTimer = null;
+        }, this.startLongPressThreshold);
+    },
+
+    onStartRelease() {
+        // タイマーがまだ実行中 = 短押し
+        if (this.startPressTimer) {
+            clearTimeout(this.startPressTimer);
+            this.startPressTimer = null;
+
+            // 短押し: トグル動作（開始/一時停止/再開）
+            if (typeof GameEngine !== 'undefined') {
+                GameEngine.togglePause();
+            }
+        }
+    },
+
     initKeyboard() {
         const keyMap = {
             'ArrowUp': 'up',
@@ -90,6 +144,14 @@ const GameController = {
             if (btn && App.currentScreen === 'play') {
                 e.preventDefault();
                 this.press(btn);
+            }
+
+            // Enterキー = Startボタン
+            if (e.code === 'Enter' && App.currentScreen === 'play') {
+                e.preventDefault();
+                if (typeof GameEngine !== 'undefined') {
+                    GameEngine.togglePause();
+                }
             }
         });
 
