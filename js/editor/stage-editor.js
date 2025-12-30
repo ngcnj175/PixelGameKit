@@ -1,5 +1,5 @@
 /**
- * PixelGameKit - ステージエディタ
+ * PixelGameKit - ステージエディタ（新UI対応）
  */
 
 const StageEditor = {
@@ -9,16 +9,87 @@ const StageEditor = {
     selectedLayer: 'bg',
     selectedObject: null,
     tileSize: 16,
-    viewScale: 1,
 
     init() {
-        this.canvas = document.getElementById('main-canvas');
+        this.canvas = document.getElementById('stage-canvas');
+        if (!this.canvas) return;
         this.ctx = this.canvas.getContext('2d');
 
         this.initLayerControls();
         this.initObjectTools();
-        this.initTileSelector();
         this.initCanvasEvents();
+    },
+
+    refresh() {
+        this.initTileGallery();
+        this.resize();
+        this.render();
+    },
+
+    resize() {
+        const container = document.getElementById('stage-area');
+        if (!container) return;
+
+        const stage = App.projectData.stage;
+        const maxWidth = container.clientWidth - 16;
+        const maxHeight = container.clientHeight - 16;
+
+        const tileCount = Math.max(stage.width, stage.height);
+        this.tileSize = Math.min(
+            Math.floor(maxWidth / stage.width),
+            Math.floor(maxHeight / stage.height)
+        );
+
+        this.canvas.width = this.tileSize * stage.width;
+        this.canvas.height = this.tileSize * stage.height;
+
+        this.render();
+    },
+
+    initTileGallery() {
+        const container = document.getElementById('tile-list');
+        if (!container) return;
+
+        container.innerHTML = '';
+
+        App.projectData.sprites.forEach((sprite, index) => {
+            const div = document.createElement('div');
+            div.className = 'tile-item' + (index === this.selectedTile ? ' selected' : '');
+
+            const miniCanvas = document.createElement('canvas');
+            miniCanvas.width = 16;
+            miniCanvas.height = 16;
+            this.renderSpriteToMiniCanvas(sprite, miniCanvas);
+            div.style.backgroundImage = `url(${miniCanvas.toDataURL()})`;
+            div.style.backgroundSize = 'cover';
+            div.style.imageRendering = 'pixelated';
+
+            div.addEventListener('click', () => {
+                this.selectedTile = index;
+                this.selectedObject = null;
+                document.querySelectorAll('.obj-btn').forEach(b => b.classList.remove('active'));
+                this.initTileGallery();
+            });
+
+            container.appendChild(div);
+        });
+    },
+
+    renderSpriteToMiniCanvas(sprite, canvas) {
+        const ctx = canvas.getContext('2d');
+        const palette = App.nesPalette;
+
+        ctx.clearRect(0, 0, 16, 16);
+
+        for (let y = 0; y < 16; y++) {
+            for (let x = 0; x < 16; x++) {
+                const colorIndex = sprite.data[y][x];
+                if (colorIndex >= 0) {
+                    ctx.fillStyle = palette[colorIndex];
+                    ctx.fillRect(x, y, 1, 1);
+                }
+            }
+        }
     },
 
     initLayerControls() {
@@ -28,6 +99,7 @@ const StageEditor = {
                 document.querySelectorAll('.layer-btn').forEach(b => {
                     b.classList.toggle('active', b === btn);
                 });
+                this.render();
             });
         });
     },
@@ -48,48 +120,9 @@ const StageEditor = {
         });
     },
 
-    initTileSelector() {
-        const container = document.getElementById('tile-selector');
-        container.innerHTML = '';
-
-        // スプライトをタイルとして表示
-        App.projectData.sprites.forEach((sprite, index) => {
-            const div = document.createElement('div');
-            div.className = 'tile-item' + (index === this.selectedTile ? ' selected' : '');
-            div.addEventListener('click', () => {
-                this.selectedTile = index;
-                document.querySelectorAll('.tile-item').forEach((el, i) => {
-                    el.classList.toggle('selected', i === index);
-                });
-            });
-
-            // サムネイル描画
-            const miniCanvas = document.createElement('canvas');
-            miniCanvas.width = 16;
-            miniCanvas.height = 16;
-            this.renderSpriteToCanvas(sprite, miniCanvas);
-            div.appendChild(miniCanvas);
-
-            container.appendChild(div);
-        });
-    },
-
-    renderSpriteToCanvas(sprite, canvas) {
-        const ctx = canvas.getContext('2d');
-        const palette = App.projectData.palette;
-
-        for (let y = 0; y < 16; y++) {
-            for (let x = 0; x < 16; x++) {
-                const colorIndex = sprite.data[y][x];
-                if (colorIndex >= 0) {
-                    ctx.fillStyle = palette[colorIndex];
-                    ctx.fillRect(x, y, 1, 1);
-                }
-            }
-        }
-    },
-
     initCanvasEvents() {
+        if (!this.canvas) return;
+
         this.canvas.addEventListener('click', (e) => this.onClick(e));
         this.canvas.addEventListener('touchstart', (e) => {
             e.preventDefault();
@@ -98,22 +131,18 @@ const StageEditor = {
     },
 
     onClick(e) {
-        if (App.currentMode !== 'stage') return;
+        if (App.currentScreen !== 'stage') return;
 
         const rect = this.canvas.getBoundingClientRect();
+        const x = Math.floor((e.clientX - rect.left) / this.tileSize);
+        const y = Math.floor((e.clientY - rect.top) / this.tileSize);
+
         const stage = App.projectData.stage;
-        const displayTileSize = this.canvas.width / stage.width;
-
-        const x = Math.floor((e.clientX - rect.left) / displayTileSize);
-        const y = Math.floor((e.clientY - rect.top) / displayTileSize);
-
         if (x < 0 || x >= stage.width || y < 0 || y >= stage.height) return;
 
         if (this.selectedObject) {
-            // オブジェクト配置
             this.placeObject(x, y);
         } else {
-            // タイル配置
             this.placeTile(x, y);
         }
 
@@ -125,10 +154,8 @@ const StageEditor = {
         const layer = stage.layers[this.selectedLayer];
 
         if (this.selectedLayer === 'collision') {
-            // 当たり判定は0/1/2をトグル
             layer[y][x] = (layer[y][x] + 1) % 3;
         } else {
-            // 同じタイルなら消す
             if (layer[y][x] === this.selectedTile) {
                 layer[y][x] = -1;
             } else {
@@ -140,14 +167,11 @@ const StageEditor = {
     placeObject(x, y) {
         const objects = App.projectData.objects;
 
-        // 同じ位置のオブジェクトを検索
         const existingIndex = objects.findIndex(obj => obj.x === x && obj.y === y);
 
         if (existingIndex >= 0) {
-            // 削除
             objects.splice(existingIndex, 1);
         } else {
-            // 追加
             objects.push({
                 type: this.selectedObject,
                 x: x,
@@ -158,56 +182,31 @@ const StageEditor = {
         }
     },
 
-    resize() {
-        const container = document.getElementById('canvas-area');
-        const stage = App.projectData.stage;
-        const maxSize = Math.min(container.clientWidth, container.clientHeight) - 32;
-
-        const tileCount = Math.max(stage.width, stage.height);
-        const displayTileSize = Math.floor(maxSize / tileCount);
-
-        this.canvas.width = displayTileSize * stage.width;
-        this.canvas.height = displayTileSize * stage.height;
-
-        this.render();
-    },
-
     render() {
-        if (App.currentMode !== 'stage') return;
-
-        // タイルセレクタ更新
-        this.initTileSelector();
+        if (!this.canvas || !this.ctx) return;
+        if (App.currentScreen !== 'stage') return;
 
         const stage = App.projectData.stage;
-        const displayTileSize = this.canvas.width / stage.width;
 
-        // クリア
         this.ctx.fillStyle = '#1a1a2e';
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-        // 背景レイヤー描画
-        this.renderLayer('bg', displayTileSize, 1);
+        this.renderLayer('bg', 1);
+        this.renderLayer('fg', 1);
 
-        // 前景レイヤー描画
-        this.renderLayer('fg', displayTileSize, 1);
-
-        // 当たり判定レイヤー（選択時のみ半透明表示）
         if (this.selectedLayer === 'collision') {
-            this.renderCollisionLayer(displayTileSize);
+            this.renderCollisionLayer();
         }
 
-        // オブジェクト描画
-        this.renderObjects(displayTileSize);
-
-        // グリッド
-        this.renderGrid(displayTileSize);
+        this.renderObjects();
+        this.renderGrid();
     },
 
-    renderLayer(layerName, tileSize, alpha) {
+    renderLayer(layerName, alpha) {
         const stage = App.projectData.stage;
         const layer = stage.layers[layerName];
         const sprites = App.projectData.sprites;
-        const palette = App.projectData.palette;
+        const palette = App.nesPalette;
 
         this.ctx.globalAlpha = alpha;
 
@@ -215,7 +214,7 @@ const StageEditor = {
             for (let x = 0; x < stage.width; x++) {
                 const tileId = layer[y][x];
                 if (tileId >= 0 && tileId < sprites.length) {
-                    this.renderSprite(sprites[tileId], x * tileSize, y * tileSize, tileSize);
+                    this.renderSprite(sprites[tileId], x, y, palette);
                 }
             }
         }
@@ -223,35 +222,44 @@ const StageEditor = {
         this.ctx.globalAlpha = 1;
     },
 
-    renderSprite(sprite, dx, dy, size) {
-        const palette = App.projectData.palette;
-        const pixelSize = size / 16;
+    renderSprite(sprite, tileX, tileY, palette) {
+        const pixelSize = this.tileSize / 16;
 
         for (let y = 0; y < 16; y++) {
             for (let x = 0; x < 16; x++) {
                 const colorIndex = sprite.data[y][x];
                 if (colorIndex >= 0) {
                     this.ctx.fillStyle = palette[colorIndex];
-                    this.ctx.fillRect(dx + x * pixelSize, dy + y * pixelSize, pixelSize + 0.5, pixelSize + 0.5);
+                    this.ctx.fillRect(
+                        tileX * this.tileSize + x * pixelSize,
+                        tileY * this.tileSize + y * pixelSize,
+                        pixelSize + 0.5,
+                        pixelSize + 0.5
+                    );
                 }
             }
         }
     },
 
-    renderCollisionLayer(tileSize) {
+    renderCollisionLayer() {
         const stage = App.projectData.stage;
         const layer = stage.layers.collision;
 
         this.ctx.globalAlpha = 0.5;
 
-        const colors = ['transparent', '#ff0000', '#00ff00']; // 0=通過, 1=壁, 2=床のみ
+        const colors = ['transparent', '#ff0000', '#00ff00'];
 
         for (let y = 0; y < stage.height; y++) {
             for (let x = 0; x < stage.width; x++) {
                 const value = layer[y][x];
                 if (value > 0) {
                     this.ctx.fillStyle = colors[value];
-                    this.ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
+                    this.ctx.fillRect(
+                        x * this.tileSize,
+                        y * this.tileSize,
+                        this.tileSize,
+                        this.tileSize
+                    );
                 }
             }
         }
@@ -259,7 +267,7 @@ const StageEditor = {
         this.ctx.globalAlpha = 1;
     },
 
-    renderObjects(tileSize) {
+    renderObjects() {
         const objects = App.projectData.objects;
         const icons = {
             'player': '👤',
@@ -268,7 +276,7 @@ const StageEditor = {
             'item': '⭐'
         };
 
-        this.ctx.font = `${tileSize * 0.8}px sans-serif`;
+        this.ctx.font = `${this.tileSize * 0.7}px sans-serif`;
         this.ctx.textAlign = 'center';
         this.ctx.textBaseline = 'middle';
 
@@ -276,29 +284,29 @@ const StageEditor = {
             const icon = icons[obj.type] || '?';
             this.ctx.fillText(
                 icon,
-                obj.x * tileSize + tileSize / 2,
-                obj.y * tileSize + tileSize / 2
+                obj.x * this.tileSize + this.tileSize / 2,
+                obj.y * this.tileSize + this.tileSize / 2
             );
         });
     },
 
-    renderGrid(tileSize) {
+    renderGrid() {
         const stage = App.projectData.stage;
 
-        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
         this.ctx.lineWidth = 1;
 
         for (let x = 0; x <= stage.width; x++) {
             this.ctx.beginPath();
-            this.ctx.moveTo(x * tileSize, 0);
-            this.ctx.lineTo(x * tileSize, this.canvas.height);
+            this.ctx.moveTo(x * this.tileSize, 0);
+            this.ctx.lineTo(x * this.tileSize, this.canvas.height);
             this.ctx.stroke();
         }
 
         for (let y = 0; y <= stage.height; y++) {
             this.ctx.beginPath();
-            this.ctx.moveTo(0, y * tileSize);
-            this.ctx.lineTo(this.canvas.width, y * tileSize);
+            this.ctx.moveTo(0, y * this.tileSize);
+            this.ctx.lineTo(this.canvas.width, y * this.tileSize);
             this.ctx.stroke();
         }
     }

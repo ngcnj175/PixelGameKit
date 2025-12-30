@@ -1,23 +1,22 @@
 /* ========================================
-   PixelGameKit - メインスタイル
+   PixelGameKit - レトロゲームボーイ風UI
    ======================================== */
 
 :root {
-    /* カラーテーマ（ダーク＆レトロ） */
-    --bg-primary: #1a1a2e;
-    --bg-secondary: #16213e;
-    --bg-tertiary: #0f3460;
-    --accent-primary: #e94560;
-    --accent-secondary: #ff6b6b;
-    --accent-blue: #4cc9f0;
-    --text-primary: #edf2f4;
-    --text-secondary: #8d99ae;
-    --border-color: #2b2d42;
-    
+    /* カラーテーマ（ゲームボーイ風ベージュ） */
+    --bg-body: #8b8b8b;
+    --bg-device: #d4c4a8;
+    --bg-screen: #1a1a2e;
+    --bg-screen-light: #9bbc0f;
+    --accent-red: #8b0000;
+    --accent-dark: #4a4a4a;
+    --text-dark: #2d2d2d;
+    --text-light: #f5f5f5;
+    --border-dark: #3a3a3a;
+    --shadow-color: rgba(0, 0, 0, 0.3);
+
     /* サイズ */
-    --header-height: 44px;
-    --tabs-height: 48px;
-    --tool-panel-height: 200px;
+    --header-height: 48px;
     --safe-area-bottom: env(safe-area-inset-bottom, 0px);
 }
 
@@ -26,14 +25,15 @@
     padding: 0;
     box-sizing: border-box;
     -webkit-tap-highlight-color: transparent;
+    user-select: none;
 }
 
-html, body {
+html,
+body {
     height: 100%;
     overflow: hidden;
     font-family: 'Courier New', monospace;
-    background: var(--bg-primary);
-    color: var(--text-primary);
+    background: var(--bg-body);
     touch-action: manipulation;
 }
 
@@ -46,482 +46,591 @@ html, body {
     flex-direction: column;
     height: 100%;
     height: 100dvh;
+    max-width: 480px;
+    margin: 0 auto;
+    background: var(--bg-device);
+    box-shadow: 0 0 30px var(--shadow-color);
 }
 
 /* ========================================
-   ヘッダー
+   ヘッダー（MENU / EDIT）
    ======================================== */
 
 #header {
     height: var(--header-height);
     display: flex;
-    align-items: center;
     justify-content: space-between;
-    padding: 0 12px;
-    background: linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));
-    border-bottom: 2px solid var(--accent-primary);
-    flex-shrink: 0;
-}
-
-#header h1 {
-    font-size: 18px;
-    font-weight: bold;
-    background: linear-gradient(90deg, var(--accent-primary), var(--accent-blue));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    text-shadow: 0 0 20px rgba(233, 69, 96, 0.3);
-}
-
-#menu-btn {
-    width: 36px;
-    height: 36px;
-    border: none;
-    border-radius: 8px;
-    background: var(--bg-tertiary);
-    color: var(--text-primary);
-    font-size: 18px;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-#menu-btn:active {
-    transform: scale(0.95);
-    background: var(--accent-primary);
-}
-
-/* ========================================
-   メインキャンバス
-   ======================================== */
-
-#canvas-area {
-    flex: 1;
-    display: flex;
     align-items: center;
-    justify-content: center;
-    background: var(--bg-secondary);
-    background-image: 
-        linear-gradient(45deg, var(--bg-primary) 25%, transparent 25%),
-        linear-gradient(-45deg, var(--bg-primary) 25%, transparent 25%),
-        linear-gradient(45deg, transparent 75%, var(--bg-primary) 75%),
-        linear-gradient(-45deg, transparent 75%, var(--bg-primary) 75%);
-    background-size: 16px 16px;
-    background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
-    overflow: hidden;
-    position: relative;
+    padding: 0 16px;
+    background: var(--bg-device);
+    border-bottom: 2px solid var(--border-dark);
 }
 
-#main-canvas {
-    image-rendering: pixelated;
-    image-rendering: crisp-edges;
-    background: #000;
-    border: 2px solid var(--accent-primary);
-    box-shadow: 0 0 30px rgba(233, 69, 96, 0.3);
-}
-
-/* ========================================
-   モードタブ
-   ======================================== */
-
-#mode-tabs {
-    height: var(--tabs-height);
+.header-btn {
     display: flex;
-    background: var(--bg-secondary);
-    border-top: 1px solid var(--border-color);
-    border-bottom: 1px solid var(--border-color);
-    flex-shrink: 0;
-}
-
-.tab {
-    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 4px 12px;
     border: none;
     background: transparent;
-    color: var(--text-secondary);
-    font-size: 12px;
+    color: var(--text-dark);
     font-family: inherit;
     cursor: pointer;
-    transition: all 0.2s;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 2px;
 }
 
-.tab.active {
-    color: var(--accent-primary);
-    background: rgba(233, 69, 96, 0.1);
-    border-bottom: 3px solid var(--accent-primary);
+.header-btn .icon {
+    font-size: 18px;
 }
 
-.tab:active {
-    transform: scale(0.95);
+.header-btn .label {
+    font-size: 10px;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+.header-btn:active {
+    opacity: 0.6;
 }
 
 /* ========================================
-   ツールパネル
+   スクリーン共通
    ======================================== */
 
-#tool-panel {
-    height: var(--tool-panel-height);
-    padding-bottom: var(--safe-area-bottom);
-    background: var(--bg-secondary);
-    flex-shrink: 0;
+.screen {
+    display: none;
+    flex-direction: column;
+    flex: 1;
     overflow: hidden;
 }
 
-.tool-content {
-    display: none;
-    height: 100%;
-    padding: 8px;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.tool-content.active {
+.screen.active {
     display: flex;
 }
 
 /* ========================================
-   スプライトエディタツール
+   プレイ画面
    ======================================== */
 
-#palette-container {
-    display: flex;
-    gap: 4px;
-    flex-wrap: wrap;
+#play-screen {
+    background: var(--bg-device);
 }
 
-#current-palette {
-    display: grid;
-    grid-template-columns: repeat(8, 1fr);
-    gap: 2px;
+#game-viewport {
     flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-screen);
+    margin: 8px;
+    border: 4px solid var(--border-dark);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+#game-canvas {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+}
+
+/* コントローラーエリア */
+#controller-area {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 30px;
+    padding-bottom: calc(20px + var(--safe-area-bottom));
+    background: var(--bg-device);
+}
+
+/* 十字キー */
+#dpad-container {
+    position: relative;
+    width: 120px;
+    height: 120px;
+}
+
+#dpad {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+#dpad-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 40px;
+    height: 40px;
+    background: var(--accent-red);
+    border-radius: 50%;
+    box-shadow: inset 0 -2px 4px rgba(0, 0, 0, 0.4);
+}
+
+.dpad-btn {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    border: none;
+    background: var(--accent-red);
+    cursor: pointer;
+    box-shadow:
+        inset 0 -3px 6px rgba(0, 0, 0, 0.3),
+        0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.dpad-btn:active {
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+#btn-up {
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    border-radius: 8px 8px 0 0;
+}
+
+#btn-down {
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    border-radius: 0 0 8px 8px;
+}
+
+#btn-left {
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    border-radius: 8px 0 0 8px;
+}
+
+#btn-right {
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    border-radius: 0 8px 8px 0;
+}
+
+/* A/Bボタン */
+#action-btns-container {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+}
+
+.action-btn {
+    width: 56px;
+    height: 56px;
+    border: none;
+    border-radius: 50%;
+    background: var(--accent-red);
+    color: var(--text-light);
+    font-family: inherit;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow:
+        inset 0 -4px 8px rgba(0, 0, 0, 0.3),
+        0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.action-btn:active {
+    box-shadow: inset 0 4px 8px rgba(0, 0, 0, 0.4);
+}
+
+#btn-b {
+    margin-top: 20px;
+}
+
+/* ========================================
+   ペイント画面
+   ======================================== */
+
+#paint-screen {
+    background: var(--bg-device);
+}
+
+/* スプライトギャラリー */
+#sprite-gallery {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px;
+    background: rgba(0, 0, 0, 0.1);
+    border-bottom: 2px solid var(--border-dark);
+    overflow-x: auto;
+}
+
+#sprite-list {
+    display: flex;
+    gap: 8px;
+    flex: 1;
+    overflow-x: auto;
+    padding: 4px;
+}
+
+.sprite-item {
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    background: var(--bg-screen);
+    border: 3px solid var(--border-dark);
+    border-radius: 6px;
+    cursor: pointer;
+    image-rendering: pixelated;
+    overflow: hidden;
+}
+
+.sprite-item.selected {
+    border-color: #4cc9f0;
+    box-shadow: 0 0 8px rgba(76, 201, 240, 0.5);
+}
+
+.sprite-item canvas {
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated;
+}
+
+#add-sprite-btn {
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    border: 3px dashed var(--border-dark);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-dark);
+    font-size: 24px;
+    cursor: pointer;
+}
+
+/* ペイントエリア */
+#paint-area {
+    flex: 1;
+    display: flex;
+    flex-direction: row;
+    padding: 8px;
+    gap: 8px;
+    min-height: 0;
+    overflow: hidden;
+    align-items: flex-start;
+}
+
+#paint-canvas {
+    width: 320px;
+    height: 320px;
+    flex-shrink: 0;
+    background: var(--bg-screen);
+    border: 3px solid var(--border-dark);
+    border-radius: 8px;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+}
+
+/* カラーパレット（右側縦並び） */
+#color-palette {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    gap: 3px;
+    width: 80px;
+    max-height: 320px;
+    overflow-y: auto;
+    padding: 4px;
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 6px;
 }
 
 .palette-color {
-    aspect-ratio: 1;
-    border: 2px solid var(--border-color);
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    border: 2px solid var(--border-dark);
     border-radius: 4px;
+    cursor: pointer;
+}
+
+.palette-color.selected {
+    border-color: #fff;
+    box-shadow: 0 0 6px rgba(255, 255, 255, 0.8);
+    transform: scale(1.1);
+}
+
+/* ペイントツール */
+#paint-tools {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    padding: 12px;
+    padding-bottom: calc(12px + var(--safe-area-bottom));
+    background: rgba(0, 0, 0, 0.1);
+    border-top: 2px solid var(--border-dark);
+}
+
+.paint-tool-btn {
+    width: 44px;
+    height: 44px;
+    border: 2px solid var(--border-dark);
+    border-radius: 8px;
+    background: var(--bg-device);
+    font-size: 20px;
     cursor: pointer;
     transition: all 0.1s;
 }
 
-.palette-color.selected {
-    border-color: var(--text-primary);
-    transform: scale(1.1);
-    box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+.paint-tool-btn.active {
+    background: #4a7c59;
+    border-color: #fff;
 }
 
-#drawing-tools {
-    display: flex;
-    gap: 8px;
-    justify-content: center;
-}
-
-.tool-btn {
-    width: 44px;
-    height: 44px;
-    border: 2px solid var(--border-color);
-    border-radius: 8px;
-    background: var(--bg-tertiary);
-    font-size: 20px;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.tool-btn.active {
-    border-color: var(--accent-primary);
-    background: rgba(233, 69, 96, 0.2);
-}
-
-.tool-btn:active {
-    transform: scale(0.9);
-}
-
-#sprite-actions {
-    display: flex;
-    gap: 8px;
-    justify-content: center;
-}
-
-#sprite-actions button {
-    padding: 8px 16px;
-    border: 1px solid var(--accent-blue);
-    border-radius: 6px;
-    background: rgba(76, 201, 240, 0.1);
-    color: var(--accent-blue);
-    font-family: inherit;
-    font-size: 12px;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-#sprite-actions button:active {
-    background: rgba(76, 201, 240, 0.3);
+.paint-tool-btn:active {
+    transform: scale(0.95);
 }
 
 /* ========================================
-   ステージエディタツール
+   ステージ画面
    ======================================== */
 
-#tile-selector {
-    display: grid;
-    grid-template-columns: repeat(8, 1fr);
-    gap: 2px;
-    max-height: 60px;
-    overflow-y: auto;
+#stage-screen {
+    background: var(--bg-device);
+}
+
+#tile-gallery {
+    display: flex;
+    padding: 8px;
+    background: rgba(0, 0, 0, 0.1);
+    border-bottom: 2px solid var(--border-dark);
+    overflow-x: auto;
+}
+
+#tile-list {
+    display: flex;
+    gap: 6px;
 }
 
 .tile-item {
-    aspect-ratio: 1;
-    background: var(--bg-tertiary);
-    border: 2px solid var(--border-color);
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    background: var(--bg-screen);
+    border: 2px solid var(--border-dark);
     border-radius: 4px;
     cursor: pointer;
     image-rendering: pixelated;
 }
 
 .tile-item.selected {
-    border-color: var(--accent-primary);
+    border-color: #4cc9f0;
 }
 
-#layer-controls {
+#stage-area {
+    flex: 1;
     display: flex;
-    gap: 8px;
+    align-items: center;
     justify-content: center;
+    padding: 8px;
+    min-height: 0;
+}
+
+#stage-canvas {
+    max-width: 100%;
+    max-height: 100%;
+    background: var(--bg-screen);
+    border: 3px solid var(--border-dark);
+    border-radius: 8px;
+    image-rendering: pixelated;
+}
+
+#stage-tools {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+    padding-bottom: calc(12px + var(--safe-area-bottom));
+    background: rgba(0, 0, 0, 0.1);
+    border-top: 2px solid var(--border-dark);
+}
+
+#layer-btns,
+#object-btns {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
 }
 
 .layer-btn {
-    padding: 6px 12px;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    background: var(--bg-tertiary);
-    color: var(--text-secondary);
+    padding: 8px 16px;
+    border: 2px solid var(--border-dark);
+    border-radius: 6px;
+    background: var(--bg-device);
+    color: var(--text-dark);
     font-family: inherit;
-    font-size: 11px;
+    font-size: 12px;
     cursor: pointer;
-    transition: all 0.2s;
 }
 
 .layer-btn.active {
-    border-color: var(--accent-primary);
-    color: var(--accent-primary);
-    background: rgba(233, 69, 96, 0.1);
-}
-
-#object-tools {
-    display: flex;
-    gap: 8px;
-    justify-content: center;
+    background: #4a7c59;
+    color: #fff;
+    border-color: #fff;
 }
 
 .obj-btn {
     width: 40px;
     height: 40px;
-    border: 2px solid var(--border-color);
+    border: 2px solid var(--border-dark);
     border-radius: 8px;
-    background: var(--bg-tertiary);
+    background: var(--bg-device);
     font-size: 18px;
     cursor: pointer;
-    transition: all 0.2s;
 }
 
 .obj-btn.active {
-    border-color: var(--accent-blue);
-    background: rgba(76, 201, 240, 0.2);
+    background: #4a7c59;
+    border-color: #fff;
 }
 
 /* ========================================
-   BGMエディタツール
+   サウンド画面
    ======================================== */
 
-#bgm-controls {
+#sound-screen {
+    background: var(--bg-device);
+}
+
+#sequencer-area {
+    flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 12px;
+    padding: 8px;
+    min-height: 0;
 }
 
-#bgm-controls button {
-    width: 36px;
-    height: 36px;
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    background: var(--bg-tertiary);
-    color: var(--text-primary);
-    font-size: 14px;
-    cursor: pointer;
+#sequencer-canvas {
+    max-width: 100%;
+    max-height: 100%;
+    background: var(--bg-screen);
+    border: 3px solid var(--border-dark);
+    border-radius: 8px;
 }
 
-#step-display {
-    font-size: 14px;
-    color: var(--accent-blue);
-    min-width: 60px;
-    text-align: center;
+#keyboard-area {
+    padding: 8px;
+    background: rgba(0, 0, 0, 0.1);
 }
 
-#bgm-buttons {
-    display: flex;
-    gap: 8px;
-    justify-content: center;
-}
-
-#bgm-buttons button {
-    padding: 8px 12px;
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    background: var(--bg-tertiary);
-    color: var(--text-primary);
-    font-family: inherit;
-    font-size: 12px;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-#rec-btn.active {
-    background: var(--accent-primary);
-    border-color: var(--accent-primary);
-    animation: pulse 1s infinite;
-}
-
-@keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.6; }
-}
-
-#keyboard-container {
+#piano-keyboard {
     display: flex;
     justify-content: center;
-    height: 50px;
+    height: 80px;
     position: relative;
 }
 
 .piano-key {
-    height: 100%;
     cursor: pointer;
-    transition: all 0.1s;
+    transition: background 0.05s;
 }
 
 .piano-key.white {
-    width: 24px;
+    width: 32px;
+    height: 80px;
     background: linear-gradient(180deg, #fff 0%, #e8e8e8 100%);
-    border: 1px solid #999;
-    border-radius: 0 0 4px 4px;
+    border: 1px solid #666;
+    border-radius: 0 0 6px 6px;
     z-index: 1;
 }
 
 .piano-key.black {
-    width: 16px;
-    height: 60%;
+    width: 20px;
+    height: 50px;
     background: linear-gradient(180deg, #333 0%, #000 100%);
     border: 1px solid #000;
-    border-radius: 0 0 3px 3px;
+    border-radius: 0 0 4px 4px;
     position: absolute;
     z-index: 2;
 }
 
-.piano-key:active, .piano-key.active {
-    background: var(--accent-primary) !important;
+.piano-key:active,
+.piano-key.active {
+    background: var(--accent-red) !important;
 }
 
-#track-selector {
+#sound-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    padding: 12px;
+    padding-bottom: calc(12px + var(--safe-area-bottom));
+    border-top: 2px solid var(--border-dark);
+}
+
+#transport-btns {
+    display: flex;
+    gap: 8px;
+}
+
+#transport-btns button {
+    width: 40px;
+    height: 40px;
+    border: 2px solid var(--border-dark);
+    border-radius: 50%;
+    background: var(--bg-device);
+    font-size: 16px;
+    cursor: pointer;
+}
+
+#rec-btn.active {
+    background: var(--accent-red);
+    color: #fff;
+}
+
+#track-btns {
     display: flex;
     gap: 4px;
-    justify-content: center;
 }
 
 .track-btn {
-    padding: 4px 8px;
-    border: 1px solid var(--border-color);
+    padding: 6px 10px;
+    border: 2px solid var(--border-dark);
     border-radius: 4px;
-    background: var(--bg-tertiary);
-    color: var(--text-secondary);
+    background: var(--bg-device);
+    color: var(--text-dark);
     font-family: inherit;
     font-size: 10px;
     cursor: pointer;
 }
 
 .track-btn.active {
-    border-color: var(--accent-blue);
-    color: var(--accent-blue);
-    background: rgba(76, 201, 240, 0.1);
+    background: #4a7c59;
+    color: #fff;
+    border-color: #fff;
 }
 
-/* ========================================
-   ゲームコントローラー
-   ======================================== */
-
-#game-controller {
+#step-info {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    padding: 16px 24px;
+    gap: 8px;
 }
 
-#dpad {
-    display: grid;
-    grid-template-areas:
-        ". up ."
-        "left . right"
-        ". down .";
-    gap: 4px;
-}
-
-#btn-up { grid-area: up; }
-#btn-left { grid-area: left; }
-#btn-right { grid-area: right; }
-#btn-down { grid-area: down; }
-
-.dpad-btn {
-    width: 48px;
-    height: 48px;
-    border: 2px solid var(--border-color);
-    border-radius: 8px;
-    background: var(--bg-tertiary);
-    color: var(--text-primary);
-    font-size: 16px;
+#step-info button {
+    width: 32px;
+    height: 32px;
+    border: 2px solid var(--border-dark);
+    border-radius: 4px;
+    background: var(--bg-device);
+    font-size: 12px;
     cursor: pointer;
-    transition: all 0.1s;
 }
 
-.dpad-btn:active {
-    background: var(--accent-primary);
-    transform: scale(0.95);
-}
-
-#action-buttons {
-    display: flex;
-    gap: 12px;
-}
-
-.action-btn {
-    width: 60px;
-    height: 60px;
-    border: 3px solid;
-    border-radius: 50%;
-    font-family: inherit;
-    font-size: 18px;
+#step-display {
+    font-size: 12px;
     font-weight: bold;
-    cursor: pointer;
-    transition: all 0.1s;
-}
-
-#btn-a {
-    background: rgba(233, 69, 96, 0.2);
-    border-color: var(--accent-primary);
-    color: var(--accent-primary);
-}
-
-#btn-b {
-    background: rgba(76, 201, 240, 0.2);
-    border-color: var(--accent-blue);
-    color: var(--accent-blue);
-}
-
-.action-btn:active {
-    transform: scale(0.9);
-    filter: brightness(1.3);
+    min-width: 50px;
+    text-align: center;
 }
 
 /* ========================================
@@ -534,85 +643,131 @@ html, body {
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.8);
+    z-index: 1000;
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 1000;
-    opacity: 1;
-    transition: opacity 0.2s;
 }
 
 #menu-panel.hidden {
-    opacity: 0;
-    pointer-events: none;
+    display: none;
+}
+
+.menu-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
 }
 
 .menu-content {
-    background: var(--bg-secondary);
-    border: 2px solid var(--accent-primary);
+    position: relative;
+    background: var(--bg-device);
+    border: 4px solid var(--border-dark);
     border-radius: 12px;
     padding: 20px;
     width: 280px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+    max-height: 90vh;
+    overflow-y: auto;
 }
 
 .menu-content h2 {
     text-align: center;
-    color: var(--accent-primary);
-    font-size: 18px;
+    color: var(--text-dark);
+    font-size: 20px;
+    margin-bottom: 16px;
+}
+
+#screen-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
     margin-bottom: 8px;
 }
 
-.menu-content button {
+.nav-btn {
     padding: 12px 16px;
-    border: 1px solid var(--border-color);
+    border: 2px solid var(--border-dark);
     border-radius: 8px;
-    background: var(--bg-tertiary);
-    color: var(--text-primary);
+    background: var(--bg-device);
+    color: var(--text-dark);
     font-family: inherit;
     font-size: 14px;
-    cursor: pointer;
-    transition: all 0.2s;
     text-align: left;
+    cursor: pointer;
 }
 
-.menu-content button:active {
-    background: var(--accent-primary);
+.nav-btn.active {
+    background: #4a7c59;
+    color: #fff;
+    border-color: #fff;
 }
 
-.close-btn {
-    margin-top: 8px;
-    text-align: center !important;
-    border-color: var(--accent-primary) !important;
-    color: var(--accent-primary) !important;
+.nav-btn:active {
+    opacity: 0.8;
+}
+
+.menu-content hr {
+    border: none;
+    border-top: 2px solid var(--border-dark);
+    margin: 12px 0;
+}
+
+.menu-action {
+    display: block;
+    width: 100%;
+    padding: 10px 16px;
+    margin-bottom: 8px;
+    border: 1px solid var(--border-dark);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-dark);
+    font-family: inherit;
+    font-size: 13px;
+    text-align: left;
+    cursor: pointer;
+}
+
+.menu-action:active {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.menu-close {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    border: 2px solid var(--accent-red);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--accent-red);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: bold;
+    text-align: center;
+    cursor: pointer;
+}
+
+.menu-close:active {
+    background: var(--accent-red);
+    color: #fff;
 }
 
 /* ========================================
-   ユーティリティ
+   スクロールバー
    ======================================== */
 
-.hidden {
-    display: none !important;
-}
-
-/* スクロールバー */
 ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-    background: var(--bg-primary);
+    background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-    background: var(--border-color);
+    background: var(--border-dark);
     border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: var(--accent-primary);
 }

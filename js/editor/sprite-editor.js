@@ -1,5 +1,5 @@
 /**
- * PixelGameKit - スプライトエディタ
+ * PixelGameKit - スプライトエディタ（新UI対応）
  */
 
 const SpriteEditor = {
@@ -12,40 +12,50 @@ const SpriteEditor = {
     lastPixel: { x: -1, y: -1 },
     clipboard: null,
 
-    // キャンバスサイズ
     SPRITE_SIZE: 16,
-    pixelSize: 20, // 表示上のピクセルサイズ
+    pixelSize: 20,
 
     init() {
-        this.canvas = document.getElementById('main-canvas');
+        this.canvas = document.getElementById('paint-canvas');
+        if (!this.canvas) return;
+
         this.ctx = this.canvas.getContext('2d');
 
-        this.initPalette();
+        this.initColorPalette();
         this.initTools();
+        this.initSpriteGallery();
         this.initCanvasEvents();
-        this.resize();
+    },
 
-        window.addEventListener('resize', () => this.resize());
+    refresh() {
+        this.initColorPalette();
+        this.initSpriteGallery();
+        this.resize();
+        this.render();
     },
 
     resize() {
-        const container = document.getElementById('canvas-area');
-        const size = Math.min(container.clientWidth, container.clientHeight) - 32;
-        this.pixelSize = Math.floor(size / this.SPRITE_SIZE);
+        // 固定サイズ（16x16 スプライト、各ピクセル20px）
+        const canvasSize = 320;
+        this.pixelSize = 20;
 
-        const canvasSize = this.pixelSize * this.SPRITE_SIZE;
         this.canvas.width = canvasSize;
         this.canvas.height = canvasSize;
 
         this.render();
     },
 
-    initPalette() {
-        const container = document.getElementById('current-palette');
+    initColorPalette() {
+        const container = document.getElementById('color-palette');
+        if (!container) return;
+
         container.innerHTML = '';
 
-        const palette = App.projectData.palette;
+        // ファミコン52色から選択可能
+        const palette = App.nesPalette;
         palette.forEach((color, index) => {
+            if (color === '#000000' && index > 13) return; // 重複黒をスキップ
+
             const div = document.createElement('div');
             div.className = 'palette-color' + (index === this.selectedColor ? ' selected' : '');
             div.style.backgroundColor = color;
@@ -62,30 +72,93 @@ const SpriteEditor = {
     },
 
     initTools() {
-        document.querySelectorAll('#drawing-tools .tool-btn').forEach(btn => {
+        document.querySelectorAll('.paint-tool-btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                this.currentTool = btn.dataset.tool;
-                document.querySelectorAll('#drawing-tools .tool-btn').forEach(b => {
-                    b.classList.toggle('active', b === btn);
-                });
+                const tool = btn.dataset.tool;
 
-                // コピペ処理
-                if (this.currentTool === 'copy') {
-                    this.copySprite();
-                    this.currentTool = 'pen';
-                } else if (this.currentTool === 'paste') {
-                    this.pasteSprite();
-                    this.currentTool = 'pen';
+                switch (tool) {
+                    case 'copy':
+                        this.copySprite();
+                        return;
+                    case 'paste':
+                        this.pasteSprite();
+                        return;
+                    case 'clear':
+                        this.clearSprite();
+                        return;
+                    default:
+                        this.currentTool = tool;
+                        document.querySelectorAll('.paint-tool-btn').forEach(b => {
+                            b.classList.toggle('active', b === btn);
+                        });
                 }
             });
         });
+    },
 
-        document.getElementById('new-sprite')?.addEventListener('click', () => this.newSprite());
-        document.getElementById('save-sprite')?.addEventListener('click', () => this.saveSprite());
+    initSpriteGallery() {
+        const container = document.getElementById('sprite-list');
+        if (!container) return;
+
+        container.innerHTML = '';
+
+        App.projectData.sprites.forEach((sprite, index) => {
+            const div = document.createElement('div');
+            div.className = 'sprite-item' + (index === this.currentSprite ? ' selected' : '');
+
+            const miniCanvas = document.createElement('canvas');
+            miniCanvas.width = 16;
+            miniCanvas.height = 16;
+            this.renderSpriteToMiniCanvas(sprite, miniCanvas);
+            div.appendChild(miniCanvas);
+
+            div.addEventListener('click', () => {
+                this.currentSprite = index;
+                this.initSpriteGallery();
+                this.render();
+            });
+
+            container.appendChild(div);
+        });
+
+        // 追加ボタン
+        document.getElementById('add-sprite-btn')?.addEventListener('click', () => {
+            this.addNewSprite();
+        });
+    },
+
+    renderSpriteToMiniCanvas(sprite, canvas) {
+        const ctx = canvas.getContext('2d');
+        const palette = App.nesPalette;
+
+        ctx.clearRect(0, 0, 16, 16);
+
+        for (let y = 0; y < 16; y++) {
+            for (let x = 0; x < 16; x++) {
+                const colorIndex = sprite.data[y][x];
+                if (colorIndex >= 0) {
+                    ctx.fillStyle = palette[colorIndex];
+                    ctx.fillRect(x, y, 1, 1);
+                }
+            }
+        }
+    },
+
+    addNewSprite() {
+        const id = App.projectData.sprites.length;
+        App.projectData.sprites.push({
+            id: id,
+            name: 'sprite_' + id,
+            data: App.create2DArray(16, 16, -1)
+        });
+        this.currentSprite = id;
+        this.initSpriteGallery();
+        this.render();
     },
 
     initCanvasEvents() {
-        // タッチ/マウスイベント
+        if (!this.canvas) return;
+
         this.canvas.addEventListener('mousedown', (e) => this.onPointerDown(e));
         this.canvas.addEventListener('mousemove', (e) => this.onPointerMove(e));
         this.canvas.addEventListener('mouseup', () => this.onPointerUp());
@@ -106,13 +179,15 @@ const SpriteEditor = {
 
     getPixelFromEvent(e) {
         const rect = this.canvas.getBoundingClientRect();
-        const x = Math.floor((e.clientX - rect.left) / this.pixelSize);
-        const y = Math.floor((e.clientY - rect.top) / this.pixelSize);
+        const scaleX = this.canvas.width / rect.width;
+        const scaleY = this.canvas.height / rect.height;
+        const x = Math.floor((e.clientX - rect.left) * scaleX / this.pixelSize);
+        const y = Math.floor((e.clientY - rect.top) * scaleY / this.pixelSize);
         return { x, y };
     },
 
     onPointerDown(e) {
-        if (App.currentMode !== 'sprite') return;
+        if (App.currentScreen !== 'paint') return;
 
         this.isDrawing = true;
         const pixel = this.getPixelFromEvent(e);
@@ -120,7 +195,7 @@ const SpriteEditor = {
     },
 
     onPointerMove(e) {
-        if (!this.isDrawing || App.currentMode !== 'sprite') return;
+        if (!this.isDrawing || App.currentScreen !== 'paint') return;
 
         const pixel = this.getPixelFromEvent(e);
         if (pixel.x !== this.lastPixel.x || pixel.y !== this.lastPixel.y) {
@@ -131,6 +206,8 @@ const SpriteEditor = {
     onPointerUp() {
         this.isDrawing = false;
         this.lastPixel = { x: -1, y: -1 };
+        // ギャラリーのサムネイル更新
+        this.initSpriteGallery();
     },
 
     processPixel(x, y) {
@@ -149,6 +226,9 @@ const SpriteEditor = {
                 } else {
                     sprite.data[y][x] = this.selectedColor;
                 }
+                break;
+            case 'eraser':
+                sprite.data[y][x] = -1;
                 break;
             case 'fill':
                 this.floodFill(x, y, sprite.data[y][x], this.selectedColor);
@@ -194,48 +274,49 @@ const SpriteEditor = {
             if (sprite) {
                 sprite.data = JSON.parse(JSON.stringify(this.clipboard));
                 this.render();
+                this.initSpriteGallery();
                 console.log('Sprite pasted');
             }
         }
     },
 
-    newSprite() {
-        const id = App.projectData.sprites.length;
-        App.projectData.sprites.push({
-            id: id,
-            name: 'sprite_' + id,
-            data: App.create2DArray(16, 16, -1)
-        });
-        this.currentSprite = id;
-        this.render();
-    },
-
-    saveSprite() {
-        App.saveProject();
-        alert('スプライトを保存しました！');
+    clearSprite() {
+        const sprite = App.projectData.sprites[this.currentSprite];
+        if (sprite) {
+            sprite.data = App.create2DArray(16, 16, -1);
+            this.render();
+            this.initSpriteGallery();
+        }
     },
 
     render() {
-        if (App.currentMode !== 'sprite') return;
+        if (!this.canvas || !this.ctx) return;
+        if (App.currentScreen !== 'paint') return;
 
         const sprite = App.projectData.sprites[this.currentSprite];
         if (!sprite) return;
 
-        const palette = App.projectData.palette;
+        const palette = App.nesPalette;
 
-        // クリア
-        this.ctx.fillStyle = '#000';
+        // クリア（透明グリッド表示）
+        this.ctx.fillStyle = '#2a2a3e';
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-        // グリッド描画
-        this.ctx.strokeStyle = '#333';
-        this.ctx.lineWidth = 1;
+        // チェッカーボード背景
+        this.ctx.fillStyle = '#3a3a4e';
+        for (let y = 0; y < this.SPRITE_SIZE; y++) {
+            for (let x = 0; x < this.SPRITE_SIZE; x++) {
+                if ((x + y) % 2 === 0) {
+                    this.ctx.fillRect(x * this.pixelSize, y * this.pixelSize, this.pixelSize, this.pixelSize);
+                }
+            }
+        }
 
+        // ピクセル描画
         for (let y = 0; y < this.SPRITE_SIZE; y++) {
             for (let x = 0; x < this.SPRITE_SIZE; x++) {
                 const colorIndex = sprite.data[y][x];
 
-                // ピクセル描画
                 if (colorIndex >= 0 && colorIndex < palette.length) {
                     this.ctx.fillStyle = palette[colorIndex];
                     this.ctx.fillRect(
@@ -245,15 +326,23 @@ const SpriteEditor = {
                         this.pixelSize
                     );
                 }
-
-                // グリッド線
-                this.ctx.strokeRect(
-                    x * this.pixelSize,
-                    y * this.pixelSize,
-                    this.pixelSize,
-                    this.pixelSize
-                );
             }
+        }
+
+        // グリッド線
+        this.ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+        this.ctx.lineWidth = 1;
+
+        for (let i = 0; i <= this.SPRITE_SIZE; i++) {
+            this.ctx.beginPath();
+            this.ctx.moveTo(i * this.pixelSize, 0);
+            this.ctx.lineTo(i * this.pixelSize, this.canvas.height);
+            this.ctx.stroke();
+
+            this.ctx.beginPath();
+            this.ctx.moveTo(0, i * this.pixelSize);
+            this.ctx.lineTo(this.canvas.width, i * this.pixelSize);
+            this.ctx.stroke();
         }
     }
 };

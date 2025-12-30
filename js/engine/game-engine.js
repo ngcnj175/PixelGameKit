@@ -1,5 +1,5 @@
 /**
- * PixelGameKit - ゲームエンジン
+ * PixelGameKit - ゲームエンジン（新UI対応）
  */
 
 const GameEngine = {
@@ -8,16 +8,18 @@ const GameEngine = {
     animationId: null,
     isRunning: false,
 
-    // ゲーム状態
     player: null,
     enemies: [],
 
-    // 物理定数
     GRAVITY: 0.5,
     TILE_SIZE: 16,
 
+    // カメラ（プレイヤー中心スクロール）
+    camera: { x: 0, y: 0 },
+
     init() {
-        this.canvas = document.getElementById('main-canvas');
+        this.canvas = document.getElementById('game-canvas');
+        if (!this.canvas) return;
         this.ctx = this.canvas.getContext('2d');
     },
 
@@ -39,31 +41,27 @@ const GameEngine = {
     },
 
     resize() {
-        const container = document.getElementById('canvas-area');
+        const container = document.getElementById('game-viewport');
+        if (!container) return;
+
         const stage = App.projectData.stage;
-        const maxSize = Math.min(container.clientWidth, container.clientHeight) - 32;
+        const maxWidth = container.clientWidth - 16;
+        const maxHeight = container.clientHeight - 16;
 
-        const aspectRatio = stage.width / stage.height;
-        let width, height;
+        // 2倍表示でフィット
+        const scale = 2;
+        const viewTilesX = Math.floor(maxWidth / (this.TILE_SIZE * scale));
+        const viewTilesY = Math.floor(maxHeight / (this.TILE_SIZE * scale));
 
-        if (aspectRatio > 1) {
-            width = maxSize;
-            height = maxSize / aspectRatio;
-        } else {
-            height = maxSize;
-            width = maxSize * aspectRatio;
-        }
+        this.canvas.width = viewTilesX * this.TILE_SIZE * scale;
+        this.canvas.height = viewTilesY * this.TILE_SIZE * scale;
 
-        this.canvas.width = width;
-        this.canvas.height = height;
-
-        this.TILE_SIZE = width / stage.width;
+        this.TILE_SIZE = 16 * scale; // 2倍スケール
     },
 
     initGame() {
         const objects = App.projectData.objects;
 
-        // プレイヤー初期化
         const playerObj = objects.find(o => o.type === 'player');
         if (playerObj) {
             this.player = new Player(playerObj.x, playerObj.y);
@@ -71,7 +69,6 @@ const GameEngine = {
             this.player = new Player(1, 1);
         }
 
-        // 敵初期化
         this.enemies = objects
             .filter(o => o.type === 'enemy')
             .map(o => new Enemy(o.x, o.y, o.behavior || 'patrol'));
@@ -87,36 +84,41 @@ const GameEngine = {
     },
 
     update() {
-        // プレイヤー更新
         if (this.player) {
             this.player.update(this);
+
+            // カメラをプレイヤー中心に
+            const viewWidth = this.canvas.width / this.TILE_SIZE;
+            const viewHeight = this.canvas.height / this.TILE_SIZE;
+
+            this.camera.x = this.player.x - viewWidth / 2 + 0.5;
+            this.camera.y = this.player.y - viewHeight / 2 + 0.5;
+
+            // カメラ範囲制限
+            const stage = App.projectData.stage;
+            this.camera.x = Math.max(0, Math.min(this.camera.x, stage.width - viewWidth));
+            this.camera.y = Math.max(0, Math.min(this.camera.y, stage.height - viewHeight));
         }
 
-        // 敵更新
         this.enemies.forEach(enemy => enemy.update(this));
-
-        // 衝突判定
         this.checkCollisions();
-
-        // クリア判定
         this.checkClearCondition();
     },
 
     checkCollisions() {
         if (!this.player) return;
 
-        // 敵との衝突
         this.enemies.forEach((enemy, index) => {
             if (this.player.collidesWith(enemy)) {
-                // プレイヤーが上から踏んだ場合
                 if (this.player.vy > 0 && this.player.y < enemy.y) {
                     this.enemies.splice(index, 1);
                     this.player.vy = -8;
                 } else {
-                    // ゲームオーバー
                     this.stop();
-                    alert('ゲームオーバー！');
-                    this.start();
+                    setTimeout(() => {
+                        alert('ゲームオーバー！');
+                        this.start();
+                    }, 100);
                 }
             }
         });
@@ -132,7 +134,9 @@ const GameEngine = {
 
             if (tileX === goal.x && tileY === goal.y) {
                 this.stop();
-                alert('クリア！');
+                setTimeout(() => {
+                    alert('クリア！');
+                }, 100);
             }
         }
     },
@@ -143,38 +147,30 @@ const GameEngine = {
         const tileY = Math.floor(y);
 
         if (tileX < 0 || tileX >= stage.width || tileY < 0 || tileY >= stage.height) {
-            return 1; // 画面外は壁
+            return 1;
         }
 
         return stage.layers.collision[tileY][tileX];
     },
 
     render() {
-        // クリア
         this.ctx.fillStyle = '#1a1a2e';
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-        // ステージ描画
         this.renderStage();
+        this.enemies.forEach(enemy => enemy.render(this.ctx, this.TILE_SIZE, this.camera));
 
-        // 敵描画
-        this.enemies.forEach(enemy => enemy.render(this.ctx, this.TILE_SIZE));
-
-        // プレイヤー描画
         if (this.player) {
-            this.player.render(this.ctx, this.TILE_SIZE);
+            this.player.render(this.ctx, this.TILE_SIZE, this.camera);
         }
     },
 
     renderStage() {
         const stage = App.projectData.stage;
         const sprites = App.projectData.sprites;
-        const palette = App.projectData.palette;
+        const palette = App.nesPalette;
 
-        // 背景レイヤー
         this.renderLayer(stage.layers.bg, sprites, palette);
-
-        // 前景レイヤー
         this.renderLayer(stage.layers.fg, sprites, palette);
     },
 
@@ -193,6 +189,14 @@ const GameEngine = {
 
     renderSprite(sprite, tileX, tileY, palette) {
         const pixelSize = this.TILE_SIZE / 16;
+        const screenX = (tileX - this.camera.x) * this.TILE_SIZE;
+        const screenY = (tileY - this.camera.y) * this.TILE_SIZE;
+
+        // 画面外スキップ
+        if (screenX + this.TILE_SIZE < 0 || screenX > this.canvas.width ||
+            screenY + this.TILE_SIZE < 0 || screenY > this.canvas.height) {
+            return;
+        }
 
         for (let y = 0; y < 16; y++) {
             for (let x = 0; x < 16; x++) {
@@ -200,8 +204,8 @@ const GameEngine = {
                 if (colorIndex >= 0) {
                     this.ctx.fillStyle = palette[colorIndex];
                     this.ctx.fillRect(
-                        tileX * this.TILE_SIZE + x * pixelSize,
-                        tileY * this.TILE_SIZE + y * pixelSize,
+                        screenX + x * pixelSize,
+                        screenY + y * pixelSize,
                         pixelSize + 0.5,
                         pixelSize + 0.5
                     );

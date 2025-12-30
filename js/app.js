@@ -4,10 +4,10 @@
 
 // グローバル状態
 const App = {
-    currentMode: 'sprite',
+    currentScreen: 'play',
     projectData: null,
 
-    // ファミコンパレット（52色 + 透明）
+    // ファミコンパレット（52色）
     nesPalette: [
         '#7C7C7C', '#0000FC', '#0000BC', '#4428BC', '#940084', '#A80020', '#A81000', '#881400',
         '#503000', '#007800', '#006800', '#005800', '#004058', '#000000', '#000000', '#000000',
@@ -40,7 +40,9 @@ const App = {
                     collision: this.create2DArray(16, 16, 0)
                 }
             },
-            objects: [],
+            objects: [
+                { type: 'player', x: 2, y: 14, sprite: 0 }
+            ],
             bgm: {
                 bpm: 120,
                 steps: 16,
@@ -58,7 +60,7 @@ const App = {
         return {
             id: 0,
             name: 'sprite_0',
-            data: this.create2DArray(16, 16, -1) // -1 = 透明
+            data: this.create2DArray(16, 16, -1)
         };
     },
 
@@ -70,26 +72,21 @@ const App = {
     init() {
         console.log('PixelGameKit initializing...');
 
-        // Service Worker登録
         this.registerServiceWorker();
-
-        // プロジェクトデータロードまたは新規作成
         this.loadOrCreateProject();
-
-        // モードタブ初期化
-        this.initModeTabs();
-
-        // メニュー初期化
         this.initMenu();
-
-        // URLからデータ読み込み
+        this.initScreenNav();
         this.checkUrlData();
 
         // 各エディタ初期化
         if (typeof SpriteEditor !== 'undefined') SpriteEditor.init();
         if (typeof StageEditor !== 'undefined') StageEditor.init();
         if (typeof BgmEditor !== 'undefined') BgmEditor.init();
+        if (typeof GameEngine !== 'undefined') GameEngine.init();
         if (typeof GameController !== 'undefined') GameController.init();
+
+        // 初期画面表示
+        this.switchScreen('play');
 
         console.log('PixelGameKit initialized!');
     },
@@ -121,7 +118,6 @@ const App = {
                 if (data) {
                     this.projectData = data;
                     console.log('Project loaded from URL');
-                    // URLをクリア
                     history.replaceState(null, '', window.location.pathname);
                 }
             } catch (e) {
@@ -130,76 +126,32 @@ const App = {
         }
     },
 
-    initModeTabs() {
-        const tabs = document.querySelectorAll('.tab');
-        const contents = document.querySelectorAll('.tool-content');
-
-        tabs.forEach(tab => {
-            tab.addEventListener('click', () => {
-                const mode = tab.dataset.mode;
-                this.switchMode(mode);
-            });
-        });
-    },
-
-    switchMode(mode) {
-        this.currentMode = mode;
-
-        // タブ更新
-        document.querySelectorAll('.tab').forEach(t => {
-            t.classList.toggle('active', t.dataset.mode === mode);
-        });
-
-        // コンテンツ更新
-        const contentMap = {
-            'sprite': 'sprite-tools',
-            'stage': 'stage-tools',
-            'bgm': 'bgm-tools',
-            'play': 'game-controller'
-        };
-
-        document.querySelectorAll('.tool-content').forEach(c => {
-            c.classList.toggle('active', c.id === contentMap[mode]);
-        });
-
-        // キャンバス更新
-        this.updateCanvas();
-    },
-
-    updateCanvas() {
-        switch (this.currentMode) {
-            case 'sprite':
-                if (typeof SpriteEditor !== 'undefined') SpriteEditor.render();
-                break;
-            case 'stage':
-                if (typeof StageEditor !== 'undefined') StageEditor.render();
-                break;
-            case 'bgm':
-                // BGMモードでは何も描画しない
-                break;
-            case 'play':
-                if (typeof GameEngine !== 'undefined') GameEngine.start();
-                break;
-        }
-    },
-
     initMenu() {
         const menuBtn = document.getElementById('menu-btn');
+        const editBtn = document.getElementById('edit-btn');
         const menuPanel = document.getElementById('menu-panel');
         const closeMenu = document.getElementById('close-menu');
+        const overlay = document.querySelector('.menu-overlay');
 
-        menuBtn.addEventListener('click', () => {
+        menuBtn?.addEventListener('click', () => {
             menuPanel.classList.remove('hidden');
         });
 
-        closeMenu.addEventListener('click', () => {
+        // EDITボタン - ペイント画面へ切り替え
+        editBtn?.addEventListener('click', () => {
+            if (this.currentScreen === 'play') {
+                this.switchScreen('paint');
+            } else {
+                this.switchScreen('play');
+            }
+        });
+
+        closeMenu?.addEventListener('click', () => {
             menuPanel.classList.add('hidden');
         });
 
-        menuPanel.addEventListener('click', (e) => {
-            if (e.target === menuPanel) {
-                menuPanel.classList.add('hidden');
-            }
+        overlay?.addEventListener('click', () => {
+            menuPanel.classList.add('hidden');
         });
 
         // メニューアクション
@@ -218,32 +170,84 @@ const App = {
             menuPanel.classList.add('hidden');
         });
 
-        document.getElementById('save-local-btn')?.addEventListener('click', () => {
+        document.getElementById('save-btn')?.addEventListener('click', () => {
             Storage.save('currentProject', this.projectData);
             alert('保存しました！');
             menuPanel.classList.add('hidden');
         });
 
-        document.getElementById('load-local-btn')?.addEventListener('click', () => {
+        document.getElementById('load-btn')?.addEventListener('click', () => {
             const data = Storage.load('currentProject');
             if (data) {
                 this.projectData = data;
-                this.updateCanvas();
+                this.refreshCurrentScreen();
                 alert('読み込みました！');
             }
             menuPanel.classList.add('hidden');
         });
 
-        document.getElementById('new-project-btn')?.addEventListener('click', () => {
+        document.getElementById('new-btn')?.addEventListener('click', () => {
             if (confirm('現在のプロジェクトを破棄して新規作成しますか？')) {
                 this.projectData = this.createDefaultProject();
-                this.updateCanvas();
+                this.refreshCurrentScreen();
             }
             menuPanel.classList.add('hidden');
         });
     },
 
-    // プロジェクトデータを保存
+    initScreenNav() {
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const screen = btn.dataset.screen;
+                this.switchScreen(screen);
+                document.getElementById('menu-panel').classList.add('hidden');
+            });
+        });
+    },
+
+    switchScreen(screenName) {
+        this.currentScreen = screenName;
+
+        // 画面切り替え
+        document.querySelectorAll('.screen').forEach(s => {
+            s.classList.toggle('active', s.id === screenName + '-screen');
+        });
+
+        // ナビボタンの状態更新
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.screen === screenName);
+        });
+
+        // 各画面の初期化/更新
+        this.refreshCurrentScreen();
+    },
+
+    refreshCurrentScreen() {
+        switch (this.currentScreen) {
+            case 'play':
+                if (typeof GameEngine !== 'undefined') {
+                    GameEngine.resize();
+                    GameEngine.start();
+                }
+                break;
+            case 'paint':
+                if (typeof SpriteEditor !== 'undefined') {
+                    SpriteEditor.refresh();
+                }
+                break;
+            case 'stage':
+                if (typeof StageEditor !== 'undefined') {
+                    StageEditor.refresh();
+                }
+                break;
+            case 'sound':
+                if (typeof BgmEditor !== 'undefined') {
+                    BgmEditor.refresh();
+                }
+                break;
+        }
+    },
+
     saveProject() {
         Storage.save('currentProject', this.projectData);
     }

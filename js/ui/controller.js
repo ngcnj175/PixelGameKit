@@ -1,5 +1,5 @@
 /**
- * PixelGameKit - ゲームコントローラー
+ * PixelGameKit - ゲームコントローラー（新UI対応）
  */
 
 const GameController = {
@@ -25,10 +25,15 @@ const GameController = {
             const btn = document.getElementById('btn-' + dir);
             if (!btn) return;
 
-            btn.addEventListener('mousedown', () => this.press(dir));
+            // マウス
+            btn.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                this.press(dir);
+            });
             btn.addEventListener('mouseup', () => this.release(dir));
             btn.addEventListener('mouseleave', () => this.release(dir));
 
+            // タッチ
             btn.addEventListener('touchstart', (e) => {
                 e.preventDefault();
                 this.press(dir);
@@ -38,6 +43,8 @@ const GameController = {
                 e.preventDefault();
                 this.release(dir);
             }, { passive: false });
+
+            btn.addEventListener('touchcancel', () => this.release(dir));
         });
     },
 
@@ -46,7 +53,10 @@ const GameController = {
             const el = document.getElementById('btn-' + btn);
             if (!el) return;
 
-            el.addEventListener('mousedown', () => this.press(btn));
+            el.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                this.press(btn);
+            });
             el.addEventListener('mouseup', () => this.release(btn));
             el.addEventListener('mouseleave', () => this.release(btn));
 
@@ -59,6 +69,8 @@ const GameController = {
                 e.preventDefault();
                 this.release(btn);
             }, { passive: false });
+
+            el.addEventListener('touchcancel', () => this.release(btn));
         });
     },
 
@@ -75,7 +87,7 @@ const GameController = {
 
         document.addEventListener('keydown', (e) => {
             const btn = keyMap[e.code];
-            if (btn) {
+            if (btn && App.currentScreen === 'play') {
                 e.preventDefault();
                 this.press(btn);
             }

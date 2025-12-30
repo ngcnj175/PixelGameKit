@@ -1,35 +1,59 @@
 /**
- * PixelGameKit - BGMエディタ
+ * PixelGameKit - BGMエディタ（新UI対応）
  */
 
 const BgmEditor = {
+    canvas: null,
+    ctx: null,
     currentStep: 0,
     currentTrack: 'pulse1',
     isRecording: false,
     isPlaying: false,
     playInterval: null,
 
-    // 音階定義（1オクターブ）
     notes: ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'],
     octave: 4,
 
     init() {
+        this.canvas = document.getElementById('sequencer-canvas');
+        if (this.canvas) {
+            this.ctx = this.canvas.getContext('2d');
+        }
+
         this.initControls();
         this.initKeyboard();
         this.initTrackSelector();
+    },
+
+    refresh() {
+        this.initKeyboard();
+        this.resize();
+        this.render();
         this.updateStepDisplay();
+    },
+
+    resize() {
+        const container = document.getElementById('sequencer-area');
+        if (!container || !this.canvas) return;
+
+        this.canvas.width = container.clientWidth - 16;
+        this.canvas.height = container.clientHeight - 16;
+
+        this.render();
     },
 
     initControls() {
         document.getElementById('step-prev')?.addEventListener('click', () => {
             this.currentStep = Math.max(0, this.currentStep - 1);
             this.updateStepDisplay();
+            this.render();
         });
 
         document.getElementById('step-next')?.addEventListener('click', () => {
             const maxSteps = App.projectData.bgm.steps;
             this.currentStep = Math.min(maxSteps - 1, this.currentStep + 1);
             this.updateStepDisplay();
+            this.render();
         });
 
         document.getElementById('rec-btn')?.addEventListener('click', () => {
@@ -47,15 +71,14 @@ const BgmEditor = {
     },
 
     initKeyboard() {
-        const container = document.getElementById('keyboard-container');
+        const container = document.getElementById('piano-keyboard');
+        if (!container) return;
+
         container.innerHTML = '';
 
-        // 白鍵のノート
         const whiteNotes = ['C', 'D', 'E', 'F', 'G', 'A', 'B', 'C'];
         const blackNotes = { 0: 'C#', 1: 'D#', 3: 'F#', 4: 'G#', 5: 'A#' };
-
-        const keyboard = document.createElement('div');
-        keyboard.style.cssText = 'display: flex; position: relative; height: 100%;';
+        const keyWidth = 32;
 
         // 白鍵
         whiteNotes.forEach((note, index) => {
@@ -64,29 +87,39 @@ const BgmEditor = {
             const noteOctave = index === 7 ? this.octave + 1 : this.octave;
             const actualNote = index === 7 ? 'C' : note;
             key.dataset.note = actualNote + noteOctave;
+
             key.addEventListener('click', () => this.onKeyPress(actualNote, noteOctave));
             key.addEventListener('touchstart', (e) => {
                 e.preventDefault();
                 this.onKeyPress(actualNote, noteOctave);
+                key.classList.add('active');
             }, { passive: false });
-            keyboard.appendChild(key);
+            key.addEventListener('touchend', () => {
+                key.classList.remove('active');
+            });
+
+            container.appendChild(key);
         });
 
         // 黒鍵
         Object.entries(blackNotes).forEach(([index, note]) => {
             const key = document.createElement('div');
             key.className = 'piano-key black';
-            key.style.left = `${parseInt(index) * 24 + 16}px`;
+            key.style.left = `${parseInt(index) * keyWidth + keyWidth * 0.65}px`;
             key.dataset.note = note + this.octave;
+
             key.addEventListener('click', () => this.onKeyPress(note, this.octave));
             key.addEventListener('touchstart', (e) => {
                 e.preventDefault();
                 this.onKeyPress(note, this.octave);
+                key.classList.add('active');
             }, { passive: false });
-            keyboard.appendChild(key);
-        });
+            key.addEventListener('touchend', () => {
+                key.classList.remove('active');
+            });
 
-        container.appendChild(keyboard);
+            container.appendChild(key);
+        });
     },
 
     initTrackSelector() {
@@ -96,6 +129,7 @@ const BgmEditor = {
                 document.querySelectorAll('.track-btn').forEach(b => {
                     b.classList.toggle('active', b === btn);
                 });
+                this.render();
             });
         });
     },
@@ -111,28 +145,18 @@ const BgmEditor = {
     onKeyPress(note, octave) {
         const fullNote = note + octave;
 
-        // 音を鳴らす
         if (typeof NesAudio !== 'undefined') {
             NesAudio.playNote(this.currentTrack, note, octave, 0.2);
         }
 
-        // RECモードならステップ入力
         if (this.isRecording) {
             this.inputNote(fullNote);
-        }
-
-        // キーのビジュアルフィードバック
-        const key = document.querySelector(`[data-note="${fullNote}"]`);
-        if (key) {
-            key.classList.add('active');
-            setTimeout(() => key.classList.remove('active'), 100);
         }
     },
 
     inputNote(note) {
         const track = App.projectData.bgm.tracks[this.currentTrack];
 
-        // 同じステップに同じ音があれば削除、なければ追加
         const existingIndex = track.findIndex(n => n.step === this.currentStep && n.note === note);
 
         if (existingIndex >= 0) {
@@ -145,10 +169,10 @@ const BgmEditor = {
             });
         }
 
-        // 次のステップへ
         const maxSteps = App.projectData.bgm.steps;
         this.currentStep = (this.currentStep + 1) % maxSteps;
         this.updateStepDisplay();
+        this.render();
     },
 
     play() {
@@ -158,15 +182,16 @@ const BgmEditor = {
         this.currentStep = 0;
 
         const bpm = App.projectData.bgm.bpm;
-        const stepDuration = (60 / bpm / 4) * 1000; // 16分音符
+        const stepDuration = (60 / bpm / 4) * 1000;
 
         this.playInterval = setInterval(() => {
             this.playStep(this.currentStep);
             this.currentStep++;
             this.updateStepDisplay();
+            this.render();
 
             if (this.currentStep >= App.projectData.bgm.steps) {
-                this.currentStep = 0; // ループ
+                this.currentStep = 0;
             }
         }, stepDuration);
     },
@@ -191,6 +216,59 @@ const BgmEditor = {
                     NesAudio.playNote(trackName, noteName, octave, 0.15);
                 }
             });
+        });
+    },
+
+    render() {
+        if (!this.canvas || !this.ctx) return;
+        if (App.currentScreen !== 'sound') return;
+
+        const bgm = App.projectData.bgm;
+        const steps = bgm.steps;
+        const track = bgm.tracks[this.currentTrack];
+
+        // クリア
+        this.ctx.fillStyle = '#1a1a2e';
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+        const stepWidth = this.canvas.width / steps;
+        const noteHeight = this.canvas.height / 12;
+
+        // グリッド
+        this.ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+        this.ctx.lineWidth = 1;
+
+        for (let i = 0; i <= steps; i++) {
+            this.ctx.beginPath();
+            this.ctx.moveTo(i * stepWidth, 0);
+            this.ctx.lineTo(i * stepWidth, this.canvas.height);
+            this.ctx.stroke();
+        }
+
+        for (let i = 0; i <= 12; i++) {
+            this.ctx.beginPath();
+            this.ctx.moveTo(0, i * noteHeight);
+            this.ctx.lineTo(this.canvas.width, i * noteHeight);
+            this.ctx.stroke();
+        }
+
+        // 現在位置
+        this.ctx.fillStyle = 'rgba(76, 201, 240, 0.2)';
+        this.ctx.fillRect(this.currentStep * stepWidth, 0, stepWidth, this.canvas.height);
+
+        // ノート
+        this.ctx.fillStyle = '#4cc9f0';
+        track.forEach(n => {
+            const noteName = n.note.replace(/\d/, '');
+            const noteIndex = this.notes.indexOf(noteName);
+            if (noteIndex >= 0) {
+                this.ctx.fillRect(
+                    n.step * stepWidth + 2,
+                    (11 - noteIndex) * noteHeight + 2,
+                    stepWidth - 4,
+                    noteHeight - 4
+                );
+            }
         });
     }
 };

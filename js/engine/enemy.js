@@ -1,5 +1,5 @@
 /**
- * PixelGameKit - 敵
+ * PixelGameKit - 敵（カメラ対応）
  */
 
 class Enemy {
@@ -12,13 +12,13 @@ class Enemy {
         this.height = 0.8;
         this.behavior = behavior;
         this.facingRight = true;
+        this.onGround = false;
         this.moveSpeed = 0.08;
     }
 
     update(engine) {
         switch (this.behavior) {
             case 'static':
-                // 動かない
                 break;
             case 'patrol':
                 this.patrol(engine);
@@ -31,24 +31,19 @@ class Enemy {
                 break;
         }
 
-        // 重力
         this.vy += engine.GRAVITY;
 
-        // 移動
         this.x += this.vx;
         this.y += this.vy;
 
-        // 速度制限
         this.vy = Math.min(this.vy, 15);
 
-        // 当たり判定
         this.handleCollision(engine);
     }
 
     patrol(engine) {
         this.vx = this.facingRight ? this.moveSpeed : -this.moveSpeed;
 
-        // 壁にぶつかったら反転
         const nextX = this.x + (this.facingRight ? this.width + 0.1 : -0.1);
         const tileY = Math.floor(this.y + this.height);
 
@@ -56,7 +51,6 @@ class Enemy {
             this.facingRight = !this.facingRight;
         }
 
-        // 床がなくなったら反転
         if (engine.getCollision(Math.floor(nextX), tileY) === 0) {
             this.facingRight = !this.facingRight;
         }
@@ -78,7 +72,6 @@ class Enemy {
     jumpPatrol(engine) {
         this.patrol(engine);
 
-        // ランダムにジャンプ
         if (this.onGround && Math.random() < 0.02) {
             this.vy = -8;
             this.onGround = false;
@@ -88,7 +81,6 @@ class Enemy {
     handleCollision(engine) {
         this.onGround = false;
 
-        // X方向
         const leftTile = Math.floor(this.x);
         const rightTile = Math.floor(this.x + this.width);
         const topTile = Math.floor(this.y);
@@ -107,7 +99,6 @@ class Enemy {
             }
         }
 
-        // Y方向（床）
         const newBottomTile = Math.floor(this.y + this.height);
         for (let tx = Math.floor(this.x); tx <= Math.floor(this.x + this.width); tx++) {
             const collision = engine.getCollision(tx, newBottomTile);
@@ -119,21 +110,18 @@ class Enemy {
         }
     }
 
-    render(ctx, tileSize) {
-        ctx.fillStyle = '#e94560';
-        ctx.fillRect(
-            this.x * tileSize,
-            this.y * tileSize,
-            this.width * tileSize,
-            this.height * tileSize
-        );
+    render(ctx, tileSize, camera) {
+        const screenX = (this.x - camera.x) * tileSize;
+        const screenY = (this.y - camera.y) * tileSize;
 
-        // 目
+        ctx.fillStyle = '#e94560';
+        ctx.fillRect(screenX, screenY, this.width * tileSize, this.height * tileSize);
+
         ctx.fillStyle = '#fff';
         const eyeX = this.facingRight ? 0.5 : 0.2;
         ctx.fillRect(
-            (this.x + eyeX) * tileSize,
-            (this.y + 0.2) * tileSize,
+            screenX + eyeX * tileSize,
+            screenY + 0.2 * tileSize,
             0.15 * tileSize,
             0.15 * tileSize
         );
