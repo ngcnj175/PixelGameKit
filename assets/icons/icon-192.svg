@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
+  <rect width="192" height="192" fill="#1a1a2e"/>
+  <rect x="48" y="48" width="96" height="96" rx="12" fill="#16213e" stroke="#e94560" stroke-width="4"/>
+  <!-- Pixel grid -->
+  <g fill="#e94560">
+    <rect x="60" y="60" width="12" height="12"/>
+    <rect x="84" y="60" width="12" height="12"/>
+    <rect x="108" y="60" width="12" height="12"/>
+    <rect x="72" y="72" width="12" height="12"/>
+    <rect x="96" y="72" width="12" height="12"/>
+    <rect x="60" y="84" width="12" height="12"/>
+    <rect x="84" y="84" width="12" height="12"/>
+    <rect x="108" y="84" width="12" height="12"/>
+  </g>
+  <g fill="#4cc9f0">
+    <rect x="72" y="96" width="12" height="12"/>
+    <rect x="96" y="96" width="12" height="12"/>
+    <rect x="60" y="108" width="12" height="12"/>
+    <rect x="84" y="108" width="12" height="12"/>
+    <rect x="108" y="108" width="12" height="12"/>
+    <rect x="72" y="120" width="12" height="12"/>
+    <rect x="96" y="120" width="12" height="12"/>
+    <rect x="120" y="120" width="12" height="12"/>
+  </g>
+  <!-- Controller hint -->
+  <circle cx="156" cy="156" r="24" fill="#0f3460" stroke="#4cc9f0" stroke-width="2"/>
+  <text x="156" y="162" text-anchor="middle" fill="#4cc9f0" font-size="16" font-family="monospace">▶</text>
+</svg>

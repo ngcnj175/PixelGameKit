@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#1a1a2e">
+    <meta name="description" content="PixelGameKit - ピクセルアートとゲームを作って遊ぼう！">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/svg+xml" href="assets/icons/icon-192.svg">
+    <link rel="apple-touch-icon" href="assets/icons/icon-192.svg">
+    <title>PixelGameKit</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <div id="app">
+        <!-- ヘッダー -->
+        <header id="header">
+            <h1>PixelGameKit</h1>
+            <button id="menu-btn" aria-label="メニュー">☰</button>
+        </header>
+
+        <!-- メインキャンバスエリア（上部） -->
+        <main id="canvas-area">
+            <canvas id="main-canvas"></canvas>
+        </main>
+
+        <!-- モード切り替えタブ -->
+        <nav id="mode-tabs">
+            <button class="tab active" data-mode="sprite">🎨 ドット</button>
+            <button class="tab" data-mode="stage">🗺️ ステージ</button>
+            <button class="tab" data-mode="bgm">🎵 BGM</button>
+            <button class="tab" data-mode="play">🎮 プレイ</button>
+        </nav>
+
+        <!-- ツールパネル（下部） -->
+        <section id="tool-panel">
+            <!-- スプライトエディタツール -->
+            <div id="sprite-tools" class="tool-content active">
+                <div id="palette-container">
+                    <div id="current-palette"></div>
+                </div>
+                <div id="drawing-tools">
+                    <button class="tool-btn active" data-tool="pen" title="ペン">✏️</button>
+                    <button class="tool-btn" data-tool="fill" title="塗りつぶし">🪣</button>
+                    <button class="tool-btn" data-tool="copy" title="コピー">📋</button>
+                    <button class="tool-btn" data-tool="paste" title="ペースト">📄</button>
+                </div>
+                <div id="sprite-actions">
+                    <button id="new-sprite">新規</button>
+                    <button id="save-sprite">保存</button>
+                </div>
+            </div>
+
+            <!-- ステージエディタツール -->
+            <div id="stage-tools" class="tool-content">
+                <div id="tile-selector"></div>
+                <div id="layer-controls">
+                    <button class="layer-btn active" data-layer="bg">背景</button>
+                    <button class="layer-btn" data-layer="fg">前景</button>
+                    <button class="layer-btn" data-layer="collision">判定</button>
+                </div>
+                <div id="object-tools">
+                    <button class="obj-btn" data-obj="player">👤</button>
+                    <button class="obj-btn" data-obj="enemy">👾</button>
+                    <button class="obj-btn" data-obj="goal">🚩</button>
+                    <button class="obj-btn" data-obj="item">⭐</button>
+                </div>
+            </div>
+
+            <!-- BGMエディタツール -->
+            <div id="bgm-tools" class="tool-content">
+                <div id="bgm-controls">
+                    <button id="step-prev">◀</button>
+                    <span id="step-display">1/16</span>
+                    <button id="step-next">▶</button>
+                </div>
+                <div id="bgm-buttons">
+                    <button id="rec-btn" class="rec">●REC</button>
+                    <button id="play-btn">▶再生</button>
+                    <button id="stop-btn">■停止</button>
+                </div>
+                <div id="keyboard-container">
+                    <!-- ピアノキーボードはJSで生成 -->
+                </div>
+                <div id="track-selector">
+                    <button class="track-btn active" data-track="pulse1">Pulse1</button>
+                    <button class="track-btn" data-track="pulse2">Pulse2</button>
+                    <button class="track-btn" data-track="triangle">Tri</button>
+                    <button class="track-btn" data-track="noise">Noise</button>
+                </div>
+            </div>
+
+            <!-- ゲームコントローラー -->
+            <div id="game-controller" class="tool-content">
+                <div id="dpad">
+                    <button id="btn-up" class="dpad-btn">▲</button>
+                    <button id="btn-left" class="dpad-btn">◀</button>
+                    <button id="btn-right" class="dpad-btn">▶</button>
+                    <button id="btn-down" class="dpad-btn">▼</button>
+                </div>
+                <div id="action-buttons">
+                    <button id="btn-b" class="action-btn">B</button>
+                    <button id="btn-a" class="action-btn">A</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 共有・メニューパネル -->
+        <div id="menu-panel" class="hidden">
+            <div class="menu-content">
+                <h2>メニュー</h2>
+                <button id="share-btn">📤 URLで共有</button>
+                <button id="save-local-btn">💾 保存</button>
+                <button id="load-local-btn">📂 読み込み</button>
+                <button id="new-project-btn">📝 新規プロジェクト</button>
+                <button id="close-menu" class="close-btn">✕ 閉じる</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+    <script src="js/utils/storage.js"></script>
+    <script src="js/utils/share.js"></script>
+    <script src="js/editor/sprite-editor.js"></script>
+    <script src="js/editor/stage-editor.js"></script>
+    <script src="js/editor/bgm-editor.js"></script>
+    <script src="js/engine/audio.js"></script>
+    <script src="js/engine/game-engine.js"></script>
+    <script src="js/engine/player.js"></script>
+    <script src="js/engine/enemy.js"></script>
+    <script src="js/ui/controller.js"></script>
+    <script src="js/ui/toolbar.js"></script>
+    <script src="js/app.js"></script>
+</body>
+
+</html>
