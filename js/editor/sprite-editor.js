@@ -94,38 +94,56 @@ const SpriteEditor = {
             div.className = 'palette-color' + (index === this.selectedColor ? ' selected' : '');
             div.style.backgroundColor = color;
 
-            // 長押し検知用
+            // タッチ/クリック処理
             let longPressTimer;
             let isLongPress = false;
+            let touchStartTime = 0;
 
-            const startLongPress = () => {
-                isLongPress = false;
-                longPressTimer = setTimeout(() => {
-                    isLongPress = true;
-                    this.editColor(index);
-                }, 800);
-            };
-
-            const cancelLongPress = () => {
-                clearTimeout(longPressTimer);
-            };
-
-            div.addEventListener('mousedown', startLongPress);
-            div.addEventListener('mouseup', cancelLongPress);
-            div.addEventListener('mouseleave', cancelLongPress);
-            div.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                startLongPress();
-            }, { passive: false });
-            div.addEventListener('touchend', (e) => {
-                e.preventDefault();
-                cancelLongPress();
-            });
-
-            div.addEventListener('click', () => {
+            const handleTap = () => {
                 if (!isLongPress) {
                     this.selectColor(index);
                 }
+                isLongPress = false;
+            };
+
+            const handleLongPress = () => {
+                isLongPress = true;
+                this.editColor(index);
+            };
+
+            // マウス操作
+            div.addEventListener('mousedown', () => {
+                isLongPress = false;
+                longPressTimer = setTimeout(handleLongPress, 600);
+            });
+            div.addEventListener('mouseup', () => {
+                clearTimeout(longPressTimer);
+                handleTap();
+            });
+            div.addEventListener('mouseleave', () => {
+                clearTimeout(longPressTimer);
+            });
+
+            // タッチ操作（iPhoneサポート）
+            div.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                isLongPress = false;
+                touchStartTime = Date.now();
+                longPressTimer = setTimeout(handleLongPress, 600);
+            }, { passive: false });
+
+            div.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                clearTimeout(longPressTimer);
+                // 短いタップならカラー選択
+                const touchDuration = Date.now() - touchStartTime;
+                if (touchDuration < 600 && !isLongPress) {
+                    this.selectColor(index);
+                }
+            }, { passive: false });
+
+            div.addEventListener('touchcancel', () => {
+                clearTimeout(longPressTimer);
             });
 
             container.appendChild(div);

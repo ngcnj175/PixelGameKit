@@ -523,10 +523,10 @@ body {
     aspect-ratio: 1;
     flex-shrink: 0;
     background: transparent;
-    /* グリッド表示（極めて薄いグレー） */
+    /* グリッド表示（スカイブルー、1ピクセル毎） */
     background-image:
-        linear-gradient(to right, rgba(180, 180, 180, 0.3) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(180, 180, 180, 0.3) 1px, transparent 1px);
+        linear-gradient(to right, rgba(135, 206, 235, 0.5) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(135, 206, 235, 0.5) 1px, transparent 1px);
     background-size: 20px 20px;
     border: 2px solid var(--color-dark);
     border-radius: 0;
