@@ -450,10 +450,11 @@ body {
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 4px;
     padding: 4px;
     overflow-y: auto;
     overflow-x: hidden;
+    height: 320px;
     max-height: 320px;
     align-self: flex-end;
 }
@@ -545,6 +546,11 @@ body {
     border-top: 1px solid var(--border-color);
     overflow-x: auto;
     overflow-y: hidden;
+    /* 長押し時の文字選抜防止 */
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: manipulation;
 }
 
 .palette-color {

@@ -113,8 +113,14 @@ const SpriteEditor = {
             div.addEventListener('mousedown', startLongPress);
             div.addEventListener('mouseup', cancelLongPress);
             div.addEventListener('mouseleave', cancelLongPress);
-            div.addEventListener('touchstart', startLongPress, { passive: true });
-            div.addEventListener('touchend', cancelLongPress);
+            div.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                startLongPress();
+            }, { passive: false });
+            div.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                cancelLongPress();
+            });
 
             div.addEventListener('click', () => {
                 if (!isLongPress) {
