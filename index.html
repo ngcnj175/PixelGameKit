@@ -105,7 +105,7 @@
         <!-- ========== ペイント画面 ========== -->
         <div id="paint-screen" class="screen">
             <div id="paint-content-wrapper">
-                <!-- スプライトギャラリー -->
+                <!-- スプライトギャラリー（上部） -->
                 <div id="sprite-gallery">
                     <div id="sprite-list">
                         <!-- JSで生成 -->
@@ -113,11 +113,59 @@
                     <button id="add-sprite-btn">+</button>
                 </div>
 
-                <!-- メインエリア（パレット＋キャンバス） -->
+                <!-- メインエリア（ツール左 + キャンバス中央） -->
                 <div id="paint-main-area">
-                    <!-- カラーパレット（左側） -->
-                    <div id="color-palette">
-                        <!-- JSで生成 -->
+                    <!-- 編集ツール（左側縦1列） -->
+                    <div id="paint-tools">
+                        <button class="paint-tool-btn active" data-tool="pen" title="ペン">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path
+                                    d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
+                            </svg>
+                        </button>
+                        <button class="paint-tool-btn" data-tool="eraser" title="消しゴム">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path
+                                    d="M16.24 3.56l4.95 4.94c.78.79.78 2.05 0 2.84L12 20.53a4.008 4.008 0 01-5.66 0L2.81 17c-.78-.79-.78-2.05 0-2.84l10.6-10.6c.79-.78 2.05-.78 2.83 0zM4.22 15.58l3.54 3.53c.78.79 2.04.79 2.83 0l3.53-3.53-4.95-4.95-4.95 4.95z" />
+                            </svg>
+                        </button>
+                        <button class="paint-tool-btn" data-tool="fill" title="塗りつぶし">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path
+                                    d="M16.56 8.94L7.62 0 6.21 1.41l2.38 2.38-5.15 5.15c-.59.59-.59 1.54 0 2.12l5.5 5.5c.29.29.68.44 1.06.44s.77-.15 1.06-.44l5.5-5.5c.59-.58.59-1.53 0-2.12zM5.21 10L10 5.21 14.79 10H5.21zM19 11.5s-2 2.17-2 3.5c0 1.1.9 2 2 2s2-.9 2-2c0-1.33-2-3.5-2-3.5z" />
+                            </svg>
+                        </button>
+                        <button class="paint-tool-btn" data-tool="undo" title="取り消し">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path
+                                    d="M12.5 8c-2.65 0-5.05 1.04-6.82 2.75L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z" />
+                            </svg>
+                        </button>
+                        <hr class="tool-divider">
+                        <button class="paint-tool-btn" data-tool="copy" title="コピー">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path
+                                    d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z" />
+                            </svg>
+                        </button>
+                        <button class="paint-tool-btn" data-tool="paste" title="ペースト">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path
+                                    d="M19 2h-4.18C14.4.84 13.3 0 12 0c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm7 18H5V4h2v3h10V4h2v16z" />
+                            </svg>
+                        </button>
+                        <button class="paint-tool-btn" data-tool="flip-v" title="上下反転">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path
+                                    d="M9 3L5 6.99h3V14H5l4 3.99L13 14h-3V6.99h3L9 3zm7 14.01V14h2V10h-2V6.99L12 11l4 6.01z" />
+                            </svg>
+                        </button>
+                        <button class="paint-tool-btn" data-tool="flip-h" title="左右反転">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path
+                                    d="M15 21h2v-2h-2v2zm4-12h2V7h-2v2zM3 5v14c0 1.1.9 2 2 2h4v-2H5V5h4V3H5c-1.1 0-2 .9-2 2zm16-2v2h2c0-1.1-.9-2-2-2zm-8 20h2V1h-2v22zm8-6h2v-2h-2v2zM15 5h2V3h-2v2zm4 8h2v-2h-2v2zm0 8c1.1 0 2-.9 2-2h-2v2z" />
+                            </svg>
+                        </button>
                     </div>
 
                     <!-- ペイントキャンバス -->
@@ -126,15 +174,9 @@
                     </div>
                 </div>
 
-                <!-- 編集ツール -->
-                <div id="paint-tools">
-                    <button class="paint-tool-btn active" data-tool="pen" title="ペン">✏️</button>
-                    <button class="paint-tool-btn" data-tool="eraser" title="消しゴム(長押しクリア)">🧹</button>
-                    <button class="paint-tool-btn" data-tool="fill" title="塗りつぶし">🪣</button>
-                    <button class="paint-tool-btn" data-tool="copy" title="コピー">📋</button>
-                    <button class="paint-tool-btn" data-tool="paste" title="ペースト">📄</button>
-                    <button class="paint-tool-btn" data-tool="flip-v" title="上下反転">↕️</button>
-                    <button class="paint-tool-btn" data-tool="flip-h" title="左右反転">↔️</button>
+                <!-- カラーパレット（下部、2行） -->
+                <div id="color-palette">
+                    <!-- JSで生成 -->
                 </div>
             </div>
         </div>
@@ -203,27 +245,6 @@
                 </div>
             </div>
         </div>
-
-        <!-- ========== メニューパネル ========== -->
-        <div id="menu-panel" class="hidden">
-            <div class="menu-overlay"></div>
-            <div class="menu-content">
-                <h2>PixelGameKit</h2>
-                <nav id="screen-nav">
-                    <button class="nav-btn active" data-screen="play">🎮 プレイ</button>
-                    <button class="nav-btn" data-screen="paint">🎨 ペイント</button>
-                    <button class="nav-btn" data-screen="stage">🗺️ ステージ</button>
-                    <button class="nav-btn" data-screen="sound">🎵 サウンド</button>
-                </nav>
-                <hr>
-                <button id="share-btn" class="menu-action">📤 URLで共有</button>
-                <button id="save-btn" class="menu-action">💾 保存</button>
-                <button id="load-btn" class="menu-action">📂 読み込み</button>
-                <button id="new-btn" class="menu-action">📝 新規作成</button>
-                <hr>
-                <button id="close-menu" class="menu-close">✕ 閉じる</button>
-            </div>
-        </div>
     </div>
 
     <!-- Scripts -->
@@ -238,7 +259,6 @@
     <script src="js/engine/player.js"></script>
     <script src="js/engine/enemy.js"></script>
     <script src="js/ui/controller.js"></script>
-    <script src="js/ui/toolbar.js"></script>
     <script src="js/app.js"></script>
 </body>
 

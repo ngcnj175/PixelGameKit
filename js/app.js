@@ -75,7 +75,6 @@ const App = {
         this.registerServiceWorker();
         this.loadOrCreateProject();
         this.initMenu();
-        this.initScreenNav();
         this.checkUrlData();
 
         // 各エディタ初期化
@@ -185,27 +184,12 @@ const App = {
         }
     },
 
-    initScreenNav() {
-        document.querySelectorAll('.nav-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const screen = btn.dataset.screen;
-                this.switchScreen(screen);
-                document.getElementById('menu-panel').classList.add('hidden');
-            });
-        });
-    },
-
     switchScreen(screenName) {
         this.currentScreen = screenName;
 
         // 画面切り替え
         document.querySelectorAll('.screen').forEach(s => {
             s.classList.toggle('active', s.id === screenName + '-screen');
-        });
-
-        // ナビボタンの状態更新
-        document.querySelectorAll('.nav-btn').forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.screen === screenName);
         });
 
         // 各画面の初期化/更新
@@ -217,8 +201,12 @@ const App = {
             case 'play':
                 this.updateGameInfo();
                 if (typeof GameEngine !== 'undefined') {
-                    GameEngine.resize();
-                    // ゲームはStartボタンで開始するので自動スタートしない
+                    // まだ開始されていない or 一時停止中ならプレビュー表示
+                    if (!GameEngine.isRunning || GameEngine.isPaused) {
+                        GameEngine.showPreview();
+                    } else {
+                        GameEngine.resize();
+                    }
                 }
                 break;
             case 'paint':
@@ -237,10 +225,6 @@ const App = {
                 }
                 break;
         }
-    },
-
-    saveProject() {
-        Storage.save('currentProject', this.projectData);
     }
 };
 

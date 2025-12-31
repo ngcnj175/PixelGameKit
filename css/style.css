@@ -344,11 +344,10 @@ body {
 #paint-content-wrapper {
     display: flex;
     flex-direction: column;
-    justify-content: flex-end;
     height: 100%;
 }
 
-/* スプライトギャラリー */
+/* スプライトギャラリー（上部） */
 #sprite-gallery {
     display: flex;
     align-items: center;
@@ -374,15 +373,20 @@ body {
     background: var(--bg-screen);
     border: 2px solid var(--border-color);
     border-radius: 0;
-    /* 角丸なし */
     cursor: pointer;
     image-rendering: pixelated;
     overflow: hidden;
+    transition: transform 0.15s ease, border-color 0.15s ease;
 }
 
 .sprite-item.selected {
     border-color: var(--color-dark);
-    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+    transform: scale(1.15);
+    z-index: 1;
+}
+
+.sprite-item.dragging {
+    opacity: 0.5;
 }
 
 .sprite-item canvas {
@@ -406,110 +410,49 @@ body {
     justify-content: center;
 }
 
-/* ペイントメイン（パレット＋キャンバス） */
+/* メインエリア（ツール左 + キャンバス中央） */
 #paint-main-area {
     flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 16px 8px;
-    gap: 16px;
+    padding: 12px;
+    gap: 12px;
     min-height: 0;
     overflow: hidden;
 }
 
-/* カラーパレット（左側縦並び） */
-#color-palette {
+/* 編集ツール（左側縦1列） */
+#paint-tools {
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    width: 44px;
-    /* 20px*2 + gap 4px */
-    max-height: 320px;
-    overflow-y: auto;
-    padding: 2px;
-    align-items: center;
-    background: transparent;
-    /* 2 columns layout handled by flex wrap? No, user said 8 in column. */
-    /* If simple flex column, it's 1 column. */
-    /* "1カラーが2x2Pixel（縦1列に8個並ぶ）" -> 1列なら width=single size */
-}
-
-.palette-color {
-    flex-shrink: 0;
-    width: 32px;
-    height: 32px;
-    border: 2px solid var(--border-color);
-    border-radius: 0;
-    /* 角丸なし */
-    cursor: pointer;
-}
-
-.palette-color.selected {
-    border-color: var(--color-dark);
-    box-shadow: 0 0 0 2px var(--bg-body);
-    transform: none;
-    z-index: 1;
-}
-
-/* キャンバス */
-#paint-canvas-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-#paint-canvas {
-    width: 320px;
-    max-width: 100%;
-    aspect-ratio: 1;
-    flex-shrink: 0;
-    background: transparent;
-    /* グリッド表示のための背景 */
-    background-image:
-        linear-gradient(to right, #ddd 1px, transparent 1px),
-        linear-gradient(to bottom, #ddd 1px, transparent 1px);
-    background-size: 20px 20px;
-    /* 320px / 16 = 20px per pixel */
-
-    border: 2px solid var(--color-dark);
-    border-radius: 0;
-    image-rendering: pixelated;
-    image-rendering: crisp-edges;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-}
-
-/* ペイントツール */
-#paint-tools {
-    display: flex;
-    justify-content: center;
-    gap: 16px;
-    padding: 12px;
-    padding-bottom: calc(12px + var(--safe-area-bottom));
-    background: var(--bg-device);
-    border-top: 1px solid var(--border-color);
+    gap: 6px;
+    padding: 4px;
 }
 
 .paint-tool-btn {
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
     border: none;
-    border-radius: 4px;
-    /* 少しだけ丸めるか、なしにするか。シンプルアイコンに合わせるならなし？ユーザーは「最上段アイコンに合わせたシンプルデザイン」と言った */
-    border-radius: 8px;
+    border-radius: 0;
     background: transparent;
     color: var(--color-medium);
-    font-size: 22px;
     cursor: pointer;
     transition: all 0.1s;
     display: flex;
     align-items: center;
     justify-content: center;
+    padding: 8px;
+}
+
+.paint-tool-btn svg {
+    width: 100%;
+    height: 100%;
 }
 
 .paint-tool-btn:hover {
-    background: rgba(0, 0, 0, 0.03);
+    background: rgba(0, 0, 0, 0.05);
     color: var(--text-dark);
 }
 
@@ -519,7 +462,69 @@ body {
 }
 
 .paint-tool-btn:active {
-    transform: scale(0.95);
+    transform: scale(0.9);
+}
+
+.tool-divider {
+    border: none;
+    border-top: 1px solid var(--border-color);
+    margin: 4px 0;
+    width: 100%;
+}
+
+/* キャンバスコンテナ */
+#paint-canvas-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
+}
+
+/* キャンバス */
+#paint-canvas {
+    width: 320px;
+    max-width: 100%;
+    aspect-ratio: 1;
+    flex-shrink: 0;
+    background: transparent;
+    /* グリッド表示（極めて薄いグレー） */
+    background-image:
+        linear-gradient(to right, rgba(180, 180, 180, 0.3) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(180, 180, 180, 0.3) 1px, transparent 1px);
+    background-size: 20px 20px;
+    border: 2px solid var(--color-dark);
+    border-radius: 0;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+}
+
+/* カラーパレット（下部、2行） */
+#color-palette {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px;
+    padding-bottom: calc(10px + var(--safe-area-bottom));
+    background: rgba(0, 0, 0, 0.03);
+    border-top: 1px solid var(--border-color);
+}
+
+.palette-color {
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    border: 2px solid var(--border-color);
+    border-radius: 0;
+    cursor: pointer;
+    transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.palette-color.selected {
+    border-color: var(--color-dark);
+    transform: scale(1.15);
+    z-index: 1;
 }
 
 /* ========================================
