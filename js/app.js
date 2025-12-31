@@ -126,8 +126,32 @@ const App = {
     },
 
     initMenu() {
-        // ファイル操作
+        // 新規プロジェクト
+        document.getElementById('new-icon-btn')?.addEventListener('click', () => {
+            // 未保存データがあれば保存を促す
+            const savedData = Storage.load('currentProject');
+            if (savedData && JSON.stringify(savedData) !== JSON.stringify(this.projectData)) {
+                if (confirm('現在の編集内容を保存しますか？')) {
+                    Storage.save('currentProject', this.projectData);
+                    alert('保存しました');
+                }
+            }
+            // 新規プロジェクト作成
+            this.projectData = this.createDefaultProject();
+            this.updateGameInfo();
+            this.refreshCurrentScreen();
+            alert('新規プロジェクトを作成しました');
+        });
+
+        // ファイル読み込み
         document.getElementById('load-icon-btn')?.addEventListener('click', () => {
+            // 未保存データがあれば保存を促す
+            const savedData = Storage.load('currentProject');
+            if (savedData && JSON.stringify(savedData) !== JSON.stringify(this.projectData)) {
+                if (confirm('現在の編集内容を保存しますか？')) {
+                    Storage.save('currentProject', this.projectData);
+                }
+            }
             const data = Storage.load('currentProject');
             if (data) {
                 this.projectData = data;

@@ -19,9 +19,14 @@
 <body>
     <div id="app">
         <!-- ヘッダー（アイコンバー） -->
-        <!-- ヘッダー（アイコンバー） -->
         <header id="header">
             <div id="toolbar-file">
+                <button id="new-icon-btn" class="toolbar-icon" title="新規">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path
+                            d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" />
+                    </svg>
+                </button>
                 <button id="load-icon-btn" class="toolbar-icon" title="読み込み">
                     <svg viewBox="0 0 24 24" fill="currentColor">
                         <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" />
@@ -35,25 +40,23 @@
                 </button>
             </div>
             <div id="toolbar-nav">
-                <button id="nav-play-btn" class="toolbar-icon active-nav" title="プレイ">
+                <button id="nav-play-btn" class="toolbar-icon nav-icon active-nav" title="プレイ">
                     <svg viewBox="0 0 24 24" fill="currentColor">
-                        <path
-                            d="M21 6H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-10 7H9v2H7v-2H5v-2h2V9h2v2h2v2zm4 0h2v2h-2v-2zm-2-2h2v2h-2v-2z" />
+                        <path d="M8 5v14l11-7z" />
                     </svg>
                 </button>
-                <button id="nav-paint-btn" class="toolbar-icon" title="ペイント">
+                <button id="nav-paint-btn" class="toolbar-icon nav-icon" title="ペイント">
                     <svg viewBox="0 0 24 24" fill="currentColor">
                         <path
-                            d="M7 14c-1.66 0-3 1.34-3 3 0 1.31-1.16 2-2 2 .92 1.22 2.49 2 4.28 2 2.21 0 4-1.79 4-4 0-1.66-1.34-3-3-3zm5-9.27l-1.63 1.63 4.51 4.51L16.51 9.3 12 4.73zM20.24 3.73c-.59-.59-1.55-.59-2.14 0l-2.32 2.32 4.28 4.28 2.32-2.32c.59-.59.59-1.55 0-2.14l-2.14-2.14z" />
+                            d="M18.4 10.6C16.55 8.99 14.15 8 11.5 8c-4.65 0-8.58 3.03-9.96 7.22L3.9 16c1.05-3.19 4.06-5.5 7.6-5.5 1.95 0 3.73.72 5.12 1.88L13 16h9V7l-3.6 3.6z" />
                     </svg>
                 </button>
-                <button id="nav-stage-btn" class="toolbar-icon" title="ステージ">
+                <button id="nav-stage-btn" class="toolbar-icon nav-icon" title="ステージ">
                     <svg viewBox="0 0 24 24" fill="currentColor">
-                        <path
-                            d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z" />
+                        <path d="M3 3h8v8H3zm10 0h8v8h-8zM3 13h8v8H3zm10 0h8v8h-8z" />
                     </svg>
                 </button>
-                <button id="nav-sound-btn" class="toolbar-icon" title="サウンド">
+                <button id="nav-sound-btn" class="toolbar-icon nav-icon" title="サウンド">
                     <svg viewBox="0 0 24 24" fill="currentColor">
                         <path
                             d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
@@ -157,7 +160,7 @@
                         <button class="paint-tool-btn" data-tool="flip-v" title="上下反転">
                             <svg viewBox="0 0 24 24" fill="currentColor">
                                 <path
-                                    d="M9 3L5 6.99h3V14H5l4 3.99L13 14h-3V6.99h3L9 3zm7 14.01V14h2V10h-2V6.99L12 11l4 6.01z" />
+                                    d="M3 15h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V9H3v2zm12 8h2v-2h-2v2zM3 3v2h2V3H3zm12 8h2V9h-2v2zM21 3h-2v2h2V3zm0 12h-2v2h2v-2zM21 7h-2v2h2V7zm0 4h-2v2h2v-2zM21 15h-2v2h2v-2zm-6-8h2V5h-2v2zM7 13h2v-2H7v2zm-4 8h2v-2H3v2zm4-4h2v-2H7v2zM7 9h2V7H7v2zm4 12h2V1h-2v22z" />
                             </svg>
                         </button>
                         <button class="paint-tool-btn" data-tool="flip-h" title="左右反転">
