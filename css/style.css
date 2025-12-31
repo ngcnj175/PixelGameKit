@@ -577,99 +577,447 @@ body {
     background: var(--bg-device);
 }
 
-#tile-gallery {
+#stage-content-wrapper {
     display: flex;
-    padding: 8px;
-    background: rgba(0, 0, 0, 0.1);
-    border-bottom: 2px solid var(--border-dark);
-    overflow-x: auto;
+    flex-direction: column;
+    height: 100%;
 }
 
-#tile-list {
+/* スプライトギャラリー（ドラッグ元）- ペイントと同じ */
+#stage-sprite-gallery {
+    flex-shrink: 0;
+    display: flex;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.03);
+    border-bottom: 1px solid var(--border-color);
+    overflow-x: auto;
+    gap: 6px;
+}
+
+#stage-sprite-list {
     display: flex;
     gap: 6px;
 }
 
-.tile-item {
+.stage-sprite-item {
     flex-shrink: 0;
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
     background: var(--bg-screen);
-    border: 2px solid var(--border-dark);
-    border-radius: 4px;
-    cursor: pointer;
+    border: 2px solid var(--border-color);
+    border-radius: 0;
+    cursor: grab;
     image-rendering: pixelated;
 }
 
-.tile-item.selected {
-    border-color: #4cc9f0;
+.stage-sprite-item:active {
+    cursor: grabbing;
 }
 
-#stage-area {
+.stage-sprite-item.dragging {
+    opacity: 0.5;
+}
+
+/* 設定パネル（スクロール可能） */
+#tile-config-panel {
+    flex-shrink: 0;
+    background: rgba(0, 0, 0, 0.12);
+    border-bottom: 2px solid var(--border-dark);
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+#tile-config-panel.hidden {
+    display: none;
+}
+
+.config-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: rgba(0, 0, 0, 0.1);
+    border-bottom: 1px solid var(--border-color);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+#config-panel-title {
+    font-size: 13px;
+    font-weight: bold;
+}
+
+#config-close-btn {
+    width: 24px;
+    height: 24px;
+    border: none;
+    background: transparent;
+    font-size: 18px;
+    cursor: pointer;
+    color: var(--text-dark);
+}
+
+.config-panel-body {
+    padding: 12px;
+}
+
+/* スプライト登録セクション */
+.config-section {
+    margin-bottom: 12px;
+}
+
+.config-section-title {
+    font-size: 12px;
+    font-weight: bold;
+    margin-bottom: 8px;
+    color: var(--text-dark);
+}
+
+/* スプライト登録行 */
+.sprite-reg-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.sprite-reg-label {
+    width: 60px;
+    font-size: 11px;
+    color: var(--text-muted);
+    transition: color 0.2s;
+}
+
+.sprite-reg-label.active {
+    color: var(--text-dark);
+    font-weight: bold;
+}
+
+.sprite-reg-slots {
+    display: flex;
+    gap: 4px;
+}
+
+.sprite-slot {
+    width: 32px;
+    height: 32px;
+    border: 2px dashed var(--border-color);
+    border-radius: 4px;
+    background: var(--bg-screen);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sprite-slot.has-sprite {
+    border-style: solid;
+    border-color: var(--color-dark);
+}
+
+.sprite-slot canvas {
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated;
+}
+
+.sprite-add-btn {
+    width: 24px;
+    height: 24px;
+    border: 1px dashed var(--border-color);
+    border-radius: 4px;
+    background: transparent;
+    font-size: 16px;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+/* 数値設定 */
+.num-setting {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.num-setting-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    min-width: 80px;
+}
+
+.num-setting-label.active {
+    color: var(--text-dark);
+    font-weight: bold;
+}
+
+.num-control {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.num-btn {
+    width: 24px;
+    height: 24px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background: var(--bg-screen);
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.num-value {
+    width: 32px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+/* 効果音設定 */
+.sound-reg-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.sound-reg-label {
+    width: 80px;
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.sound-slot {
+    width: 32px;
+    height: 32px;
+    border: 2px dashed var(--border-color);
+    border-radius: 4px;
+    background: var(--bg-screen);
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.sprite-drop-slot {
+    width: 40px;
+    height: 40px;
+    border: 2px dashed var(--border-color);
+    border-radius: 4px;
+    background: var(--bg-screen);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sprite-drop-slot.has-sprite {
+    border-style: solid;
+    border-color: var(--color-dark);
+}
+
+.sprite-drop-slot canvas {
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated;
+}
+
+.slot-placeholder {
+    font-size: 10px;
+    color: var(--text-muted);
+}
+
+#tile-detail-config {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.config-save-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    background: var(--color-dark);
+    color: var(--color-light);
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+/* メインエリア（ツール左 + キャンバス中央）- ペイントと同じ */
+#stage-main-area {
     flex: 1;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 12px;
+    gap: 12px;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* ステージツール（左側縦1列）- ペイントと完全同じスタイル */
+#stage-tools {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 4px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    height: 320px;
+    max-height: 320px;
+    align-self: flex-end;
+}
+
+.stage-tool-btn {
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    color: var(--color-medium);
+    cursor: pointer;
+    transition: all 0.1s;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 8px;
-    min-height: 0;
+}
+
+.stage-tool-btn svg {
+    width: 100%;
+    height: 100%;
+}
+
+.stage-tool-btn.active {
+    background: var(--color-dark);
+    color: var(--text-light);
+}
+
+.stage-tool-btn:active {
+    transform: scale(0.9);
+}
+
+/* ステージキャンバスコンテナ */
+#stage-canvas-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    min-width: 0;
+    gap: 4px;
+}
+
+/* レイヤー切替（BG/FGテキスト表示） */
+#layer-toggle {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 4px;
+}
+
+.layer-label {
+    font-size: 14px;
+    font-weight: bold;
+    color: var(--text-muted);
+    cursor: pointer;
+    opacity: 0.4;
+    transition: opacity 0.2s;
+}
+
+.layer-label.active {
+    color: var(--text-dark);
+    opacity: 1;
 }
 
 #stage-canvas {
+    width: 320px;
     max-width: 100%;
-    max-height: 100%;
+    aspect-ratio: 1;
+    flex-shrink: 0;
+    background: #1a1a2e;
+    border: 2px solid var(--color-dark);
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+}
+
+/* タイルテンプレート（下部、2行固定）- カラーパレットと同じ */
+#tile-template-palette {
+    display: grid;
+    grid-template-rows: repeat(2, 1fr);
+    grid-auto-flow: column;
+    gap: 6px;
+    padding: 10px;
+    padding-bottom: calc(10px + var(--safe-area-bottom));
+    background: rgba(0, 0, 0, 0.03);
+    border-top: 1px solid var(--border-color);
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: manipulation;
+}
+
+#tile-template-list {
+    display: contents;
+}
+
+.tile-template {
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
     background: var(--bg-screen);
-    border: 3px solid var(--border-dark);
-    border-radius: 8px;
+    border: 2px solid var(--border-color);
+    border-radius: 0;
+    cursor: pointer;
+    position: relative;
+    transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.tile-template.selected {
+    border-color: var(--color-dark);
+    transform: scale(1.15);
+    z-index: 1;
+}
+
+.tile-template canvas {
+    width: 100%;
+    height: 100%;
     image-rendering: pixelated;
 }
 
-#stage-tools {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding: 12px;
-    padding-bottom: calc(12px + var(--safe-area-bottom));
-    background: rgba(0, 0, 0, 0.1);
-    border-top: 2px solid var(--border-dark);
+.tile-template .type-badge {
+    position: absolute;
+    bottom: 1px;
+    right: 1px;
+    font-size: 8px;
+    background: rgba(0, 0, 0, 0.6);
+    padding: 0 2px;
+    border-radius: 2px;
 }
 
-#layer-btns,
-#object-btns {
-    display: flex;
-    justify-content: center;
-    gap: 8px;
-}
-
-.layer-btn {
-    padding: 8px 16px;
-    border: 2px solid var(--border-dark);
-    border-radius: 6px;
-    background: var(--bg-device);
+#add-tile-btn {
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    background: transparent;
+    border: 2px dashed var(--border-color);
+    border-radius: 0;
     color: var(--text-dark);
-    font-family: inherit;
-    font-size: 12px;
+    font-size: 24px;
+    font-weight: bold;
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.layer-btn.active {
-    background: #4a7c59;
-    color: #fff;
-    border-color: #fff;
-}
-
-.obj-btn {
-    width: 40px;
-    height: 40px;
-    border: 2px solid var(--border-dark);
-    border-radius: 8px;
-    background: var(--bg-device);
-    font-size: 18px;
-    cursor: pointer;
-}
-
-.obj-btn.active {
-    background: #4a7c59;
-    border-color: #fff;
+#add-tile-btn:active {
+    background: rgba(0, 0, 0, 0.05);
 }
 
 /* ========================================
@@ -950,4 +1298,390 @@ body {
 ::-webkit-scrollbar-thumb {
     background: var(--border-dark);
     border-radius: 3px;
+}
+
+/* ========================================
+   モーダル
+   ======================================== */
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    padding: 20px;
+}
+
+.modal-overlay.hidden {
+    display: none;
+}
+
+.modal-content {
+    background: var(--bg-device);
+    border-radius: 12px;
+    max-width: 400px;
+    width: 100%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.modal-content.modal-small {
+    max-width: 320px;
+}
+
+.modal-header {
+    padding: 16px;
+    font-size: 18px;
+    font-weight: bold;
+    text-align: center;
+    background: var(--color-dark);
+    color: var(--color-light);
+    border-radius: 12px 12px 0 0;
+}
+
+.modal-body {
+    padding: 16px;
+}
+
+.modal-footer {
+    display: flex;
+    gap: 10px;
+    padding: 16px;
+    justify-content: center;
+    border-top: 1px solid var(--border-color);
+}
+
+.modal-btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.modal-btn.ok-btn {
+    background: var(--color-dark);
+    color: var(--color-light);
+}
+
+.modal-btn.cancel-btn {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-dark);
+}
+
+.modal-btn:active {
+    opacity: 0.7;
+}
+
+/* 種別選択グリッド */
+.type-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+.type-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 16px 8px;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-screen);
+    cursor: pointer;
+}
+
+.type-btn:active {
+    background: var(--color-dark);
+    color: var(--color-light);
+    border-color: var(--color-dark);
+}
+
+.type-icon {
+    font-size: 28px;
+}
+
+.type-label {
+    font-size: 12px;
+    font-weight: bold;
+}
+
+/* 設定セクション */
+.config-section {
+    margin-bottom: 16px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.config-label {
+    display: block;
+    font-size: 13px;
+    font-weight: bold;
+    color: var(--text-dark);
+    width: 100%;
+}
+
+.config-label.inline {
+    width: auto;
+    margin-left: 8px;
+}
+
+.config-select {
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background: var(--bg-screen);
+    font-family: inherit;
+    font-size: 14px;
+}
+
+.config-select.small {
+    padding: 6px 8px;
+    font-size: 12px;
+}
+
+/* スプライト選択ボタン */
+.sprite-select-btn {
+    width: 48px;
+    height: 48px;
+    border: 2px dashed var(--border-color);
+    border-radius: 6px;
+    background: var(--bg-screen);
+    font-size: 14px;
+    font-weight: bold;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sprite-select-btn.small {
+    width: 36px;
+    height: 36px;
+    font-size: 18px;
+}
+
+.sprite-select-btn.has-sprite {
+    border-style: solid;
+    border-color: var(--color-dark);
+}
+
+.sprite-select-btn canvas {
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated;
+}
+
+/* アニメーショングリッド */
+.anim-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    width: 100%;
+}
+
+.anim-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.anim-item span {
+    font-size: 11px;
+    font-weight: bold;
+    width: 55px;
+}
+
+/* ラジオグループ */
+.radio-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    width: 100%;
+}
+
+.radio-group.vertical {
+    flex-direction: column;
+    gap: 8px;
+}
+
+.radio-group label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+/* サウンドボタン */
+.sound-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    width: 100%;
+}
+
+.sound-btn {
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background: var(--bg-screen);
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.sound-btn:active {
+    background: var(--color-dark);
+    color: var(--color-light);
+}
+
+.sound-btn.has-sound {
+    background: var(--accent-blue);
+    color: white;
+    border-color: var(--accent-blue);
+}
+
+/* サウンド設定グリッド */
+.sound-config-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    width: 100%;
+}
+
+.sound-config-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.sound-config-item span {
+    font-size: 11px;
+    font-weight: bold;
+}
+
+/* スプライト選択リスト */
+#sprite-select-list {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.sprite-select-item {
+    width: 100%;
+    aspect-ratio: 1;
+    border: 2px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--bg-screen);
+    cursor: pointer;
+    padding: 4px;
+}
+
+.sprite-select-item:active,
+.sprite-select-item.selected {
+    border-color: var(--accent-blue);
+    background: rgba(74, 144, 226, 0.1);
+}
+
+.sprite-select-item canvas {
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated;
+}
+
+/* ========================================
+   属性選択ポップアップ
+   ======================================== */
+
+.popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.popup-overlay.hidden {
+    display: none;
+}
+
+.popup-content {
+    background: var(--bg-device);
+    border-radius: 12px;
+    padding: 16px;
+    min-width: 200px;
+    max-width: 280px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.popup-title {
+    font-size: 14px;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 12px;
+}
+
+.type-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 12px;
+}
+
+.type-select-item {
+    padding: 12px 16px;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-screen);
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.1s;
+}
+
+.type-select-item:active {
+    background: var(--color-dark);
+    color: var(--color-light);
+    border-color: var(--color-dark);
+}
+
+.popup-cancel {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 13px;
+    cursor: pointer;
 }

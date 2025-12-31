@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/svg+xml" href="assets/icons/icon-192.svg">
     <link rel="apple-touch-icon" href="assets/icons/icon-192.svg">
-    <title>PixelGameKit v1.1.3</title>
+    <title>PixelGameKit v1.3.2</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 
@@ -196,31 +196,94 @@
 
         <!-- ========== ステージ画面 ========== -->
         <div id="stage-screen" class="screen">
-            <!-- タイルギャラリー（上部） -->
-            <div id="tile-gallery">
-                <div id="tile-list">
-                    <!-- JSで生成 -->
+            <div id="stage-content-wrapper">
+                <!-- スプライトギャラリー（上部）- ドラッグ元 -->
+                <div id="stage-sprite-gallery">
+                    <div id="stage-sprite-list">
+                        <!-- JSで生成 -->
+                    </div>
+                </div>
+
+                <!-- 設定パネル（スプライト行の下）- 初期非表示 -->
+                <div id="tile-config-panel" class="hidden">
+                    <div class="config-panel-header">
+                        <span id="config-panel-title">プレイヤー設定</span>
+                        <button id="config-close-btn">×</button>
+                    </div>
+                    <div class="config-panel-body" id="config-panel-content">
+                        <!-- JSで動的生成 -->
+                    </div>
+                </div>
+
+                <!-- メインエリア（ツール左 + キャンバス中央） -->
+                <div id="stage-main-area">
+                    <!-- 編集ツール（左側縦1列） -->
+                    <div id="stage-tools">
+                        <button class="stage-tool-btn active" data-tool="pen" title="配置">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path
+                                    d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
+                            </svg>
+                        </button>
+                        <button class="stage-tool-btn" data-tool="eraser" title="消しゴム">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path
+                                    d="M16.24 3.56l4.95 4.94c.78.79.78 2.05 0 2.84L12 20.53a4.008 4.008 0 01-5.66 0L2.81 17c-.78-.79-.78-2.05 0-2.84l10.6-10.6c.79-.78 2.05-.78 2.83 0zM4.22 15.58l3.54 3.53c.78.79 2.04.79 2.83 0l3.53-3.53-4.95-4.95-4.95 4.95z" />
+                            </svg>
+                        </button>
+                        <button class="stage-tool-btn" data-tool="fill" title="塗りつぶし">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path
+                                    d="M16.56 8.94L7.62 0 6.21 1.41l2.38 2.38-5.15 5.15c-.59.59-.59 1.54 0 2.12l5.5 5.5c.29.29.68.44 1.06.44s.77-.15 1.06-.44l5.5-5.5c.59-.58.59-1.53 0-2.12zM5.21 10L10 5.21 14.79 10H5.21zM19 11.5s-2 2.17-2 3.5c0 1.1.9 2 2 2s2-.9 2-2c0-1.33-2-3.5-2-3.5z" />
+                            </svg>
+                        </button>
+                        <button class="stage-tool-btn" data-tool="eyedropper" title="スポイト">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path
+                                    d="M20.71 5.63l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-3.12 3.12-1.93-1.91-1.41 1.41 1.42 1.42L3 16.25V21h4.75l8.92-8.92 1.42 1.42 1.41-1.41-1.92-1.92 3.12-3.12c.4-.4.4-1.03.01-1.42zM6.92 19L5 17.08l8.06-8.06 1.92 1.92L6.92 19z" />
+                            </svg>
+                        </button>
+                        <button class="stage-tool-btn" data-tool="undo" title="取り消し">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path
+                                    d="M12.5 8c-2.65 0-5.05 1.04-6.82 2.75L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- ステージキャンバス -->
+                    <div id="stage-canvas-container">
+                        <!-- レイヤー切替（BG/FG テキスト表示） -->
+                        <div id="layer-toggle">
+                            <span class="layer-label active" data-layer="bg">BG</span>
+                            <span class="layer-label" data-layer="fg">FG</span>
+                        </div>
+                        <canvas id="stage-canvas"></canvas>
+                    </div>
+                </div>
+
+                <!-- タイルテンプレート（下部、2行固定） -->
+                <div id="tile-template-palette">
+                    <div id="tile-template-list">
+                        <!-- JSで生成 -->
+                    </div>
+                    <button id="add-tile-btn" title="タイル追加">+</button>
                 </div>
             </div>
+        </div>
 
-            <!-- ステージエディタ（中央） -->
-            <div id="stage-area">
-                <canvas id="stage-canvas"></canvas>
-            </div>
-
-            <!-- ステージツール（下部） -->
-            <div id="stage-tools">
-                <div id="layer-btns">
-                    <button class="layer-btn active" data-layer="bg">背景</button>
-                    <button class="layer-btn" data-layer="fg">前景</button>
-                    <button class="layer-btn" data-layer="collision">判定</button>
+        <!-- 属性選択ポップアップ（+ボタン押下時） -->
+        <div id="type-select-popup" class="popup-overlay hidden">
+            <div class="popup-content">
+                <div class="popup-title">属性を選択</div>
+                <div class="type-list">
+                    <button class="type-select-item" data-type="player">プレイヤー</button>
+                    <button class="type-select-item" data-type="enemy">敵</button>
+                    <button class="type-select-item" data-type="material">素材</button>
+                    <button class="type-select-item" data-type="item">アイテム</button>
+                    <button class="type-select-item" data-type="goal">ゴール</button>
                 </div>
-                <div id="object-btns">
-                    <button class="obj-btn" data-obj="player">👤</button>
-                    <button class="obj-btn" data-obj="enemy">👾</button>
-                    <button class="obj-btn" data-obj="goal">🚩</button>
-                    <button class="obj-btn" data-obj="item">⭐</button>
-                </div>
+                <button class="popup-cancel">キャンセル</button>
             </div>
         </div>
 
@@ -256,6 +319,315 @@
                     <span id="step-display">1/16</span>
                     <button id="step-next">▶</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== モーダル ========== -->
+
+    <!-- 種別選択モーダル -->
+    <div id="type-select-modal" class="modal-overlay hidden">
+        <div class="modal-content modal-small">
+            <div class="modal-header">タイル種別を選択</div>
+            <div class="modal-body">
+                <div class="type-grid">
+                    <button class="type-btn" data-type="player">
+                        <span class="type-icon">🎮</span>
+                        <span class="type-label">プレイヤー</span>
+                    </button>
+                    <button class="type-btn" data-type="enemy">
+                        <span class="type-icon">👾</span>
+                        <span class="type-label">敵</span>
+                    </button>
+                    <button class="type-btn" data-type="material">
+                        <span class="type-icon">🧱</span>
+                        <span class="type-label">素材</span>
+                    </button>
+                    <button class="type-btn" data-type="item">
+                        <span class="type-icon">⭐</span>
+                        <span class="type-label">アイテム</span>
+                    </button>
+                    <button class="type-btn" data-type="goal">
+                        <span class="type-icon">🚩</span>
+                        <span class="type-label">ゴール</span>
+                    </button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn cancel-btn" data-action="close">キャンセル</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- プレイヤー設定モーダル -->
+    <div id="player-config-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header">🎮 プレイヤー設定</div>
+            <div class="modal-body">
+                <div class="config-section">
+                    <label class="config-label">メイン (必須)</label>
+                    <button class="sprite-select-btn" data-slot="main">選択</button>
+                </div>
+                <div class="config-section">
+                    <label class="config-label">アニメーション (任意)</label>
+                    <div class="anim-grid">
+                        <div class="anim-item"><span>WALK</span><button class="sprite-select-btn small"
+                                data-slot="walk">+</button></div>
+                        <div class="anim-item"><span>JUMP</span><button class="sprite-select-btn small"
+                                data-slot="jump">+</button></div>
+                        <div class="anim-item"><span>ATTACK</span><button class="sprite-select-btn small"
+                                data-slot="attack">+</button></div>
+                        <div class="anim-item"><span>SHOT</span><button class="sprite-select-btn small"
+                                data-slot="shot">+</button></div>
+                    </div>
+                </div>
+                <div class="config-section">
+                    <label class="config-label">LIFE表示</label>
+                    <button class="sprite-select-btn small" data-slot="life">+</button>
+                    <label class="config-label inline">LIFE数</label>
+                    <select class="config-select" id="player-life-count">
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3" selected>3</option>
+                        <option value="5">5</option>
+                        <option value="10">10</option>
+                        <option value="-1">∞</option>
+                    </select>
+                </div>
+                <div class="config-section">
+                    <label class="config-label">攻撃方法</label>
+                    <div class="radio-group">
+                        <label><input type="radio" name="attack-type" value="none" checked> なし</label>
+                        <label><input type="radio" name="attack-type" value="stomp"> 踏む</label>
+                        <label><input type="radio" name="attack-type" value="weapon"> 武器</label>
+                        <select class="config-select small" id="weapon-range">
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3" selected>3</option>
+                            <option value="5">5</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="config-section">
+                    <label class="config-label">効果音</label>
+                    <div class="sound-grid">
+                        <button class="sound-btn" data-sound="jump">Jump ♪</button>
+                        <button class="sound-btn" data-sound="attack">Attack ♪</button>
+                        <button class="sound-btn" data-sound="damage">Damage ♪</button>
+                        <button class="sound-btn" data-sound="ko">KO ♪</button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn cancel-btn" data-action="close">キャンセル</button>
+                <button class="modal-btn ok-btn" data-action="save">決定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 敵設定モーダル -->
+    <div id="enemy-config-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header">👾 敵設定</div>
+            <div class="modal-body">
+                <div class="config-section">
+                    <label class="config-label">メイン (必須)</label>
+                    <button class="sprite-select-btn" data-slot="main">選択</button>
+                </div>
+                <div class="config-section">
+                    <label class="config-label">アニメーション (任意)</label>
+                    <div class="anim-grid">
+                        <div class="anim-item"><span>WALK</span><button class="sprite-select-btn small"
+                                data-slot="walk">+</button></div>
+                        <div class="anim-item"><span>JUMP</span><button class="sprite-select-btn small"
+                                data-slot="jump">+</button></div>
+                        <div class="anim-item"><span>ATTACK</span><button class="sprite-select-btn small"
+                                data-slot="attack">+</button></div>
+                    </div>
+                </div>
+                <div class="config-section">
+                    <label class="config-label">LIFE数</label>
+                    <select class="config-select" id="enemy-life-count">
+                        <option value="1" selected>1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="5">5</option>
+                        <option value="10">10</option>
+                        <option value="-1">∞</option>
+                    </select>
+                </div>
+                <div class="config-section">
+                    <label class="config-label">移動パターン</label>
+                    <div class="radio-group">
+                        <label><input type="radio" name="enemy-move" value="none" checked> なし</label>
+                        <label><input type="radio" name="enemy-move" value="patrol"> 往復</label>
+                        <label><input type="radio" name="enemy-move" value="jump"> ジャンプ</label>
+                        <label><input type="radio" name="enemy-move" value="chase"> 追跡</label>
+                    </div>
+                </div>
+                <div class="config-section">
+                    <label class="config-label">効果音</label>
+                    <div class="sound-grid">
+                        <button class="sound-btn" data-sound="jump">Jump ♪</button>
+                        <button class="sound-btn" data-sound="attack">Attack ♪</button>
+                        <button class="sound-btn" data-sound="damage">Damage ♪</button>
+                        <button class="sound-btn" data-sound="ko">KO ♪</button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn cancel-btn" data-action="close">キャンセル</button>
+                <button class="modal-btn ok-btn" data-action="save">決定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 素材設定モーダル -->
+    <div id="material-config-modal" class="modal-overlay hidden">
+        <div class="modal-content modal-small">
+            <div class="modal-header">🧱 素材設定</div>
+            <div class="modal-body">
+                <div class="config-section">
+                    <label class="config-label">メイン (必須)</label>
+                    <button class="sprite-select-btn" data-slot="main">選択</button>
+                    <label class="config-label inline">アニメ</label>
+                    <button class="sprite-select-btn small" data-slot="anim">+</button>
+                </div>
+                <div class="config-section">
+                    <label class="config-label">当たり判定</label>
+                    <label class="checkbox-label"><input type="checkbox" id="material-collision" checked> ON</label>
+                </div>
+                <div class="config-section">
+                    <label class="config-label">LIFE数</label>
+                    <select class="config-select" id="material-life-count">
+                        <option value="-1" selected>∞</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="5">5</option>
+                        <option value="10">10</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn cancel-btn" data-action="close">キャンセル</button>
+                <button class="modal-btn ok-btn" data-action="save">決定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- アイテム設定モーダル -->
+    <div id="item-config-modal" class="modal-overlay hidden">
+        <div class="modal-content modal-small">
+            <div class="modal-header">⭐ アイテム設定</div>
+            <div class="modal-body">
+                <div class="config-section">
+                    <label class="config-label">メイン (必須)</label>
+                    <button class="sprite-select-btn" data-slot="main">選択</button>
+                    <label class="config-label inline">アニメ</label>
+                    <button class="sprite-select-btn small" data-slot="anim">+</button>
+                </div>
+                <div class="config-section">
+                    <label class="config-label">効果</label>
+                    <div class="radio-group">
+                        <label><input type="radio" name="item-effect" value="invincible"> 無敵</label>
+                        <label><input type="radio" name="item-effect" value="lifeup" checked> ライフアップ</label>
+                        <label><input type="radio" name="item-effect" value="weapon"> 武器取得</label>
+                    </div>
+                </div>
+                <div class="config-section">
+                    <label class="config-label">効果音</label>
+                    <button class="sound-btn" data-sound="get">Get ♪</button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn cancel-btn" data-action="close">キャンセル</button>
+                <button class="modal-btn ok-btn" data-action="save">決定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ゴール設定モーダル -->
+    <div id="goal-config-modal" class="modal-overlay hidden">
+        <div class="modal-content modal-small">
+            <div class="modal-header">🚩 ゴール設定</div>
+            <div class="modal-body">
+                <div class="config-section">
+                    <label class="config-label">メイン (必須)</label>
+                    <button class="sprite-select-btn" data-slot="main">選択</button>
+                    <label class="config-label inline">アニメ</label>
+                    <button class="sprite-select-btn small" data-slot="anim">+</button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn cancel-btn" data-action="close">キャンセル</button>
+                <button class="modal-btn ok-btn" data-action="save">決定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ステージ設定モーダル -->
+    <div id="stage-settings-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header">ステージ設定</div>
+            <div class="modal-body">
+                <div class="config-section">
+                    <label class="config-label">クリア条件</label>
+                    <div class="radio-group vertical">
+                        <label><input type="radio" name="clear-condition" value="goal" checked> ゴールにたどり着く</label>
+                        <label><input type="radio" name="clear-condition" value="items"> 全アイテム取得</label>
+                        <label><input type="radio" name="clear-condition" value="enemies"> 敵全滅</label>
+                    </div>
+                </div>
+                <div class="config-section">
+                    <label class="config-label">サウンド</label>
+                    <div class="sound-config-grid">
+                        <div class="sound-config-item">
+                            <span>BGM</span>
+                            <select class="config-select" id="stage-bgm">
+                                <option value="">なし</option>
+                                <option value="default">デフォルト</option>
+                            </select>
+                        </div>
+                        <div class="sound-config-item">
+                            <span>CLEAR</span>
+                            <select class="config-select" id="stage-clear">
+                                <option value="default" selected>デフォルト</option>
+                            </select>
+                        </div>
+                        <div class="sound-config-item">
+                            <span>GAMEOVER</span>
+                            <select class="config-select" id="stage-gameover">
+                                <option value="default" selected>デフォルト</option>
+                            </select>
+                        </div>
+                        <div class="sound-config-item">
+                            <span>STAR</span>
+                            <select class="config-select" id="stage-star">
+                                <option value="default" selected>デフォルト</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn cancel-btn" data-action="close">キャンセル</button>
+                <button class="modal-btn ok-btn" data-action="save">決定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- スプライト選択モーダル -->
+    <div id="sprite-select-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header">スプライトを選択</div>
+            <div class="modal-body">
+                <div id="sprite-select-list">
+                    <!-- JSで生成 -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn cancel-btn" data-action="close">キャンセル</button>
             </div>
         </div>
     </div>
