@@ -94,12 +94,63 @@ const SpriteEditor = {
             div.className = 'palette-color' + (index === this.selectedColor ? ' selected' : '');
             div.style.backgroundColor = color;
 
+            // 長押し検知用
+            let longPressTimer;
+            let isLongPress = false;
+
+            const startLongPress = () => {
+                isLongPress = false;
+                longPressTimer = setTimeout(() => {
+                    isLongPress = true;
+                    this.editColor(index);
+                }, 800);
+            };
+
+            const cancelLongPress = () => {
+                clearTimeout(longPressTimer);
+            };
+
+            div.addEventListener('mousedown', startLongPress);
+            div.addEventListener('mouseup', cancelLongPress);
+            div.addEventListener('mouseleave', cancelLongPress);
+            div.addEventListener('touchstart', startLongPress, { passive: true });
+            div.addEventListener('touchend', cancelLongPress);
+
             div.addEventListener('click', () => {
-                this.selectColor(index);
+                if (!isLongPress) {
+                    this.selectColor(index);
+                }
             });
 
             container.appendChild(div);
         });
+    },
+
+    editColor(index) {
+        const currentColor = App.nesPalette[index];
+        // カラーピッカーを表示
+        const input = document.createElement('input');
+        input.type = 'color';
+        input.value = currentColor;
+        input.style.position = 'absolute';
+        input.style.visibility = 'hidden';
+        document.body.appendChild(input);
+
+        input.addEventListener('change', (e) => {
+            App.nesPalette[index] = e.target.value;
+            this.initColorPalette();
+            this.render();
+            this.initSpriteGallery();
+            document.body.removeChild(input);
+        });
+
+        input.addEventListener('blur', () => {
+            if (document.body.contains(input)) {
+                document.body.removeChild(input);
+            }
+        });
+
+        input.click();
     },
 
     selectColor(index) {
@@ -449,6 +500,12 @@ const SpriteEditor = {
                 break;
             case 'fill':
                 this.floodFill(x, y, sprite.data[y][x], this.selectedColor);
+                break;
+            case 'eyedropper':
+                const pickedColor = sprite.data[y][x];
+                if (pickedColor >= 0) {
+                    this.selectColor(pickedColor);
+                }
                 break;
         }
 
