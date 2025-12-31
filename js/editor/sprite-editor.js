@@ -94,56 +94,32 @@ const SpriteEditor = {
             div.className = 'palette-color' + (index === this.selectedColor ? ' selected' : '');
             div.style.backgroundColor = color;
 
-            // タッチ/クリック処理
+            // 長押しで編集（サムネイルと同じ方式）
             let longPressTimer;
             let isLongPress = false;
-            let touchStartTime = 0;
 
-            const handleTap = () => {
+            const startLongPress = () => {
+                isLongPress = false;
+                longPressTimer = setTimeout(() => {
+                    isLongPress = true;
+                    this.editColor(index);
+                }, 600);
+            };
+
+            const cancelLongPress = () => {
+                clearTimeout(longPressTimer);
+            };
+
+            div.addEventListener('mousedown', startLongPress);
+            div.addEventListener('mouseup', cancelLongPress);
+            div.addEventListener('mouseleave', cancelLongPress);
+            div.addEventListener('touchstart', startLongPress, { passive: true });
+            div.addEventListener('touchend', cancelLongPress);
+
+            div.addEventListener('click', () => {
                 if (!isLongPress) {
                     this.selectColor(index);
                 }
-                isLongPress = false;
-            };
-
-            const handleLongPress = () => {
-                isLongPress = true;
-                this.editColor(index);
-            };
-
-            // マウス操作
-            div.addEventListener('mousedown', () => {
-                isLongPress = false;
-                longPressTimer = setTimeout(handleLongPress, 600);
-            });
-            div.addEventListener('mouseup', () => {
-                clearTimeout(longPressTimer);
-                handleTap();
-            });
-            div.addEventListener('mouseleave', () => {
-                clearTimeout(longPressTimer);
-            });
-
-            // タッチ操作（iPhoneサポート）
-            div.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                isLongPress = false;
-                touchStartTime = Date.now();
-                longPressTimer = setTimeout(handleLongPress, 600);
-            }, { passive: false });
-
-            div.addEventListener('touchend', (e) => {
-                e.preventDefault();
-                clearTimeout(longPressTimer);
-                // 短いタップならカラー選択
-                const touchDuration = Date.now() - touchStartTime;
-                if (touchDuration < 600 && !isLongPress) {
-                    this.selectColor(index);
-                }
-            }, { passive: false });
-
-            div.addEventListener('touchcancel', () => {
-                clearTimeout(longPressTimer);
             });
 
             container.appendChild(div);
@@ -152,29 +128,60 @@ const SpriteEditor = {
 
     editColor(index) {
         const currentColor = App.nesPalette[index];
-        // カラーピッカーを表示
+
+        // モーダルオーバーレイを作成
+        const overlay = document.createElement('div');
+        overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999;';
+
+        // モーダルコンテンツ
+        const modal = document.createElement('div');
+        modal.style.cssText = 'background:white;padding:20px;border-radius:8px;text-align:center;';
+
+        const title = document.createElement('div');
+        title.textContent = 'カラーを選択';
+        title.style.cssText = 'font-size:16px;font-weight:bold;margin-bottom:15px;';
+
         const input = document.createElement('input');
         input.type = 'color';
         input.value = currentColor;
-        input.style.position = 'absolute';
-        input.style.visibility = 'hidden';
-        document.body.appendChild(input);
+        input.style.cssText = 'width:100px;height:100px;border:none;cursor:pointer;';
 
-        input.addEventListener('change', (e) => {
-            App.nesPalette[index] = e.target.value;
+        const btnContainer = document.createElement('div');
+        btnContainer.style.cssText = 'margin-top:15px;display:flex;gap:10px;justify-content:center;';
+
+        const okBtn = document.createElement('button');
+        okBtn.textContent = 'OK';
+        okBtn.style.cssText = 'padding:10px 30px;border:none;background:#4a4a4a;color:white;border-radius:4px;cursor:pointer;';
+
+        const cancelBtn = document.createElement('button');
+        cancelBtn.textContent = 'キャンセル';
+        cancelBtn.style.cssText = 'padding:10px 20px;border:1px solid #ccc;background:white;border-radius:4px;cursor:pointer;';
+
+        btnContainer.appendChild(okBtn);
+        btnContainer.appendChild(cancelBtn);
+        modal.appendChild(title);
+        modal.appendChild(input);
+        modal.appendChild(btnContainer);
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+
+        okBtn.addEventListener('click', () => {
+            App.nesPalette[index] = input.value;
             this.initColorPalette();
             this.render();
             this.initSpriteGallery();
-            document.body.removeChild(input);
+            document.body.removeChild(overlay);
         });
 
-        input.addEventListener('blur', () => {
-            if (document.body.contains(input)) {
-                document.body.removeChild(input);
+        cancelBtn.addEventListener('click', () => {
+            document.body.removeChild(overlay);
+        });
+
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+                document.body.removeChild(overlay);
             }
         });
-
-        input.click();
     },
 
     selectColor(index) {
