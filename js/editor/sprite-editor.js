@@ -137,33 +137,31 @@ const SpriteEditor = {
         const modal = document.createElement('div');
         modal.style.cssText = 'background:white;padding:20px;border-radius:8px;text-align:center;';
 
-        const title = document.createElement('div');
-        title.textContent = 'カラーを選択';
-        title.style.cssText = 'font-size:16px;font-weight:bold;margin-bottom:15px;';
-
         const input = document.createElement('input');
         input.type = 'color';
         input.value = currentColor;
-        input.style.cssText = 'width:100px;height:100px;border:none;cursor:pointer;';
+        input.style.cssText = 'width:120px;height:120px;border:none;cursor:pointer;padding:0;';
 
         const btnContainer = document.createElement('div');
         btnContainer.style.cssText = 'margin-top:15px;display:flex;gap:10px;justify-content:center;';
 
         const okBtn = document.createElement('button');
-        okBtn.textContent = 'OK';
-        okBtn.style.cssText = 'padding:10px 30px;border:none;background:#4a4a4a;color:white;border-radius:4px;cursor:pointer;';
+        okBtn.textContent = '決定';
+        okBtn.style.cssText = 'padding:12px 35px;border:none;background:#4a4a4a;color:white;border-radius:4px;cursor:pointer;font-size:14px;';
 
         const cancelBtn = document.createElement('button');
         cancelBtn.textContent = 'キャンセル';
-        cancelBtn.style.cssText = 'padding:10px 20px;border:1px solid #ccc;background:white;border-radius:4px;cursor:pointer;';
+        cancelBtn.style.cssText = 'padding:12px 20px;border:1px solid #ccc;background:white;border-radius:4px;cursor:pointer;font-size:14px;';
 
         btnContainer.appendChild(okBtn);
         btnContainer.appendChild(cancelBtn);
-        modal.appendChild(title);
         modal.appendChild(input);
         modal.appendChild(btnContainer);
         overlay.appendChild(modal);
         document.body.appendChild(overlay);
+
+        // すぐにカラーピッカーを開く
+        setTimeout(() => input.click(), 100);
 
         okBtn.addEventListener('click', () => {
             App.nesPalette[index] = input.value;
@@ -376,6 +374,22 @@ const SpriteEditor = {
                     this.ctx.fillRect(x * this.pixelSize, y * this.pixelSize, this.pixelSize, this.pixelSize);
                 }
             }
+        }
+
+        // グリッド線（スカイブルー）
+        this.ctx.strokeStyle = 'rgba(135, 206, 235, 0.6)';
+        this.ctx.lineWidth = 1;
+        for (let i = 1; i < 16; i++) {
+            // 縦線
+            this.ctx.beginPath();
+            this.ctx.moveTo(i * this.pixelSize, 0);
+            this.ctx.lineTo(i * this.pixelSize, this.canvas.height);
+            this.ctx.stroke();
+            // 横線
+            this.ctx.beginPath();
+            this.ctx.moveTo(0, i * this.pixelSize);
+            this.ctx.lineTo(this.canvas.width, i * this.pixelSize);
+            this.ctx.stroke();
         }
 
         this.canvas.style.backgroundColor = bgColor;
