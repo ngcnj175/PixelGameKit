@@ -224,6 +224,7 @@ body {
     border: none;
     background: var(--color-dark);
     cursor: pointer;
+    border-radius: 4px;
 }
 
 .dpad-btn:active {
@@ -423,7 +424,7 @@ body {
 #paint-main-area {
     flex: 1;
     display: flex;
-    align-items: stretch;
+    align-items: flex-end;
     justify-content: center;
     padding: 12px;
     gap: 12px;
@@ -485,6 +486,11 @@ body {
     border-top: 1px solid var(--border-color);
     margin: 4px 0;
     width: 100%;
+}
+
+/* 上下反転：左右反転アイコンを90度回転 */
+.flip-v-btn svg {
+    transform: rotate(90deg);
 }
 
 /* キャンバスコンテナ */

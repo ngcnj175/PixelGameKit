@@ -126,44 +126,82 @@ const App = {
     },
 
     initMenu() {
+        // 現在のプロジェクト名
+        this.currentProjectName = null;
+
         // 新規プロジェクト
         document.getElementById('new-icon-btn')?.addEventListener('click', () => {
             // 未保存データがあれば保存を促す
-            const savedData = Storage.load('currentProject');
-            if (savedData && JSON.stringify(savedData) !== JSON.stringify(this.projectData)) {
+            if (this.hasUnsavedChanges()) {
                 if (confirm('現在の編集内容を保存しますか？')) {
-                    Storage.save('currentProject', this.projectData);
-                    alert('保存しました');
+                    this.saveProject();
                 }
             }
             // 新規プロジェクト作成
             this.projectData = this.createDefaultProject();
+            this.currentProjectName = null;
             this.updateGameInfo();
             this.refreshCurrentScreen();
             alert('新規プロジェクトを作成しました');
         });
 
-        // ファイル読み込み
+        // ファイル読み込み（ファイル選択ダイアログ）
+        const fileInput = document.getElementById('file-input');
         document.getElementById('load-icon-btn')?.addEventListener('click', () => {
             // 未保存データがあれば保存を促す
-            const savedData = Storage.load('currentProject');
-            if (savedData && JSON.stringify(savedData) !== JSON.stringify(this.projectData)) {
+            if (this.hasUnsavedChanges()) {
                 if (confirm('現在の編集内容を保存しますか？')) {
-                    Storage.save('currentProject', this.projectData);
+                    this.saveProject();
                 }
             }
-            const data = Storage.load('currentProject');
-            if (data) {
-                this.projectData = data;
-                this.updateGameInfo();
-                this.refreshCurrentScreen();
-                alert('読み込みました！');
-            }
+            fileInput?.click();
         });
 
-        document.getElementById('save-icon-btn')?.addEventListener('click', () => {
-            Storage.save('currentProject', this.projectData);
-            alert('保存しました！');
+        fileInput?.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const data = JSON.parse(event.target.result);
+                        this.projectData = data;
+                        this.currentProjectName = file.name.replace(/\.(json|pgk)$/i, '');
+                        this.updateGameInfo();
+                        this.refreshCurrentScreen();
+                        alert(`${file.name} を読み込みました`);
+                    } catch (err) {
+                        alert('ファイルの読み込みに失敗しました');
+                    }
+                };
+                reader.readAsText(file);
+            }
+            e.target.value = ''; // リセット
+        });
+
+        // 保存：ワンタップで上書き、長押しで名前を付けて保存
+        let saveTimer;
+        const saveBtn = document.getElementById('save-icon-btn');
+
+        const startSavePress = () => {
+            saveTimer = setTimeout(() => {
+                // 長押し：名前を付けて保存
+                this.saveAsNewFile();
+            }, 800);
+        };
+
+        const cancelSavePress = () => {
+            clearTimeout(saveTimer);
+        };
+
+        saveBtn?.addEventListener('mousedown', startSavePress);
+        saveBtn?.addEventListener('mouseup', cancelSavePress);
+        saveBtn?.addEventListener('mouseleave', cancelSavePress);
+        saveBtn?.addEventListener('touchstart', startSavePress, { passive: true });
+        saveBtn?.addEventListener('touchend', cancelSavePress);
+
+        saveBtn?.addEventListener('click', () => {
+            // 長押しでなければ通常保存
+            this.saveProject();
         });
 
         // ナビゲーション切り替え
@@ -225,7 +263,6 @@ const App = {
             case 'play':
                 this.updateGameInfo();
                 if (typeof GameEngine !== 'undefined') {
-                    // まだ開始されていない or 一時停止中ならプレビュー表示
                     if (!GameEngine.isRunning || GameEngine.isPaused) {
                         GameEngine.showPreview();
                     } else {
@@ -249,6 +286,48 @@ const App = {
                 }
                 break;
         }
+    },
+
+    hasUnsavedChanges() {
+        const savedData = Storage.load('currentProject');
+        if (!savedData) return true;
+        return JSON.stringify(savedData) !== JSON.stringify(this.projectData);
+    },
+
+    saveProject() {
+        // LocalStorageにも保存
+        Storage.save('currentProject', this.projectData);
+
+        if (this.currentProjectName) {
+            // 上書き保存（ダウンロード）
+            this.downloadProject(this.currentProjectName);
+            alert(`${this.currentProjectName}.json を保存しました`);
+        } else {
+            // 新規の場合は名前を付けて保存
+            this.saveAsNewFile();
+        }
+    },
+
+    saveAsNewFile() {
+        const defaultName = this.projectData?.meta?.name || 'MyGame';
+        const name = prompt('ファイル名を入力してください', defaultName);
+        if (name) {
+            this.currentProjectName = name;
+            Storage.save('currentProject', this.projectData);
+            this.downloadProject(name);
+            alert(`${name}.json を保存しました`);
+        }
+    },
+
+    downloadProject(filename) {
+        const data = JSON.stringify(this.projectData, null, 2);
+        const blob = new Blob([data], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${filename}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
     }
 };
 

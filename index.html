@@ -18,6 +18,9 @@
 
 <body>
     <div id="app">
+        <!-- 隠しファイル入力 -->
+        <input type="file" id="file-input" accept=".json,.pgk" style="display:none">
+
         <!-- ヘッダー（アイコンバー） -->
         <header id="header">
             <div id="toolbar-file">
@@ -29,7 +32,8 @@
                 </button>
                 <button id="load-icon-btn" class="toolbar-icon" title="読み込み">
                     <svg viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" />
+                        <path
+                            d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z" />
                     </svg>
                 </button>
                 <button id="save-icon-btn" class="toolbar-icon" title="保存">
@@ -157,10 +161,10 @@
                                     d="M19 2h-4.18C14.4.84 13.3 0 12 0c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm7 18H5V4h2v3h10V4h2v16z" />
                             </svg>
                         </button>
-                        <button class="paint-tool-btn" data-tool="flip-v" title="上下反転">
+                        <button class="paint-tool-btn flip-v-btn" data-tool="flip-v" title="上下反転">
                             <svg viewBox="0 0 24 24" fill="currentColor">
                                 <path
-                                    d="M3 15h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V9H3v2zm12 8h2v-2h-2v2zM3 3v2h2V3H3zm12 8h2V9h-2v2zM21 3h-2v2h2V3zm0 12h-2v2h2v-2zM21 7h-2v2h2V7zm0 4h-2v2h2v-2zM21 15h-2v2h2v-2zm-6-8h2V5h-2v2zM7 13h2v-2H7v2zm-4 8h2v-2H3v2zm4-4h2v-2H7v2zM7 9h2V7H7v2zm4 12h2V1h-2v22z" />
+                                    d="M15 21h2v-2h-2v2zm4-12h2V7h-2v2zM3 5v14c0 1.1.9 2 2 2h4v-2H5V5h4V3H5c-1.1 0-2 .9-2 2zm16-2v2h2c0-1.1-.9-2-2-2zm-8 20h2V1h-2v22zm8-6h2v-2h-2v2zM15 5h2V3h-2v2zm4 8h2v-2h-2v2zm0 8c1.1 0 2-.9 2-2h-2v2z" />
                             </svg>
                         </button>
                         <button class="paint-tool-btn" data-tool="flip-h" title="左右反転">
