@@ -376,10 +376,11 @@ body {
     background: var(--bg-device);
 }
 
-/* ピクセル画面コンテンツラッパー */
+/* ピクセル画面コンテンツラッパー（下寄せ） */
 #paint-content-wrapper {
     display: flex;
     flex-direction: column;
+    justify-content: flex-end;
     flex: 1;
     overflow: hidden;
 }
@@ -457,7 +458,7 @@ body {
 
 /* メインエリア（ツール左 + キャンバス右） */
 #paint-main-area {
-    flex: 1;
+    flex-shrink: 0;
     display: flex;
     align-items: flex-start;
     justify-content: flex-start;
