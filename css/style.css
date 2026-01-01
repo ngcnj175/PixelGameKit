@@ -394,17 +394,17 @@ body {
     padding: 6px 0;
 }
 
-/* 追加ボタン（左固定、ツールと縦軸揃え=48px幅） */
+/* 追加ボタン（左固定、ツールと縦軸揃え=48px幅、枠線なし） */
 .gallery-add-btn {
     flex-shrink: 0;
     width: 48px;
     min-width: 48px;
     height: 44px;
-    border: 2px dashed var(--border-color);
+    border: none;
     border-radius: 0;
     background: transparent;
     color: var(--color-medium);
-    font-size: 20px;
+    font-size: 24px;
     cursor: pointer;
     display: flex;
     align-items: center;
