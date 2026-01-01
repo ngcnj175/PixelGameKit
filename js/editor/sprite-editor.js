@@ -94,31 +94,19 @@ const SpriteEditor = {
             div.className = 'palette-color' + (index === this.selectedColor ? ' selected' : '');
             div.style.backgroundColor = color;
 
-            // 長押しで編集（サムネイルと同じ方式）
-            let longPressTimer;
-            let isLongPress = false;
-
-            const startLongPress = () => {
-                isLongPress = false;
-                longPressTimer = setTimeout(() => {
-                    isLongPress = true;
-                    this.editColor(index);
-                }, 600);
-            };
-
-            const cancelLongPress = () => {
-                clearTimeout(longPressTimer);
-            };
-
-            div.addEventListener('mousedown', startLongPress);
-            div.addEventListener('mouseup', cancelLongPress);
-            div.addEventListener('mouseleave', cancelLongPress);
-            div.addEventListener('touchstart', startLongPress, { passive: true });
-            div.addEventListener('touchend', cancelLongPress);
+            // ダブルタップで編集
+            let lastTapTime = 0;
 
             div.addEventListener('click', () => {
-                if (!isLongPress) {
+                const now = Date.now();
+                if (now - lastTapTime < 300) {
+                    // ダブルタップ → 編集
+                    this.editColor(index);
+                    lastTapTime = 0;
+                } else {
+                    // シングルタップ → 選択
                     this.selectColor(index);
+                    lastTapTime = now;
                 }
             });
 
