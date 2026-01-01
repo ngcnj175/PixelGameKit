@@ -490,9 +490,9 @@ body {
     border: none;
     border-radius: 0;
     background: transparent;
-    color: var(--color-medium);
+    color: var(--color-light);
     cursor: pointer;
-    transition: all 0.1s;
+    transition: color 0.1s;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -505,13 +505,12 @@ body {
 }
 
 .paint-tool-btn:hover {
-    background: rgba(0, 0, 0, 0.05);
-    color: var(--text-dark);
+    color: var(--color-medium);
 }
 
 .paint-tool-btn.active {
-    background: var(--color-dark);
-    color: var(--text-light);
+    color: var(--color-dark);
+    background: transparent;
 }
 
 .paint-tool-btn:active {
