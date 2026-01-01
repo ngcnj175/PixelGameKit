@@ -87,118 +87,43 @@ const SpriteEditor = {
 
         container.innerHTML = '';
 
-        // 全色表示
-        const palette = App.nesPalette;
+        const palette = App.nesPalette.slice(0, 16);
 
         palette.forEach((color, index) => {
             const div = document.createElement('div');
             div.className = 'palette-color' + (index === this.selectedColor ? ' selected' : '');
             div.style.backgroundColor = color;
-            div.dataset.index = index;
+
+            // 長押しで編集（サムネイルと同じ方式）
+            let longPressTimer;
+            let isLongPress = false;
+
+            const startLongPress = () => {
+                isLongPress = false;
+                longPressTimer = setTimeout(() => {
+                    isLongPress = true;
+                    this.editColor(index);
+                }, 600);
+            };
+
+            const cancelLongPress = () => {
+                clearTimeout(longPressTimer);
+            };
+
+            div.addEventListener('mousedown', startLongPress);
+            div.addEventListener('mouseup', cancelLongPress);
+            div.addEventListener('mouseleave', cancelLongPress);
+            div.addEventListener('touchstart', startLongPress, { passive: true });
+            div.addEventListener('touchend', cancelLongPress);
+
+            div.addEventListener('click', () => {
+                if (!isLongPress) {
+                    this.selectColor(index);
+                }
+            });
+
             container.appendChild(div);
         });
-
-        // イベント委譲（コンテナに1つだけイベントを設定）
-        container.onmousedown = container.ontouchstart = null;
-
-        let longPressTimer = null;
-        let isLongPress = false;
-        let lastTapTime = 0;
-        let startX = 0;
-        let startY = 0;
-
-        const handleStart = (e) => {
-            const target = e.target.closest('.palette-color');
-            if (!target) return;
-
-            const touch = e.touches ? e.touches[0] : e;
-            startX = touch.clientX;
-            startY = touch.clientY;
-            isLongPress = false;
-
-            const index = parseInt(target.dataset.index);
-            longPressTimer = setTimeout(() => {
-                isLongPress = true;
-                this.deleteColor(index);
-            }, 800);
-        };
-
-        const handleMove = (e) => {
-            if (!longPressTimer) return;
-            const touch = e.touches ? e.touches[0] : e;
-            const dx = Math.abs(touch.clientX - startX);
-            const dy = Math.abs(touch.clientY - startY);
-            if (dx > 10 || dy > 10) {
-                clearTimeout(longPressTimer);
-                longPressTimer = null;
-            }
-        };
-
-        const handleEnd = () => {
-            clearTimeout(longPressTimer);
-            longPressTimer = null;
-        };
-
-        const handleClick = (e) => {
-            if (isLongPress) {
-                isLongPress = false;
-                return;
-            }
-            const target = e.target.closest('.palette-color');
-            if (!target) return;
-
-            const index = parseInt(target.dataset.index);
-            const now = Date.now();
-
-            if (now - lastTapTime < 300) {
-                this.editColor(index);
-                lastTapTime = 0;
-            } else {
-                this.selectColor(index);
-                lastTapTime = now;
-            }
-        };
-
-        container.addEventListener('mousedown', handleStart);
-        container.addEventListener('touchstart', handleStart, { passive: true });
-        container.addEventListener('mousemove', handleMove);
-        container.addEventListener('touchmove', handleMove, { passive: true });
-        container.addEventListener('mouseup', handleEnd);
-        container.addEventListener('touchend', handleEnd);
-        container.addEventListener('mouseleave', handleEnd);
-        container.addEventListener('click', handleClick);
-
-        // 追加ボタンのイベント設定
-        const addBtn = document.getElementById('add-color-btn');
-        if (addBtn) {
-            addBtn.onclick = () => this.addNewColor();
-        }
-    },
-
-    // 新しい色を追加（デフォルト#000000）
-    addNewColor() {
-        App.nesPalette.push('#000000');
-        this.initColorPalette();
-    },
-
-    // 色を削除（確認あり、重複防止フラグ付き）
-    deleteColor(index) {
-        if (this._isDeleting) return;
-        if (App.nesPalette.length <= 1) {
-            alert('最低1色は必要です');
-            return;
-        }
-        this._isDeleting = true;
-        const doDelete = confirm('この色を削除しますか？');
-        this._isDeleting = false;
-        if (!doDelete) {
-            return;
-        }
-        App.nesPalette.splice(index, 1);
-        if (this.selectedColor >= App.nesPalette.length) {
-            this.selectedColor = App.nesPalette.length - 1;
-        }
-        this.initColorPalette();
     },
 
     editColor(index) {
