@@ -31,6 +31,7 @@ const StageEditor = {
         this.initTemplateList();
         this.initCanvasEvents();
         this.initTypeSelectPopup();
+        this.resize();
     },
 
     refresh() {
@@ -632,7 +633,7 @@ const StageEditor = {
     },
 
     resize() {
-        const container = document.getElementById('stage-canvas-container');
+        const container = document.getElementById('stage-canvas-area');
         if (!container || !this.canvas) return;
 
         const stage = App.projectData.stage;
