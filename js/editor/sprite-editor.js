@@ -87,7 +87,7 @@ const SpriteEditor = {
 
         container.innerHTML = '';
 
-        const palette = App.nesPalette.slice(0, 16);
+        const palette = App.nesPalette;
 
         palette.forEach((color, index) => {
             const div = document.createElement('div');
@@ -124,6 +124,15 @@ const SpriteEditor = {
 
             container.appendChild(div);
         });
+
+        // 追加ボタンのイベント設定
+        const addBtn = document.getElementById('add-color-btn');
+        if (addBtn) {
+            addBtn.onclick = () => {
+                App.nesPalette.push('#000000');
+                this.initColorPalette();
+            };
+        }
     },
 
     editColor(index) {
