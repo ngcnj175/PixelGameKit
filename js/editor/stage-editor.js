@@ -462,7 +462,7 @@ const StageEditor = {
 
     // ========== タイルテンプレート一覧 ==========
     initTemplateList() {
-        const container = document.getElementById('tile-template-list');
+        const container = document.getElementById('tile-list');
         if (!container) return;
 
         container.innerHTML = '';
@@ -482,7 +482,7 @@ const StageEditor = {
 
         this.templates.forEach((template, index) => {
             const div = document.createElement('div');
-            div.className = 'tile-template' + (this.selectedTemplate === index ? ' selected' : '');
+            div.className = 'tile-item' + (this.selectedTemplate === index ? ' selected' : '');
 
             // サムネイル（IDLEまたはメイン）
             const spriteIdx = template.sprites.idle?.[0] ?? template.sprites.main?.[0];
@@ -654,7 +654,7 @@ const StageEditor = {
 
         const stage = App.projectData.stage;
 
-        this.ctx.fillStyle = '#1a1a2e';
+        this.ctx.fillStyle = '#e8e8e8';
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
         this.renderLayer('bg', this.currentLayer === 'fg' ? 0.4 : 1);
@@ -722,7 +722,7 @@ const StageEditor = {
     renderGrid() {
         const stage = App.projectData.stage;
 
-        this.ctx.strokeStyle = 'rgba(135, 206, 235, 0.4)';
+        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
         this.ctx.lineWidth = 1;
 
         for (let x = 0; x <= stage.width; x++) {

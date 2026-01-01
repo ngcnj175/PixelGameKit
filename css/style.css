@@ -378,8 +378,9 @@ body {
     background: var(--bg-device);
 }
 
-/* ピクセル画面コンテンツラッパー（下寄せ） */
-#paint-content-wrapper {
+/* ピクセル・ステージ画面コンテンツラッパー（下寄せ） */
+#paint-content-wrapper,
+#stage-content-wrapper {
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
@@ -626,28 +627,14 @@ body {
     background: var(--bg-device);
 }
 
-#stage-content-wrapper {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-}
-
-/* スプライトギャラリー（ドラッグ元）- ペイントと同じ */
-#stage-sprite-gallery {
-    flex-shrink: 0;
-    display: flex;
-    padding: 10px;
-    background: rgba(0, 0, 0, 0.03);
-    border-bottom: 1px solid var(--border-color);
-    overflow-x: auto;
-    gap: 6px;
-}
-
+/* ステージ用スプライトリスト */
 #stage-sprite-list {
     display: flex;
-    gap: 6px;
+    gap: 4px;
+    padding: 4px 8px;
 }
 
+/* ステージ用スプライトアイテム（ピクセル画面と共通） */
 .stage-sprite-item {
     flex-shrink: 0;
     width: 44px;
@@ -655,16 +642,22 @@ body {
     background: var(--bg-screen);
     border: 2px solid var(--border-color);
     border-radius: 0;
-    cursor: grab;
+    cursor: pointer;
     image-rendering: pixelated;
+    overflow: hidden;
+    transition: transform 0.15s ease, border-color 0.15s ease;
 }
 
-.stage-sprite-item:active {
-    cursor: grabbing;
+.stage-sprite-item.selected {
+    border-color: var(--color-dark);
+    transform: scale(1.15);
+    z-index: 1;
 }
 
-.stage-sprite-item.dragging {
-    opacity: 0.5;
+.stage-sprite-item canvas {
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated;
 }
 
 /* 設定パネル（スクロール可能） */
