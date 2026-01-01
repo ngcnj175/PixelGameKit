@@ -87,7 +87,7 @@ const SpriteEditor = {
 
         container.innerHTML = '';
 
-        // 64色全て表示
+        // 全色表示
         const palette = App.nesPalette;
 
         palette.forEach((color, index) => {
@@ -95,16 +95,17 @@ const SpriteEditor = {
             div.className = 'palette-color' + (index === this.selectedColor ? ' selected' : '');
             div.style.backgroundColor = color;
 
-            // 長押しで編集（サムネイルと同じ方式）
+            // 長押しで削除（スプライトと同じ）
             let longPressTimer;
             let isLongPress = false;
 
-            const startLongPress = () => {
+            const startLongPress = (e) => {
+                e.preventDefault();
                 isLongPress = false;
                 longPressTimer = setTimeout(() => {
                     isLongPress = true;
-                    this.editColor(index);
-                }, 600);
+                    this.deleteColor(index);
+                }, 800);
             };
 
             const cancelLongPress = () => {
@@ -114,12 +115,24 @@ const SpriteEditor = {
             div.addEventListener('mousedown', startLongPress);
             div.addEventListener('mouseup', cancelLongPress);
             div.addEventListener('mouseleave', cancelLongPress);
-            div.addEventListener('touchstart', startLongPress, { passive: true });
+            div.addEventListener('touchstart', startLongPress, { passive: false });
             div.addEventListener('touchend', cancelLongPress);
+            div.addEventListener('touchmove', cancelLongPress);
 
-            div.addEventListener('click', () => {
-                if (!isLongPress) {
+            // ダブルタップで編集
+            let lastTapTime = 0;
+            div.addEventListener('click', (e) => {
+                if (isLongPress) return;
+
+                const now = Date.now();
+                if (now - lastTapTime < 300) {
+                    // ダブルタップ → 編集
+                    this.editColor(index);
+                    lastTapTime = 0;
+                } else {
+                    // シングルタップ → 選択
                     this.selectColor(index);
+                    lastTapTime = now;
                 }
             });
 
@@ -133,28 +146,23 @@ const SpriteEditor = {
         }
     },
 
-    // 新しい色を追加
+    // 新しい色を追加（デフォルト#000000）
     addNewColor() {
-        const input = document.createElement('input');
-        input.type = 'color';
-        input.value = '#000000';
-        input.style.position = 'absolute';
-        input.style.opacity = '0';
-        document.body.appendChild(input);
+        App.nesPalette.push('#000000');
+        this.initColorPalette();
+    },
 
-        input.addEventListener('change', () => {
-            App.nesPalette.push(input.value);
-            this.initColorPalette();
-            document.body.removeChild(input);
-        });
-
-        input.addEventListener('blur', () => {
-            if (document.body.contains(input)) {
-                document.body.removeChild(input);
-            }
-        });
-
-        input.click();
+    // 色を削除
+    deleteColor(index) {
+        if (App.nesPalette.length <= 1) {
+            alert('最低1色は必要です');
+            return;
+        }
+        App.nesPalette.splice(index, 1);
+        if (this.selectedColor >= App.nesPalette.length) {
+            this.selectedColor = App.nesPalette.length - 1;
+        }
+        this.initColorPalette();
     },
 
     editColor(index) {
