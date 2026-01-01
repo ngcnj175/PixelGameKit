@@ -627,37 +627,46 @@ body {
     background: var(--bg-device);
 }
 
-/* ステージ用スプライトリスト */
-#stage-sprite-list {
+/* ステージ用ツールは #paint-tools と同じクラスで適用 */
+
+#stage-canvas-area {
     display: flex;
-    gap: 4px;
-    padding: 4px 8px;
+    flex-direction: column;
+    align-items: center;
 }
 
-/* ステージ用スプライトアイテム（ピクセル画面と共通） */
-.stage-sprite-item {
+#stage-canvas {
+    width: 320px;
+    max-width: calc(100% - 48px);
+    aspect-ratio: 1;
     flex-shrink: 0;
-    width: 44px;
-    height: 44px;
-    background: var(--bg-screen);
-    border: 2px solid var(--border-color);
+    background: #e8e8e8;
+    background-image:
+        linear-gradient(to right, rgba(255, 255, 255, 0.8) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.8) 1px, transparent 1px);
+    background-size: 20px 20px;
+    border: 2px solid var(--color-dark);
     border-radius: 0;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+}
+
+/* レイヤー切替タブ */
+#layer-toggle {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 4px;
+}
+
+.layer-label {
+    font-size: 14px;
+    font-weight: bold;
+    color: var(--color-light);
     cursor: pointer;
-    image-rendering: pixelated;
-    overflow: hidden;
-    transition: transform 0.15s ease, border-color 0.15s ease;
 }
 
-.stage-sprite-item.selected {
-    border-color: var(--color-dark);
-    transform: scale(1.15);
-    z-index: 1;
-}
-
-.stage-sprite-item canvas {
-    width: 100%;
-    height: 100%;
-    image-rendering: pixelated;
+.layer-label.active {
+    color: var(--color-dark);
 }
 
 /* 設定パネル（スクロール可能） */
