@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/svg+xml" href="assets/icons/icon-192.svg">
     <link rel="apple-touch-icon" href="assets/icons/icon-192.svg">
-    <title>PixelGameKit v1.3.2</title>
+    <title>PixelGameKit v1.4.0</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 
@@ -69,8 +69,9 @@
             </div>
         </header>
 
-        <!-- ========== プレイ画面 ========== -->
+        <!-- ========== ゲーム画面 ========== -->
         <div id="play-screen" class="screen active">
+            <div class="screen-title">GAME</div>
             <!-- ゲーム情報（編集可能） -->
             <div id="game-info">
                 <input type="text" id="game-title" value="My Game" placeholder="ゲームタイトル">
@@ -109,17 +110,10 @@
             </div>
         </div>
 
-        <!-- ========== ペイント画面 ========== -->
+        <!-- ========== ピクセル画面 ========== -->
         <div id="paint-screen" class="screen">
+            <div class="screen-title">PIXEL</div>
             <div id="paint-content-wrapper">
-                <!-- スプライトギャラリー（上部） -->
-                <div id="sprite-gallery">
-                    <div id="sprite-list">
-                        <!-- JSで生成 -->
-                    </div>
-                    <button id="add-sprite-btn">+</button>
-                </div>
-
                 <!-- メインエリア（ツール左 + キャンバス中央） -->
                 <div id="paint-main-area">
                     <!-- 編集ツール（左側縦1列） -->
@@ -181,8 +175,15 @@
                         </button>
                     </div>
 
-                    <!-- ペイントキャンバス -->
+                    <!-- ピクセルキャンバス -->
                     <div id="paint-canvas-container">
+                        <!-- スプライトギャラリー（キャンバス上部） -->
+                        <div id="sprite-gallery">
+                            <div id="sprite-list">
+                                <!-- JSで生成 -->
+                            </div>
+                            <button id="add-sprite-btn">+</button>
+                        </div>
                         <canvas id="paint-canvas"></canvas>
                     </div>
                 </div>
@@ -196,15 +197,9 @@
 
         <!-- ========== ステージ画面 ========== -->
         <div id="stage-screen" class="screen">
+            <div class="screen-title">STAGE</div>
             <div id="stage-content-wrapper">
-                <!-- スプライトギャラリー（上部）- ドラッグ元 -->
-                <div id="stage-sprite-gallery">
-                    <div id="stage-sprite-list">
-                        <!-- JSで生成 -->
-                    </div>
-                </div>
-
-                <!-- 設定パネル（スプライト行の下）- 初期非表示 -->
+                <!-- 設定パネル（初期非表示） -->
                 <div id="tile-config-panel" class="hidden">
                     <div class="config-panel-header">
                         <span id="config-panel-title">プレイヤー設定</span>
@@ -289,6 +284,7 @@
 
         <!-- ========== サウンド画面 ========== -->
         <div id="sound-screen" class="screen">
+            <div class="screen-title">SOUND</div>
             <!-- シーケンサー表示 -->
             <div id="sequencer-area">
                 <canvas id="sequencer-canvas"></canvas>

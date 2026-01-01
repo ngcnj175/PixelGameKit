@@ -117,6 +117,18 @@ body {
     display: flex;
 }
 
+/* 画面タイトル（各画面の上部） */
+.screen-title {
+    flex-shrink: 0;
+    text-align: center;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    color: var(--text-muted);
+    padding: 4px 0;
+    opacity: 0.6;
+}
+
 /* ========================================
    プレイ画面
    ======================================== */
@@ -507,13 +519,15 @@ body {
     transform: rotate(90deg);
 }
 
-/* キャンバスコンテナ */
+/* キャンバスコンテナ（スプライトギャラリー + キャンバス縦並び） */
 #paint-canvas-container {
     display: flex;
-    justify-content: center;
+    flex-direction: column;
+    justify-content: flex-end;
     align-items: center;
     flex: 1;
     min-width: 0;
+    gap: 8px;
 }
 
 /* キャンバス */

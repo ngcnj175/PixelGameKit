@@ -30,12 +30,10 @@ const StageEditor = {
         this.initConfigPanel();
         this.initTemplateList();
         this.initCanvasEvents();
-        this.initSpriteGallery();
         this.initTypeSelectPopup();
     },
 
     refresh() {
-        this.initSpriteGallery();
         this.initTemplateList();
         this.resize();
         this.render();
