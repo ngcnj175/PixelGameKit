@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/svg+xml" href="assets/icons/icon-192.svg">
     <link rel="apple-touch-icon" href="assets/icons/icon-192.svg">
-    <title>PixelGameKit v1.5.0</title>
+    <title>PixelGameKit v1.5.1</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 
@@ -204,72 +204,99 @@
         <!-- ========== ステージ画面 ========== -->
         <div id="stage-screen" class="screen">
             <div class="screen-title">STAGE</div>
-            <div id="stage-content-wrapper">
-                <!-- 設定パネル（初期非表示） -->
-                <div id="tile-config-panel" class="hidden">
-                    <div class="config-panel-header">
-                        <span id="config-panel-title">プレイヤー設定</span>
-                        <button id="config-close-btn">×</button>
-                    </div>
-                    <div class="config-panel-body" id="config-panel-content">
-                        <!-- JSで動的生成 -->
+            <div id="stage-content-wrapper" class="paint-content-wrapper">
+                <!-- スプライトエリア（追加ボタン左固定 + スクロール可能リスト） -->
+                <div id="stage-sprite-area" class="gallery-row">
+                    <button id="add-stage-sprite-btn" class="gallery-add-btn">+</button>
+                    <div id="stage-sprite-scroll-container" class="gallery-scroll">
+                        <div id="stage-sprite-list">
+                            <!-- JSで生成 -->
+                        </div>
                     </div>
                 </div>
 
                 <!-- メインエリア（ツール左 + キャンバス中央） -->
-                <div id="stage-main-area">
+                <div id="stage-main-area" class="paint-main-area">
                     <!-- 編集ツール（左側縦1列） -->
-                    <div id="stage-tools">
-                        <button class="stage-tool-btn active" data-tool="pen" title="配置">
+                    <div id="stage-tools" class="paint-tools">
+                        <button class="paint-tool-btn active" data-tool="pen" title="配置">
                             <svg viewBox="0 0 24 24" fill="currentColor">
                                 <path
                                     d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
                             </svg>
                         </button>
-                        <button class="stage-tool-btn" data-tool="eraser" title="消しゴム">
+                        <button class="paint-tool-btn" data-tool="eraser" title="消しゴム">
                             <svg viewBox="0 0 24 24" fill="currentColor">
                                 <path
                                     d="M16.24 3.56l4.95 4.94c.78.79.78 2.05 0 2.84L12 20.53a4.008 4.008 0 01-5.66 0L2.81 17c-.78-.79-.78-2.05 0-2.84l10.6-10.6c.79-.78 2.05-.78 2.83 0zM4.22 15.58l3.54 3.53c.78.79 2.04.79 2.83 0l3.53-3.53-4.95-4.95-4.95 4.95z" />
                             </svg>
                         </button>
-                        <button class="stage-tool-btn" data-tool="fill" title="塗りつぶし">
+                        <button class="paint-tool-btn" data-tool="fill" title="塗りつぶし">
                             <svg viewBox="0 0 24 24" fill="currentColor">
                                 <path
                                     d="M16.56 8.94L7.62 0 6.21 1.41l2.38 2.38-5.15 5.15c-.59.59-.59 1.54 0 2.12l5.5 5.5c.29.29.68.44 1.06.44s.77-.15 1.06-.44l5.5-5.5c.59-.58.59-1.53 0-2.12zM5.21 10L10 5.21 14.79 10H5.21zM19 11.5s-2 2.17-2 3.5c0 1.1.9 2 2 2s2-.9 2-2c0-1.33-2-3.5-2-3.5z" />
                             </svg>
                         </button>
-                        <button class="stage-tool-btn" data-tool="eyedropper" title="スポイト">
+                        <button class="paint-tool-btn" data-tool="eyedropper" title="スポイト">
                             <svg viewBox="0 0 24 24" fill="currentColor">
                                 <path
                                     d="M20.71 5.63l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-3.12 3.12-1.93-1.91-1.41 1.41 1.42 1.42L3 16.25V21h4.75l8.92-8.92 1.42 1.42 1.41-1.41-1.92-1.92 3.12-3.12c.4-.4.4-1.03.01-1.42zM6.92 19L5 17.08l8.06-8.06 1.92 1.92L6.92 19z" />
                             </svg>
                         </button>
-                        <button class="stage-tool-btn" data-tool="undo" title="取り消し">
+                        <button class="paint-tool-btn" data-tool="undo" title="取り消し">
                             <svg viewBox="0 0 24 24" fill="currentColor">
                                 <path
                                     d="M12.5 8c-2.65 0-5.05 1.04-6.82 2.75L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z" />
                             </svg>
                         </button>
+                        <hr class="tool-divider">
+                        <button class="paint-tool-btn" data-tool="copy" title="コピー">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path
+                                    d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z" />
+                            </svg>
+                        </button>
+                        <button class="paint-tool-btn" data-tool="paste" title="ペースト">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path
+                                    d="M19 2h-4.18C14.4.84 13.3 0 12 0c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm7 18H5V4h2v3h10V4h2v16z" />
+                            </svg>
+                        </button>
+                        <button class="paint-tool-btn flip-v-btn" data-tool="flip-v" title="上下反転">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path
+                                    d="M15 21h2v-2h-2v2zm4-12h2V7h-2v2zM3 5v14c0 1.1.9 2 2 2h4v-2H5V5h4V3H5c-1.1 0-2 .9-2 2zm16-2v2h2c0-1.1-.9-2-2-2zm-8 20h2V1h-2v22zm8-6h2v-2h-2v2zM15 5h2V3h-2v2zm4 8h2v-2h-2v2zm0 8c1.1 0 2-.9 2-2h-2v2z" />
+                            </svg>
+                        </button>
+                        <button class="paint-tool-btn" data-tool="flip-h" title="左右反転">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path
+                                    d="M15 21h2v-2h-2v2zm4-12h2V7h-2v2zM3 5v14c0 1.1.9 2 2 2h4v-2H5V5h4V3H5c-1.1 0-2 .9-2 2zm16-2v2h2c0-1.1-.9-2-2-2zm-8 20h2V1h-2v22zm8-6h2v-2h-2v2zM15 5h2V3h-2v2zm4 8h2v-2h-2v2zm0 8c1.1 0 2-.9 2-2h-2v2z" />
+                            </svg>
+                        </button>
                     </div>
 
-                    <!-- ステージキャンバス -->
+                    <!-- キャンバスコンテナ（BG/FGタブ + キャンバス） -->
                     <div id="stage-canvas-container">
                         <!-- レイヤー切替（BG/FG テキスト表示） -->
                         <div id="layer-toggle">
                             <span class="layer-label active" data-layer="bg">BG</span>
                             <span class="layer-label" data-layer="fg">FG</span>
                         </div>
-                        <canvas id="stage-canvas"></canvas>
+                        <canvas id="stage-canvas" class="paint-canvas"></canvas>
                     </div>
                 </div>
+            </div>
+        </div>
 
-                <!-- タイルテンプレート（下部、2行固定） -->
-                <div id="tile-template-palette">
-                    <div id="tile-template-list">
-                        <!-- JSで生成 -->
-                    </div>
-                    <button id="add-tile-btn" title="タイル追加">+</button>
-                </div>
+        <!-- 設定パネル（初期非表示） -->
+        <div id="tile-config-panel" class="hidden">
+            <div class="config-panel-header">
+                <span id="config-panel-title">プレイヤー設定</span>
+                <button id="config-close-btn">×</button>
+            </div>
+            <div class="config-panel-body" id="config-panel-content">
+                <!-- JSで動的生成 -->
             </div>
         </div>
 
