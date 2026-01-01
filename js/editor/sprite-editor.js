@@ -94,50 +94,79 @@ const SpriteEditor = {
             const div = document.createElement('div');
             div.className = 'palette-color' + (index === this.selectedColor ? ' selected' : '');
             div.style.backgroundColor = color;
-
-            // 長押しで削除（スプライトと同じ）
-            let longPressTimer;
-            let isLongPress = false;
-
-            const startLongPress = (e) => {
-                e.preventDefault();
-                isLongPress = false;
-                longPressTimer = setTimeout(() => {
-                    isLongPress = true;
-                    this.deleteColor(index);
-                }, 800);
-            };
-
-            const cancelLongPress = () => {
-                clearTimeout(longPressTimer);
-            };
-
-            div.addEventListener('mousedown', startLongPress);
-            div.addEventListener('mouseup', cancelLongPress);
-            div.addEventListener('mouseleave', cancelLongPress);
-            div.addEventListener('touchstart', startLongPress, { passive: false });
-            div.addEventListener('touchend', cancelLongPress);
-            div.addEventListener('touchmove', cancelLongPress);
-
-            // ダブルタップで編集
-            let lastTapTime = 0;
-            div.addEventListener('click', (e) => {
-                if (isLongPress) return;
-
-                const now = Date.now();
-                if (now - lastTapTime < 300) {
-                    // ダブルタップ → 編集
-                    this.editColor(index);
-                    lastTapTime = 0;
-                } else {
-                    // シングルタップ → 選択
-                    this.selectColor(index);
-                    lastTapTime = now;
-                }
-            });
-
+            div.dataset.index = index;
             container.appendChild(div);
         });
+
+        // イベント委譲（コンテナに1つだけイベントを設定）
+        container.onmousedown = container.ontouchstart = null;
+
+        let longPressTimer = null;
+        let isLongPress = false;
+        let lastTapTime = 0;
+        let startX = 0;
+        let startY = 0;
+
+        const handleStart = (e) => {
+            const target = e.target.closest('.palette-color');
+            if (!target) return;
+
+            const touch = e.touches ? e.touches[0] : e;
+            startX = touch.clientX;
+            startY = touch.clientY;
+            isLongPress = false;
+
+            const index = parseInt(target.dataset.index);
+            longPressTimer = setTimeout(() => {
+                isLongPress = true;
+                this.deleteColor(index);
+            }, 800);
+        };
+
+        const handleMove = (e) => {
+            if (!longPressTimer) return;
+            const touch = e.touches ? e.touches[0] : e;
+            const dx = Math.abs(touch.clientX - startX);
+            const dy = Math.abs(touch.clientY - startY);
+            if (dx > 10 || dy > 10) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+            }
+        };
+
+        const handleEnd = () => {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+        };
+
+        const handleClick = (e) => {
+            if (isLongPress) {
+                isLongPress = false;
+                return;
+            }
+            const target = e.target.closest('.palette-color');
+            if (!target) return;
+
+            const index = parseInt(target.dataset.index);
+            const now = Date.now();
+
+            if (now - lastTapTime < 300) {
+                this.editColor(index);
+                lastTapTime = 0;
+            } else {
+                this.selectColor(index);
+                lastTapTime = now;
+            }
+        };
+
+        container.addEventListener('mousedown', handleStart);
+        container.addEventListener('touchstart', handleStart, { passive: true });
+        container.addEventListener('mousemove', handleMove);
+        container.addEventListener('touchmove', handleMove, { passive: true });
+        container.addEventListener('mouseup', handleEnd);
+        container.addEventListener('touchend', handleEnd);
+        container.addEventListener('mouseleave', handleEnd);
+        container.addEventListener('click', handleClick);
 
         // 追加ボタンのイベント設定
         const addBtn = document.getElementById('add-color-btn');
@@ -152,10 +181,13 @@ const SpriteEditor = {
         this.initColorPalette();
     },
 
-    // 色を削除
+    // 色を削除（確認あり）
     deleteColor(index) {
         if (App.nesPalette.length <= 1) {
             alert('最低1色は必要です');
+            return;
+        }
+        if (!confirm('この色を削除しますか？')) {
             return;
         }
         App.nesPalette.splice(index, 1);
