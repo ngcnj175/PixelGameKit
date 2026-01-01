@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/svg+xml" href="assets/icons/icon-192.svg">
     <link rel="apple-touch-icon" href="assets/icons/icon-192.svg">
-    <title>PixelGameKit v1.4.0</title>
+    <title>PixelGameKit v1.4.1</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 
@@ -177,20 +177,23 @@
 
                     <!-- ピクセルキャンバス -->
                     <div id="paint-canvas-container">
-                        <!-- スプライトギャラリー（キャンバス上部） -->
+                        <!-- スプライトギャラリー（キャンバス上部・1行・左端追加ボタン固定） -->
                         <div id="sprite-gallery">
+                            <button id="add-sprite-btn">+</button>
                             <div id="sprite-list">
                                 <!-- JSで生成 -->
                             </div>
-                            <button id="add-sprite-btn">+</button>
                         </div>
                         <canvas id="paint-canvas"></canvas>
                     </div>
                 </div>
 
-                <!-- カラーパレット（下部、2行） -->
+                <!-- カラーパレット（下部・1行・左端追加ボタン固定） -->
                 <div id="color-palette">
-                    <!-- JSで生成 -->
+                    <button id="add-color-btn">+</button>
+                    <div id="color-list">
+                        <!-- JSで生成 -->
+                    </div>
                 </div>
             </div>
         </div>

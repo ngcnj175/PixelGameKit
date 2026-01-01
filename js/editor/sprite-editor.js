@@ -82,7 +82,7 @@ const SpriteEditor = {
 
     // ========== カラーパレット ==========
     initColorPalette() {
-        const container = document.getElementById('color-palette');
+        const container = document.getElementById('color-list');
         if (!container) return;
 
         container.innerHTML = '';
@@ -361,7 +361,8 @@ const SpriteEditor = {
         if (!sprite) return;
 
         const palette = App.nesPalette;
-        const bgColor = palette[0];
+        // 背景色: 薄グレー
+        const bgColor = '#e8e8e8';
 
         this.ctx.fillStyle = bgColor;
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
@@ -376,8 +377,8 @@ const SpriteEditor = {
             }
         }
 
-        // グリッド線（スカイブルー）
-        this.ctx.strokeStyle = 'rgba(135, 206, 235, 0.6)';
+        // グリッド線（白）
+        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
         this.ctx.lineWidth = 1;
         for (let i = 1; i < 16; i++) {
             // 縦線
@@ -399,7 +400,8 @@ const SpriteEditor = {
         const ctx = canvas.getContext('2d');
         const palette = App.nesPalette;
 
-        canvas.style.backgroundColor = palette[0];
+        // 背景色: 薄グレー
+        canvas.style.backgroundColor = '#e8e8e8';
         ctx.clearRect(0, 0, 16, 16);
 
         for (let y = 0; y < 16; y++) {
