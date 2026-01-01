@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/svg+xml" href="assets/icons/icon-192.svg">
     <link rel="apple-touch-icon" href="assets/icons/icon-192.svg">
-    <title>PixelGameKit v1.5.1</title>
+    <title>PixelGameKit v1.5.2</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 
@@ -284,6 +284,16 @@
                             <span class="layer-label" data-layer="fg">FG</span>
                         </div>
                         <canvas id="stage-canvas" class="paint-canvas"></canvas>
+                    </div>
+                </div>
+
+                <!-- タイルエリア（追加ボタン左固定 + スクロール可能リスト） -->
+                <div id="tile-area" class="gallery-row">
+                    <button id="add-tile-btn" class="gallery-add-btn">+</button>
+                    <div id="tile-scroll-container" class="gallery-scroll">
+                        <div id="tile-list">
+                            <!-- JSで生成 -->
+                        </div>
                     </div>
                 </div>
             </div>
