@@ -181,13 +181,17 @@ const SpriteEditor = {
         this.initColorPalette();
     },
 
-    // 色を削除（確認あり）
+    // 色を削除（確認あり、重複防止フラグ付き）
     deleteColor(index) {
+        if (this._isDeleting) return;
         if (App.nesPalette.length <= 1) {
             alert('最低1色は必要です');
             return;
         }
-        if (!confirm('この色を削除しますか？')) {
+        this._isDeleting = true;
+        const doDelete = confirm('この色を削除しますか？');
+        this._isDeleting = false;
+        if (!doDelete) {
             return;
         }
         App.nesPalette.splice(index, 1);
@@ -231,24 +235,26 @@ const SpriteEditor = {
         overlay.appendChild(modal);
         document.body.appendChild(overlay);
 
-        // すぐにカラーピッカーを開く
-        setTimeout(() => input.click(), 100);
+        const closeModal = () => {
+            if (document.body.contains(overlay)) {
+                document.body.removeChild(overlay);
+            }
+        };
 
         okBtn.addEventListener('click', () => {
-            App.nesPalette[index] = input.value;
+            const newColor = input.value;
+            App.nesPalette[index] = newColor;
             this.initColorPalette();
             this.render();
             this.initSpriteGallery();
-            document.body.removeChild(overlay);
+            closeModal();
         });
 
-        cancelBtn.addEventListener('click', () => {
-            document.body.removeChild(overlay);
-        });
+        cancelBtn.addEventListener('click', closeModal);
 
         overlay.addEventListener('click', (e) => {
             if (e.target === overlay) {
-                document.body.removeChild(overlay);
+                closeModal();
             }
         });
     },
