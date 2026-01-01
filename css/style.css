@@ -1042,25 +1042,7 @@ body {
     border-radius: 2px;
 }
 
-#add-tile-btn {
-    flex-shrink: 0;
-    width: 44px;
-    height: 44px;
-    background: transparent;
-    border: 2px dashed var(--border-color);
-    border-radius: 0;
-    color: var(--text-dark);
-    font-size: 24px;
-    font-weight: bold;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-#add-tile-btn:active {
-    background: rgba(0, 0, 0, 0.05);
-}
+/* #add-tile-btn は .gallery-add-btn のスタイルを使用 */
 
 /* ========================================
    サウンド画面

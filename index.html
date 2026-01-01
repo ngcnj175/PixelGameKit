@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/svg+xml" href="assets/icons/icon-192.svg">
     <link rel="apple-touch-icon" href="assets/icons/icon-192.svg">
-    <title>PixelGameKit v1.5.3</title>
+    <title>PixelGameKit v1.5.4</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 
@@ -204,7 +204,7 @@
         <!-- ========== ステージ画面 ========== -->
         <div id="stage-screen" class="screen">
             <div class="screen-title">STAGE</div>
-            <div id="stage-content-wrapper" class="paint-content-wrapper">
+            <div id="stage-content-wrapper">
                 <!-- スプライトエリア（追加ボタン左固定 + スクロール可能リスト） -->
                 <div id="stage-sprite-area" class="gallery-row">
                     <button id="add-stage-sprite-btn" class="gallery-add-btn">+</button>
@@ -216,9 +216,9 @@
                 </div>
 
                 <!-- メインエリア（ツール左 + キャンバス中央） -->
-                <div id="stage-main-area" class="paint-main-area">
+                <div id="stage-main-area">
                     <!-- 編集ツール（左側縦1列） -->
-                    <div id="stage-tools" class="paint-tools">
+                    <div id="stage-tools">
                         <button class="paint-tool-btn active" data-tool="pen" title="配置">
                             <svg viewBox="0 0 24 24" fill="currentColor">
                                 <path
@@ -276,14 +276,14 @@
                         </button>
                     </div>
 
-                    <!-- キャンバスコンテナ（BG/FGタブ + キャンバス） -->
-                    <div id="stage-canvas-container">
+                    <!-- キャンバスコンテナ -->
+                    <div id="stage-canvas-wrapper">
                         <!-- レイヤー切替（BG/FG テキスト表示） -->
                         <div id="layer-toggle">
                             <span class="layer-label active" data-layer="bg">BG</span>
                             <span class="layer-label" data-layer="fg">FG</span>
                         </div>
-                        <canvas id="stage-canvas" class="paint-canvas"></canvas>
+                        <canvas id="stage-canvas"></canvas>
                     </div>
                 </div>
 
