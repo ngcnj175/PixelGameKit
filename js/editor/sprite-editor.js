@@ -87,7 +87,8 @@ const SpriteEditor = {
 
         container.innerHTML = '';
 
-        const palette = App.nesPalette.slice(0, 16);
+        // 64色全て表示
+        const palette = App.nesPalette;
 
         palette.forEach((color, index) => {
             const div = document.createElement('div');
@@ -124,6 +125,36 @@ const SpriteEditor = {
 
             container.appendChild(div);
         });
+
+        // 追加ボタンのイベント設定
+        const addBtn = document.getElementById('add-color-btn');
+        if (addBtn) {
+            addBtn.onclick = () => this.addNewColor();
+        }
+    },
+
+    // 新しい色を追加
+    addNewColor() {
+        const input = document.createElement('input');
+        input.type = 'color';
+        input.value = '#000000';
+        input.style.position = 'absolute';
+        input.style.opacity = '0';
+        document.body.appendChild(input);
+
+        input.addEventListener('change', () => {
+            App.nesPalette.push(input.value);
+            this.initColorPalette();
+            document.body.removeChild(input);
+        });
+
+        input.addEventListener('blur', () => {
+            if (document.body.contains(input)) {
+                document.body.removeChild(input);
+            }
+        });
+
+        input.click();
     },
 
     editColor(index) {
