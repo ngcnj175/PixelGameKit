@@ -376,26 +376,29 @@ body {
     background: var(--bg-device);
 }
 
+/* ピクセル画面コンテンツラッパー */
 #paint-content-wrapper {
     display: flex;
     flex-direction: column;
-    height: 100%;
+    flex: 1;
+    overflow: hidden;
 }
 
-/* スプライトギャラリー（1行・左端追加ボタン固定） */
-#sprite-gallery {
+/* ギャラリー行共通（スプライト・カラーパレット） */
+.gallery-row {
+    flex-shrink: 0;
     display: flex;
     align-items: center;
-    gap: 0;
-    background: transparent;
-    width: 100%;
-    max-width: 320px;
+    background: rgba(0, 0, 0, 0.05);
+    padding: 6px 0;
 }
 
-#add-sprite-btn {
+/* 追加ボタン（左固定、ツールと縦軸揃え=48px幅） */
+.gallery-add-btn {
     flex-shrink: 0;
-    width: 40px;
-    height: 40px;
+    width: 48px;
+    min-width: 48px;
+    height: 44px;
     border: 2px dashed var(--border-color);
     border-radius: 0;
     background: transparent;
@@ -407,31 +410,39 @@ body {
     justify-content: center;
 }
 
+/* スクロールコンテナ（キャンバス幅固定=320px） */
+.gallery-scroll {
+    width: 320px;
+    max-width: calc(100% - 48px);
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* スプライトリスト */
 #sprite-list {
     display: flex;
     gap: 4px;
-    flex: 1;
-    overflow-x: auto;
-    padding: 4px;
-    -webkit-overflow-scrolling: touch;
+    padding: 4px 8px;
 }
 
 .sprite-item {
     flex-shrink: 0;
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
     background: var(--bg-screen);
     border: 2px solid var(--border-color);
     border-radius: 0;
     cursor: pointer;
     image-rendering: pixelated;
     overflow: hidden;
-    transition: border-color 0.15s ease;
+    transition: transform 0.15s ease, border-color 0.15s ease;
 }
 
 .sprite-item.selected {
     border-color: var(--color-dark);
-    border-width: 3px;
+    transform: scale(1.15);
+    z-index: 1;
 }
 
 .sprite-item.dragging {
@@ -444,36 +455,37 @@ body {
     image-rendering: pixelated;
 }
 
-/* メインエリア（ツール左 + キャンバス中央） */
+/* メインエリア（ツール左 + キャンバス右） */
 #paint-main-area {
     flex: 1;
     display: flex;
-    align-items: flex-end;
-    justify-content: center;
-    padding: 12px;
-    gap: 12px;
+    align-items: flex-start;
+    justify-content: flex-start;
+    padding: 0;
+    gap: 0;
     min-height: 0;
     overflow: hidden;
 }
 
-/* 編集ツール（左側縦1列、キャンバス高さに合わせる） */
+/* 編集ツール（左側縦1列、上端をキャンバス上端に揃える） */
 #paint-tools {
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
     gap: 4px;
     padding: 4px;
+    width: 48px;
+    min-width: 48px;
     overflow-y: auto;
     overflow-x: hidden;
-    height: 320px;
     max-height: 320px;
-    align-self: flex-end;
+    align-self: flex-start;
 }
 
 .paint-tool-btn {
     flex-shrink: 0;
-    width: 44px;
-    height: 44px;
+    width: 40px;
+    height: 40px;
     border: none;
     border-radius: 0;
     background: transparent;
@@ -518,21 +530,10 @@ body {
     transform: rotate(90deg);
 }
 
-/* キャンバスコンテナ（スプライトギャラリー + キャンバス縦並び） */
-#paint-canvas-container {
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    align-items: center;
-    flex: 1;
-    min-width: 0;
-    gap: 8px;
-}
-
 /* キャンバス */
 #paint-canvas {
     width: 320px;
-    max-width: 100%;
+    max-width: calc(100% - 48px);
     aspect-ratio: 1;
     flex-shrink: 0;
     /* 背景色: 薄グレー */
@@ -548,58 +549,32 @@ body {
     image-rendering: crisp-edges;
 }
 
-/* カラーパレット（1行・左端追加ボタン固定） */
-#color-palette {
-    display: flex;
-    align-items: center;
-    gap: 0;
-    padding: 8px;
-    padding-bottom: calc(8px + var(--safe-area-bottom));
-    background: rgba(0, 0, 0, 0.03);
-    border-top: 1px solid var(--border-color);
-    -webkit-touch-callout: none;
-    -webkit-user-select: none;
-    user-select: none;
-    touch-action: manipulation;
-}
-
-#add-color-btn {
-    flex-shrink: 0;
-    width: 40px;
-    height: 40px;
-    border: 2px dashed var(--border-color);
-    border-radius: 0;
-    background: transparent;
-    color: var(--color-medium);
-    font-size: 20px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
+/* カラーリスト */
 #color-list {
     display: flex;
     gap: 4px;
-    flex: 1;
-    overflow-x: auto;
-    padding: 4px;
-    -webkit-overflow-scrolling: touch;
+    padding: 4px 8px;
 }
 
 .palette-color {
     flex-shrink: 0;
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
     border: 2px solid var(--border-color);
     border-radius: 0;
     cursor: pointer;
-    transition: border-color 0.15s ease;
+    transition: transform 0.15s ease, border-color 0.15s ease;
 }
 
 .palette-color.selected {
     border-color: var(--color-dark);
-    border-width: 3px;
+    transform: scale(1.15);
+    z-index: 1;
+}
+
+/* カラーパレットエリア下部余白 */
+#color-area {
+    padding-bottom: calc(6px + var(--safe-area-bottom));
 }
 
 /* ========================================
