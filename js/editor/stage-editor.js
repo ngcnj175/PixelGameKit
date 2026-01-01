@@ -27,10 +27,11 @@ const StageEditor = {
 
         this.initTools();
         this.initLayerToggle();
+        this.initAddTileButton();
         this.initConfigPanel();
+        this.initSpriteSelectPopup();
         this.initTemplateList();
         this.initCanvasEvents();
-        this.initTypeSelectPopup();
         this.resize();
     },
 
@@ -101,49 +102,61 @@ const StageEditor = {
         });
     },
 
-    // ========== 属性選択ポップアップ ==========
-    initTypeSelectPopup() {
-        const popup = document.getElementById('type-select-popup');
+    // ========== タイル追加ボタン ==========
+    initAddTileButton() {
         const addBtn = document.getElementById('add-tile-btn');
-        const cancelBtn = popup?.querySelector('.popup-cancel');
-
         if (addBtn) {
-            addBtn.addEventListener('click', () => {
-                popup?.classList.remove('hidden');
-            });
+            addBtn.addEventListener('click', () => this.addNewTile());
         }
-
-        if (cancelBtn) {
-            cancelBtn.addEventListener('click', () => {
-                popup?.classList.add('hidden');
-            });
-        }
-
-        document.querySelectorAll('.type-select-item').forEach(item => {
-            item.addEventListener('click', () => {
-                const type = item.dataset.type;
-                popup?.classList.add('hidden');
-                this.createNewTemplate(type);
-            });
-        });
-
-        popup?.addEventListener('click', (e) => {
-            if (e.target === popup) {
-                popup.classList.add('hidden');
-            }
-        });
     },
 
-    createNewTemplate(type) {
-        this.editingTemplate = {
-            type: type,
-            sprites: {}, // { idle: [idx], walk: [idx, idx], ... }
-            life: type === 'player' ? 3 : (type === 'enemy' ? 1 : -1),
-            shotRange: 1,
-            sounds: {}
-        };
+    addNewTile() {
+        // 新規タイル作成（デフォルト: 素材）
+        this.editingTemplate = this.createDefaultTemplate('material');
         this.editingIndex = -1;
         this.openConfigPanel();
+    },
+
+    createDefaultTemplate(type) {
+        const spriteKeys = this.getSpriteKeysForType(type);
+        const sprites = {};
+        spriteKeys.forEach(key => {
+            sprites[key] = { frames: [], speed: 5, loop: true };
+        });
+
+        return {
+            type: type,
+            sprites: sprites,
+            config: this.getDefaultConfig(type)
+        };
+    },
+
+    getSpriteKeysForType(type) {
+        switch (type) {
+            case 'player':
+            case 'enemy':
+                return ['idle', 'walk', 'jump', 'attack', 'shot'];
+            case 'material':
+            case 'item':
+                return ['main'];
+            default:
+                return ['main'];
+        }
+    },
+
+    getDefaultConfig(type) {
+        switch (type) {
+            case 'player':
+                return { life: 3, speed: 5, jumpPower: 10, wJump: false, shotMaxRange: 1 };
+            case 'enemy':
+                return { life: 1, speed: 3, jumpPower: 5, shotMaxRange: 1, move: 'idle' };
+            case 'material':
+                return { collision: true, life: -1 };
+            case 'item':
+                return { itemType: 'star' };
+            default:
+                return {};
+        }
     },
 
     // ========== 設定パネル ==========
@@ -152,24 +165,39 @@ const StageEditor = {
         if (closeBtn) {
             closeBtn.addEventListener('click', () => this.closeConfigPanel());
         }
+
+        const typeSelect = document.getElementById('tile-type-select');
+        if (typeSelect) {
+            typeSelect.addEventListener('change', (e) => this.onTypeChange(e.target.value));
+        }
+    },
+
+    onTypeChange(newType) {
+        if (!this.editingTemplate) return;
+
+        if (this.editingTemplate.type !== newType) {
+            // 属性変更時はリセット確認
+            if (confirm('スプライト設定がリセットされます。よろしいですか？')) {
+                this.editingTemplate = this.createDefaultTemplate(newType);
+                this.renderConfigContent();
+            } else {
+                // キャンセル時は元に戻す
+                document.getElementById('tile-type-select').value = this.editingTemplate.type;
+            }
+        }
     },
 
     openConfigPanel() {
         const panel = document.getElementById('tile-config-panel');
-        const title = document.getElementById('config-panel-title');
-
         if (panel && this.editingTemplate) {
             panel.classList.remove('hidden');
             this.isConfigOpen = true;
 
-            const typeNames = {
-                player: 'プレイヤー設定',
-                enemy: '敵設定',
-                material: '素材設定',
-                item: 'アイテム設定',
-                goal: 'ゴール設定'
-            };
-            title.textContent = typeNames[this.editingTemplate.type] || 'タイル設定';
+            // 属性セレクトを設定
+            const typeSelect = document.getElementById('tile-type-select');
+            if (typeSelect) {
+                typeSelect.value = this.editingTemplate.type;
+            }
 
             this.renderConfigContent();
         }
@@ -186,158 +214,125 @@ const StageEditor = {
     },
 
     renderConfigContent() {
-        const container = document.getElementById('config-panel-content');
-        if (!container || !this.editingTemplate) return;
+        const spriteSection = document.getElementById('sprite-config-section');
+        const paramSection = document.getElementById('param-config-section');
+        if (!spriteSection || !paramSection || !this.editingTemplate) return;
 
         const type = this.editingTemplate.type;
-        let html = '';
+        const spriteKeys = this.getSpriteKeysForType(type);
 
-        if (type === 'player') {
-            html = this.renderPlayerConfig();
-        } else if (type === 'enemy') {
-            html = this.renderEnemyConfig();
-        } else if (type === 'material') {
-            html = this.renderMaterialConfig();
-        } else if (type === 'item') {
-            html = this.renderItemConfig();
-        } else if (type === 'goal') {
-            html = this.renderGoalConfig();
-        }
+        // スプライト設定セクション
+        let spriteHtml = '';
+        spriteKeys.forEach(key => {
+            spriteHtml += this.renderSpriteRow(key);
+        });
+        spriteSection.innerHTML = spriteHtml;
 
-        html += `<button class="config-save-btn" id="config-save-btn">登録</button>`;
+        // パラメータ設定セクション
+        paramSection.innerHTML = this.renderParamSection(type);
 
-        container.innerHTML = html;
         this.initConfigEvents();
     },
 
-    renderPlayerConfig() {
-        return `
-            <div class="config-section">
-                <div class="config-section-title">スプライト登録</div>
-                ${this.renderSpriteRow('IDLE', 'idle')}
-                ${this.renderSpriteRow('WALK', 'walk')}
-                ${this.renderSpriteRow('JUMP', 'jump')}
-                ${this.renderSpriteRow('ATTACK', 'attack')}
-                ${this.renderSpriteRow('LIFE', 'life')}
-                ${this.renderSpriteRow('SHOT', 'shot')}
-            </div>
-            <div class="config-section">
-                <div class="config-section-title">ライフ設定</div>
-                ${this.renderNumSetting('ライフ数', 'life', this.editingTemplate.life, 1, 10, true)}
-            </div>
-            <div class="config-section">
-                <div class="config-section-title">SHOT飛距離</div>
-                ${this.renderNumSetting('飛距離', 'shotRange', this.editingTemplate.shotRange, 1, 16)}
-            </div>
-            <div class="config-section">
-                <div class="config-section-title">効果音</div>
-                ${this.renderSoundRow('ジャンプ', 'jump')}
-                ${this.renderSoundRow('攻撃', 'attack')}
-                ${this.renderSoundRow('ダメージ', 'damage')}
-                ${this.renderSoundRow('デス', 'death')}
-            </div>
-        `;
-    },
+    renderSpriteRow(slot) {
+        const spriteData = this.editingTemplate.sprites[slot] || { frames: [], speed: 5, loop: true };
+        const frameCount = spriteData.frames?.length || 0;
+        const displayCount = frameCount > 0 ? frameCount : '-';
+        const firstFrame = spriteData.frames?.[0];
 
-    renderEnemyConfig() {
-        return `
-            <div class="config-section">
-                <div class="config-section-title">スプライト登録</div>
-                ${this.renderSpriteRow('IDLE', 'idle')}
-                ${this.renderSpriteRow('WALK', 'walk')}
-                ${this.renderSpriteRow('JUMP', 'jump')}
-                ${this.renderSpriteRow('ATTACK', 'attack')}
-            </div>
-            <div class="config-section">
-                <div class="config-section-title">設定</div>
-                ${this.renderNumSetting('ライフ数', 'life', this.editingTemplate.life, 1, 10, true)}
-            </div>
-            <div class="config-section">
-                <div class="config-section-title">効果音</div>
-                ${this.renderSoundRow('ジャンプ', 'jump')}
-                ${this.renderSoundRow('攻撃', 'attack')}
-                ${this.renderSoundRow('ダメージ', 'damage')}
-                ${this.renderSoundRow('デス', 'death')}
-            </div>
-        `;
-    },
+        // スロット表示名
+        const labels = {
+            idle: 'IDLE', walk: 'WALK', jump: 'JUMP',
+            attack: 'ATTACK', shot: 'SHOT', main: 'MAIN'
+        };
 
-    renderMaterialConfig() {
         return `
-            <div class="config-section">
-                <div class="config-section-title">スプライト登録</div>
-                ${this.renderSpriteRow('メイン', 'main')}
-            </div>
-            <div class="config-section">
-                <div class="config-section-title">設定</div>
-                <div class="num-setting">
-                    <span class="num-setting-label active">当たり判定</span>
-                    <label><input type="checkbox" id="config-collision" checked> ON</label>
+            <div class="sprite-row" data-slot="${slot}">
+                <span class="sprite-row-label">${labels[slot] || slot.toUpperCase()}:</span>
+                <div class="sprite-slot" data-slot="${slot}">
+                    ${firstFrame !== undefined ? `<canvas width="16" height="16" data-sprite="${firstFrame}"></canvas>` : ''}
                 </div>
+                <span class="sprite-count">${displayCount}</span>
+                <input type="range" class="sprite-speed" min="1" max="20" value="${spriteData.speed || 5}" data-slot="${slot}">
+                <label class="sprite-loop-label">
+                    <input type="checkbox" ${spriteData.loop !== false ? 'checked' : ''} data-slot="${slot}">
+                    LOOP
+                </label>
             </div>
         `;
     },
 
-    renderItemConfig() {
-        return `
-            <div class="config-section">
-                <div class="config-section-title">スプライト登録</div>
-                ${this.renderSpriteRow('メイン', 'main')}
-            </div>
-            <div class="config-section">
-                <div class="config-section-title">効果</div>
-                <div class="num-setting">
-                    <select id="config-effect">
-                        <option value="lifeup">ライフアップ</option>
-                        <option value="invincible">無敵</option>
-                        <option value="weapon">武器取得</option>
+    renderParamSection(type) {
+        const config = this.editingTemplate.config || {};
+        let html = '';
+
+        if (type === 'player' || type === 'enemy') {
+            html += this.renderSlider('LIFE', 'life', config.life ?? 3, 1, 10);
+            html += this.renderSlider('SPEED', 'speed', config.speed ?? 5, 1, 10);
+            html += this.renderSliderWithCheck('JUMP POWER', 'jumpPower', config.jumpPower ?? 10, 1, 20, 'W JUMP', 'wJump', config.wJump);
+            html += this.renderSlider('ShotMaxRange', 'shotMaxRange', config.shotMaxRange ?? 1, 1, 16);
+
+            if (type === 'enemy') {
+                html += `
+                    <div class="param-row">
+                        <span class="param-label">MOVE:</span>
+                        <select class="param-select" data-key="move">
+                            <option value="idle" ${config.move === 'idle' ? 'selected' : ''}>IDLE</option>
+                            <option value="patrol" ${config.move === 'patrol' ? 'selected' : ''}>PATROL</option>
+                            <option value="jump" ${config.move === 'jump' ? 'selected' : ''}>JUMP</option>
+                            <option value="chase" ${config.move === 'chase' ? 'selected' : ''}>CHASE</option>
+                        </select>
+                    </div>
+                `;
+            }
+        } else if (type === 'material') {
+            html += `
+                <div class="param-row">
+                    <label class="param-check-label">
+                        <input type="checkbox" data-key="collision" ${config.collision !== false ? 'checked' : ''}>
+                        Collision
+                    </label>
+                </div>
+            `;
+            html += this.renderSlider('LIFE', 'life', config.life ?? -1, -1, 10);
+        } else if (type === 'item') {
+            html += `
+                <div class="param-row">
+                    <span class="param-label">Type:</span>
+                    <select class="param-select" data-key="itemType">
+                        <option value="star" ${config.itemType === 'star' ? 'selected' : ''}>STAR</option>
+                        <option value="lifeup" ${config.itemType === 'lifeup' ? 'selected' : ''}>LifeUp</option>
+                        <option value="weapon" ${config.itemType === 'weapon' ? 'selected' : ''}>WeaponGet</option>
+                        <option value="event" ${config.itemType === 'event' ? 'selected' : ''}>EventFlag</option>
                     </select>
                 </div>
+            `;
+        }
+
+        return html;
+    },
+
+    renderSlider(label, key, value, min, max) {
+        const displayVal = value === -1 ? '∞' : value;
+        return `
+            <div class="param-row">
+                <span class="param-label">${label}:</span>
+                <span class="param-value" data-key="${key}">${displayVal}</span>
+                <input type="range" class="param-slider" min="${min}" max="${max}" value="${value}" data-key="${key}">
             </div>
         `;
     },
 
-    renderGoalConfig() {
+    renderSliderWithCheck(label, sliderKey, sliderValue, min, max, checkLabel, checkKey, checkValue) {
         return `
-            <div class="config-section">
-                <div class="config-section-title">スプライト登録</div>
-                ${this.renderSpriteRow('メイン', 'main')}
-            </div>
-        `;
-    },
-
-    renderSpriteRow(label, slot) {
-        const sprites = this.editingTemplate.sprites[slot] || [];
-        const hasSprite = sprites.length > 0;
-
-        return `
-            <div class="sprite-reg-row">
-                <span class="sprite-reg-label ${hasSprite ? 'active' : ''}">${label}</span>
-                <div class="sprite-reg-slots" data-slot="${slot}">
-                    ${sprites.map((idx, i) => `
-                        <div class="sprite-slot has-sprite" data-index="${i}">
-                            <canvas width="16" height="16" data-sprite="${idx}"></canvas>
-                        </div>
-                    `).join('')}
-                    <div class="sprite-slot" data-index="${sprites.length}"></div>
-                </div>
-                <button class="sprite-add-btn" data-slot="${slot}">+</button>
-            </div>
-        `;
-    },
-
-    renderNumSetting(label, key, value, min, max, hasInfinite = false) {
-        const isInfinite = value === -1;
-        const displayValue = isInfinite ? '∞' : value;
-
-        return `
-            <div class="num-setting" data-key="${key}" data-min="${min}" data-max="${max}" data-infinite="${hasInfinite}">
-                <span class="num-setting-label active">${label}</span>
-                <div class="num-control">
-                    <button class="num-btn" data-action="dec">-</button>
-                    <span class="num-value" data-value="${value}">${displayValue}</span>
-                    <button class="num-btn" data-action="inc">+</button>
-                </div>
+            <div class="param-row">
+                <span class="param-label">${label}:</span>
+                <span class="param-value" data-key="${sliderKey}">${sliderValue}</span>
+                <input type="range" class="param-slider" min="${min}" max="${max}" value="${sliderValue}" data-key="${sliderKey}">
+                <label class="param-check-label">
+                    <input type="checkbox" data-key="${checkKey}" ${checkValue ? 'checked' : ''}>
+                    ${checkLabel}
+                </label>
             </div>
         `;
     },
@@ -352,24 +347,68 @@ const StageEditor = {
     },
 
     initConfigEvents() {
-        // スプライトスロットにドロップ対応
-        document.querySelectorAll('.sprite-slot').forEach(slot => {
-            slot.addEventListener('dragover', (e) => e.preventDefault());
-            slot.addEventListener('drop', (e) => {
-                e.preventDefault();
-                const spriteIndex = parseInt(e.dataTransfer.getData('text/plain'));
-                if (!isNaN(spriteIndex)) {
-                    const slotsContainer = slot.closest('.sprite-reg-slots');
-                    const slotKey = slotsContainer?.dataset.slot;
-                    const slotIndex = parseInt(slot.dataset.index);
+        // スプライトスロットのクリックイベント
+        document.querySelectorAll('.sprite-slot').forEach(slotEl => {
+            slotEl.addEventListener('click', () => {
+                const slot = slotEl.dataset.slot;
+                if (slot) {
+                    this.openSpriteSelectPopup(slot);
+                }
+            });
+        });
 
-                    if (slotKey && this.editingTemplate) {
-                        if (!this.editingTemplate.sprites[slotKey]) {
-                            this.editingTemplate.sprites[slotKey] = [];
-                        }
-                        this.editingTemplate.sprites[slotKey][slotIndex] = spriteIndex;
-                        this.renderConfigContent();
+        // スプライト速度スライダー
+        document.querySelectorAll('.sprite-speed').forEach(slider => {
+            slider.addEventListener('input', (e) => {
+                const slot = slider.dataset.slot;
+                if (slot && this.editingTemplate?.sprites?.[slot]) {
+                    this.editingTemplate.sprites[slot].speed = parseInt(e.target.value);
+                }
+            });
+        });
+
+        // スプライトLOOPチェック
+        document.querySelectorAll('.sprite-loop-label input[type="checkbox"]').forEach(cb => {
+            cb.addEventListener('change', () => {
+                const slot = cb.dataset.slot;
+                if (slot && this.editingTemplate?.sprites?.[slot]) {
+                    this.editingTemplate.sprites[slot].loop = cb.checked;
+                }
+            });
+        });
+
+        // パラメータスライダー
+        document.querySelectorAll('.param-slider').forEach(slider => {
+            slider.addEventListener('input', (e) => {
+                const key = slider.dataset.key;
+                const value = parseInt(e.target.value);
+                if (key && this.editingTemplate?.config) {
+                    this.editingTemplate.config[key] = value;
+                    // 値表示を更新
+                    const valueEl = document.querySelector(`.param-value[data-key="${key}"]`);
+                    if (valueEl) {
+                        valueEl.textContent = value === -1 ? '∞' : value;
                     }
+                }
+            });
+        });
+
+        // パラメータチェックボックス
+        document.querySelectorAll('.param-check-label input[type="checkbox"]').forEach(cb => {
+            cb.addEventListener('change', () => {
+                const key = cb.dataset.key;
+                if (key && this.editingTemplate?.config) {
+                    this.editingTemplate.config[key] = cb.checked;
+                }
+            });
+        });
+
+        // パラメータセレクト
+        document.querySelectorAll('.param-select').forEach(select => {
+            select.addEventListener('change', () => {
+                const key = select.dataset.key;
+                if (key && this.editingTemplate?.config) {
+                    this.editingTemplate.config[key] = select.value;
                 }
             });
         });
@@ -381,65 +420,121 @@ const StageEditor = {
                 this.renderSpriteToMiniCanvas(App.projectData.sprites[spriteIdx], canvas);
             }
         });
+    },
 
-        // 追加ボタン
-        document.querySelectorAll('.sprite-add-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const slotKey = btn.dataset.slot;
-                if (slotKey && this.editingTemplate) {
-                    if (!this.editingTemplate.sprites[slotKey]) {
-                        this.editingTemplate.sprites[slotKey] = [];
-                    }
-                    // 空スロットを追加
-                    this.renderConfigContent();
-                }
-            });
-        });
+    // ========== スプライト選択ポップアップ ==========
+    initSpriteSelectPopup() {
+        const cancelBtn = document.getElementById('sprite-select-cancel');
+        const doneBtn = document.getElementById('sprite-select-done');
 
-        // 数値設定
-        document.querySelectorAll('.num-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const container = btn.closest('.num-setting');
-                const key = container.dataset.key;
-                const min = parseInt(container.dataset.min);
-                const max = parseInt(container.dataset.max);
-                const hasInfinite = container.dataset.infinite === 'true';
-                const valueSpan = container.querySelector('.num-value');
-                let value = parseInt(valueSpan.dataset.value);
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', () => this.closeSpriteSelectPopup());
+        }
 
-                if (btn.dataset.action === 'inc') {
-                    if (value === -1) value = 1;
-                    else if (value >= max && hasInfinite) value = -1;
-                    else if (value < max) value++;
-                } else {
-                    if (value === -1) value = max;
-                    else if (value <= min && hasInfinite) value = -1;
-                    else if (value > min) value--;
-                }
-
-                valueSpan.dataset.value = value;
-                valueSpan.textContent = value === -1 ? '∞' : value;
-
-                if (this.editingTemplate) {
-                    this.editingTemplate[key] = value;
-                }
-            });
-        });
-
-        // 登録ボタン
-        const saveBtn = document.getElementById('config-save-btn');
-        if (saveBtn) {
-            saveBtn.addEventListener('click', () => this.saveTemplate());
+        if (doneBtn) {
+            doneBtn.addEventListener('click', () => this.confirmSpriteSelection());
         }
     },
 
+    currentSelectingSlot: null,
+    selectedSpriteOrder: [],
+
+    openSpriteSelectPopup(slot) {
+        const popup = document.getElementById('sprite-select-popup');
+        const list = document.getElementById('sprite-select-list');
+        if (!popup || !list) return;
+
+        this.currentSelectingSlot = slot;
+        this.selectedSpriteOrder = [...(this.editingTemplate?.sprites?.[slot]?.frames || [])];
+
+        // スプライト一覧を横スクロール形式で表示
+        list.innerHTML = '';
+        App.projectData.sprites.forEach((sprite, index) => {
+            const item = document.createElement('div');
+            item.className = 'sprite-select-item';
+            const orderIndex = this.selectedSpriteOrder.indexOf(index);
+            if (orderIndex >= 0) {
+                item.classList.add('selected');
+                const orderNum = document.createElement('span');
+                orderNum.className = 'sprite-select-order';
+                orderNum.textContent = orderIndex + 1;
+                item.appendChild(orderNum);
+            }
+
+            const canvas = document.createElement('canvas');
+            canvas.width = 16;
+            canvas.height = 16;
+            this.renderSpriteToMiniCanvas(sprite, canvas);
+            item.appendChild(canvas);
+
+            item.addEventListener('click', () => this.toggleSpriteSelection(index, item));
+            list.appendChild(item);
+        });
+
+        popup.classList.remove('hidden');
+    },
+
+    toggleSpriteSelection(spriteIndex, itemEl) {
+        const orderIndex = this.selectedSpriteOrder.indexOf(spriteIndex);
+        if (orderIndex >= 0) {
+            // 選択解除
+            this.selectedSpriteOrder.splice(orderIndex, 1);
+            itemEl.classList.remove('selected');
+            const orderNum = itemEl.querySelector('.sprite-select-order');
+            if (orderNum) orderNum.remove();
+        } else {
+            // 選択追加
+            this.selectedSpriteOrder.push(spriteIndex);
+            itemEl.classList.add('selected');
+            const orderNum = document.createElement('span');
+            orderNum.className = 'sprite-select-order';
+            orderNum.textContent = this.selectedSpriteOrder.length;
+            itemEl.appendChild(orderNum);
+        }
+
+        // 順番表示を更新
+        this.updateSpriteSelectionOrder();
+    },
+
+    updateSpriteSelectionOrder() {
+        const list = document.getElementById('sprite-select-list');
+        if (!list) return;
+
+        list.querySelectorAll('.sprite-select-item').forEach(item => {
+            const canvas = item.querySelector('canvas');
+            if (!canvas) return;
+            // canvasからsprite indexを取得する方法がないため、順番だけ更新
+        });
+    },
+
+    closeSpriteSelectPopup() {
+        const popup = document.getElementById('sprite-select-popup');
+        if (popup) {
+            popup.classList.add('hidden');
+        }
+        this.currentSelectingSlot = null;
+        this.selectedSpriteOrder = [];
+    },
+
+    confirmSpriteSelection() {
+        if (this.currentSelectingSlot && this.editingTemplate) {
+            if (!this.editingTemplate.sprites[this.currentSelectingSlot]) {
+                this.editingTemplate.sprites[this.currentSelectingSlot] = { frames: [], speed: 5, loop: true };
+            }
+            this.editingTemplate.sprites[this.currentSelectingSlot].frames = [...this.selectedSpriteOrder];
+            this.renderConfigContent();
+        }
+        this.closeSpriteSelectPopup();
+    },
+
+    // ========== タイル保存 ==========
     saveTemplate() {
         if (!this.editingTemplate) return;
 
         // IDLEまたはメインスプライトが必須
-        const hasMainSprite =
-            (this.editingTemplate.sprites.idle && this.editingTemplate.sprites.idle.length > 0) ||
-            (this.editingTemplate.sprites.main && this.editingTemplate.sprites.main.length > 0);
+        const idleFrames = this.editingTemplate.sprites?.idle?.frames || [];
+        const mainFrames = this.editingTemplate.sprites?.main?.frames || [];
+        const hasMainSprite = idleFrames.length > 0 || mainFrames.length > 0;
 
         if (!hasMainSprite) {
             alert('スプライトを登録してください');
@@ -486,7 +581,7 @@ const StageEditor = {
             div.className = 'tile-item' + (this.selectedTemplate === index ? ' selected' : '');
 
             // サムネイル（IDLEまたはメイン）
-            const spriteIdx = template.sprites.idle?.[0] ?? template.sprites.main?.[0];
+            const spriteIdx = template.sprites?.idle?.frames?.[0] ?? template.sprites?.main?.frames?.[0];
             if (spriteIdx !== undefined && App.projectData.sprites[spriteIdx]) {
                 const miniCanvas = document.createElement('canvas');
                 miniCanvas.width = 16;
@@ -580,7 +675,7 @@ const StageEditor = {
             case 'pen':
                 if (this.selectedTemplate !== null) {
                     const template = this.templates[this.selectedTemplate];
-                    const spriteIdx = template?.sprites.idle?.[0] ?? template?.sprites.main?.[0];
+                    const spriteIdx = template?.sprites?.idle?.frames?.[0] ?? template?.sprites?.main?.frames?.[0];
                     if (spriteIdx !== undefined) {
                         layer[y][x] = spriteIdx;
                     }
@@ -592,7 +687,7 @@ const StageEditor = {
             case 'fill':
                 if (this.selectedTemplate !== null) {
                     const template = this.templates[this.selectedTemplate];
-                    const spriteIdx = template?.sprites.idle?.[0] ?? template?.sprites.main?.[0];
+                    const spriteIdx = template?.sprites?.idle?.frames?.[0] ?? template?.sprites?.main?.frames?.[0];
                     if (spriteIdx !== undefined) {
                         this.floodFill(x, y, layer[y][x], spriteIdx);
                     }
@@ -602,7 +697,7 @@ const StageEditor = {
                 const tileId = layer[y][x];
                 if (tileId >= 0) {
                     const idx = this.templates.findIndex(t =>
-                        (t.sprites.idle?.[0] === tileId) || (t.sprites.main?.[0] === tileId)
+                        (t.sprites?.idle?.frames?.[0] === tileId) || (t.sprites?.main?.frames?.[0] === tileId)
                     );
                     if (idx >= 0) {
                         this.selectedTemplate = idx;

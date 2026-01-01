@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/svg+xml" href="assets/icons/icon-192.svg">
     <link rel="apple-touch-icon" href="assets/icons/icon-192.svg">
-    <title>PixelGameKit v1.5.6</title>
+    <title>PixelGameKit v1.6.0</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 
@@ -285,17 +285,53 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- タイル設定パネル（インライン展開） -->
+                <div id="tile-config-panel" class="hidden">
+                    <!-- 属性選択 -->
+                    <div class="config-row">
+                        <label>属性:</label>
+                        <select id="tile-type-select">
+                            <option value="player">プレイヤー</option>
+                            <option value="enemy">敵</option>
+                            <option value="material" selected>素材</option>
+                            <option value="item">アイテム</option>
+                        </select>
+                    </div>
+
+                    <!-- スプライト設定（属性によって表示内容変更） -->
+                    <div id="sprite-config-section">
+                        <!-- JSで動的生成 -->
+                    </div>
+
+                    <!-- パラメータ設定（属性によって表示内容変更） -->
+                    <div id="param-config-section">
+                        <!-- JSで動的生成 -->
+                    </div>
+
+                    <!-- 閉じるボタン -->
+                    <div class="config-row config-actions">
+                        <button id="config-close-btn" class="config-btn">閉じる</button>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- 設定パネル（初期非表示） -->
-        <div id="tile-config-panel" class="hidden">
-            <div class="config-panel-header">
-                <span id="config-panel-title">プレイヤー設定</span>
-                <button id="config-close-btn">×</button>
-            </div>
-            <div class="config-panel-body" id="config-panel-content">
-                <!-- JSで動的生成 -->
+        <!-- スプライト選択ポップアップ -->
+        <div id="sprite-select-popup" class="popup-overlay hidden">
+            <div class="popup-content sprite-select-content">
+                <div class="popup-header">
+                    <span class="popup-title">スプライト選択</span>
+                    <button id="sprite-select-cancel" class="popup-close">×</button>
+                </div>
+                <div class="sprite-select-scroll">
+                    <div id="sprite-select-list">
+                        <!-- JSで生成 -->
+                    </div>
+                </div>
+                <div class="popup-actions">
+                    <button id="sprite-select-done" class="popup-btn primary">完了</button>
+                </div>
             </div>
         </div>
 

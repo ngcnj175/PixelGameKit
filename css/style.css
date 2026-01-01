@@ -671,12 +671,15 @@ body {
     color: var(--color-dark);
 }
 
-/* 設定パネル（スクロール可能） */
+/* ========================================
+   タイル設定パネル（インライン展開）
+   ======================================== */
+
 #tile-config-panel {
-    flex-shrink: 0;
-    background: rgba(0, 0, 0, 0.12);
-    border-bottom: 2px solid var(--border-dark);
-    max-height: 200px;
+    background: var(--bg-device);
+    border-top: 2px solid var(--border-color);
+    padding: 12px;
+    max-height: 300px;
     overflow-y: auto;
 }
 
@@ -684,88 +687,68 @@ body {
     display: none;
 }
 
-.config-panel-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px 12px;
-    background: rgba(0, 0, 0, 0.1);
-    border-bottom: 1px solid var(--border-color);
-    position: sticky;
-    top: 0;
-    z-index: 1;
-}
-
-#config-panel-title {
-    font-size: 13px;
-    font-weight: bold;
-}
-
-#config-close-btn {
-    width: 24px;
-    height: 24px;
-    border: none;
-    background: transparent;
-    font-size: 18px;
-    cursor: pointer;
-    color: var(--text-dark);
-}
-
-.config-panel-body {
-    padding: 12px;
-}
-
-/* スプライト登録セクション */
-.config-section {
-    margin-bottom: 12px;
-}
-
-.config-section-title {
-    font-size: 12px;
-    font-weight: bold;
-    margin-bottom: 8px;
-    color: var(--text-dark);
-}
-
-/* スプライト登録行 */
-.sprite-reg-row {
+/* 設定行 */
+.config-row {
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
 }
 
-.sprite-reg-label {
-    width: 60px;
-    font-size: 11px;
-    color: var(--text-muted);
-    transition: color 0.2s;
-}
-
-.sprite-reg-label.active {
-    color: var(--text-dark);
+.config-row label {
+    font-size: 12px;
     font-weight: bold;
+    color: var(--text-dark);
+    min-width: 40px;
 }
 
-.sprite-reg-slots {
+#tile-type-select {
+    flex: 1;
+    padding: 6px 10px;
+    font-size: 13px;
+    border: 2px solid var(--border-color);
+    border-radius: 0;
+    background: var(--bg-screen);
+    color: var(--text-dark);
+}
+
+/* スプライト設定セクション */
+#sprite-config-section {
+    margin-bottom: 12px;
+}
+
+/* スプライト行 */
+.sprite-row {
     display: flex;
-    gap: 4px;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 6px;
+    padding: 4px 0;
 }
 
+.sprite-row-label {
+    width: 55px;
+    font-size: 11px;
+    font-weight: bold;
+    color: var(--text-dark);
+}
+
+/* スプライト登録枠 */
 .sprite-slot {
-    width: 32px;
-    height: 32px;
-    border: 2px dashed var(--border-color);
-    border-radius: 4px;
+    width: 36px;
+    height: 36px;
+    border: 2px solid var(--border-color);
+    border-radius: 0;
     background: var(--bg-screen);
     display: flex;
     align-items: center;
     justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
 }
 
-.sprite-slot.has-sprite {
-    border-style: solid;
-    border-color: var(--color-dark);
+.sprite-slot:active {
+    background: rgba(0, 0, 0, 0.1);
 }
 
 .sprite-slot canvas {
@@ -774,50 +757,276 @@ body {
     image-rendering: pixelated;
 }
 
-.sprite-add-btn {
-    width: 24px;
-    height: 24px;
-    border: 1px dashed var(--border-color);
-    border-radius: 4px;
-    background: transparent;
-    font-size: 16px;
+/* 枚数表示 */
+.sprite-count {
+    width: 16px;
+    font-size: 11px;
     color: var(--text-muted);
+    text-align: center;
+}
+
+/* 速度スライダー */
+.sprite-speed {
+    flex: 1;
+    height: 4px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: var(--border-color);
+    border-radius: 2px;
+    outline: none;
+}
+
+.sprite-speed::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--color-dark);
     cursor: pointer;
 }
 
-/* 数値設定 */
-.num-setting {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 8px;
-}
-
-.num-setting-label {
-    font-size: 11px;
-    color: var(--text-muted);
-    min-width: 80px;
-}
-
-.num-setting-label.active {
-    color: var(--text-dark);
-    font-weight: bold;
-}
-
-.num-control {
+/* LOOPチェック */
+.sprite-loop-label {
     display: flex;
     align-items: center;
     gap: 2px;
+    font-size: 10px;
+    color: var(--text-muted);
 }
 
-.num-btn {
-    width: 24px;
-    height: 24px;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    background: var(--bg-screen);
-    font-size: 14px;
+.sprite-loop-label input[type="checkbox"] {
+    width: 14px;
+    height: 14px;
+}
+
+/* パラメータ設定セクション */
+#param-config-section {
+    border-top: 1px solid var(--border-color);
+    padding-top: 8px;
+    margin-top: 8px;
+}
+
+/* パラメータ行 */
+.param-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.param-label {
+    width: 90px;
+    font-size: 11px;
+    font-weight: bold;
+    color: var(--text-dark);
+}
+
+.param-value {
+    width: 30px;
+    font-size: 12px;
+    color: var(--text-dark);
+    text-align: center;
+}
+
+.param-slider {
+    flex: 1;
+    height: 4px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: var(--border-color);
+    border-radius: 2px;
+    outline: none;
+}
+
+.param-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--color-dark);
     cursor: pointer;
+}
+
+/* パラメータチェックボックス */
+.param-check-label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--text-dark);
+}
+
+.param-check-label input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+}
+
+/* セレクト */
+.param-select {
+    flex: 1;
+    padding: 4px 8px;
+    font-size: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 0;
+    background: var(--bg-screen);
+}
+
+/* 閉じるボタン */
+.config-actions {
+    justify-content: center;
+    margin-top: 8px;
+}
+
+.config-btn {
+    padding: 8px 24px;
+    font-size: 12px;
+    font-weight: bold;
+    border: 2px solid var(--color-dark);
+    border-radius: 0;
+    background: var(--bg-screen);
+    color: var(--text-dark);
+    cursor: pointer;
+}
+
+.config-btn:active {
+    background: var(--color-dark);
+    color: var(--color-light);
+}
+
+/* ========================================
+   スプライト選択ポップアップ
+   ======================================== */
+
+.popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.popup-overlay.hidden {
+    display: none;
+}
+
+.popup-content {
+    background: var(--bg-device);
+    border: 2px solid var(--color-dark);
+    border-radius: 0;
+    max-width: 90%;
+    max-height: 80%;
+}
+
+.sprite-select-content {
+    width: 340px;
+}
+
+.popup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.popup-title {
+    font-size: 14px;
+    font-weight: bold;
+    color: var(--text-dark);
+}
+
+.popup-close {
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: transparent;
+    font-size: 20px;
+    cursor: pointer;
+    color: var(--text-dark);
+}
+
+/* スプライト選択スクロールエリア */
+.sprite-select-scroll {
+    padding: 12px;
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+#sprite-select-list {
+    display: flex;
+    gap: 6px;
+    min-width: min-content;
+}
+
+/* スプライト選択アイテム */
+.sprite-select-item {
+    width: 44px;
+    height: 44px;
+    border: 2px solid var(--border-color);
+    border-radius: 0;
+    background: var(--bg-screen);
+    cursor: pointer;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.sprite-select-item.selected {
+    border-color: var(--color-dark);
+    border-width: 3px;
+}
+
+.sprite-select-item canvas {
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated;
+}
+
+/* 選択順番号 */
+.sprite-select-order {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 20px;
+    height: 20px;
+    background: var(--color-dark);
+    color: var(--color-light);
+    border-radius: 50%;
+    font-size: 12px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.popup-actions {
+    padding: 12px;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: center;
+}
+
+.popup-btn {
+    padding: 10px 32px;
+    font-size: 13px;
+    font-weight: bold;
+    border: 2px solid var(--color-dark);
+    border-radius: 0;
+    cursor: pointer;
+}
+
+.popup-btn.primary {
+    background: var(--color-dark);
+    color: var(--color-light);
+}
+
+.popup-btn.primary:active {
+    opacity: 0.8;
 }
 
 .num-value {
