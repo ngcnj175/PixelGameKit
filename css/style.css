@@ -676,15 +676,42 @@ body {
    ======================================== */
 
 #tile-config-panel {
+    position: relative;
     background: var(--bg-device);
     border-top: 2px solid var(--border-color);
     padding: 12px;
+    padding-top: 8px;
     max-height: 300px;
     overflow-y: auto;
 }
 
 #tile-config-panel.hidden {
     display: none;
+}
+
+/* パネル閉じるボタン（右上✕） */
+.panel-close-btn {
+    position: absolute;
+    top: 4px;
+    right: 8px;
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: transparent;
+    font-size: 18px;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.panel-close-btn:hover {
+    color: var(--text-dark);
+}
+
+.panel-close-btn:active {
+    transform: scale(0.9);
 }
 
 /* 設定行 */

@@ -684,6 +684,7 @@ const StageEditor = {
                     this.selectedTemplate = index;
                     this.editingTemplate = { ...template, sprites: { ...template.sprites } };
                     this.editingIndex = index;
+                    this.initTemplateList(); // 選択状態を更新
                     this.openConfigPanel();
                 } else {
                     // 最初のクリック
