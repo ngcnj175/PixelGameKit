@@ -699,17 +699,15 @@ body {
     border: none;
     background: transparent;
     font-size: 18px;
-    color: var(--text-dark);
+    color: var(--text-muted);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: bold;
 }
 
 .panel-close-btn:hover {
-    color: var(--color-dark);
-    background: rgba(0, 0, 0, 0.05);
+    color: var(--text-dark);
 }
 
 .panel-close-btn:active {
@@ -732,14 +730,12 @@ body {
 }
 
 #tile-type-select {
-    width: 120px;
-    max-width: 120px;
-    flex: none;
+    flex: 1;
     padding: 6px 10px;
     font-size: 13px;
     border: 2px solid var(--border-color);
     border-radius: 0;
-    background: #fff;
+    background: var(--bg-screen);
     color: var(--text-dark);
 }
 
