@@ -601,8 +601,14 @@ const StageEditor = {
             badge.textContent = typeIcons[template.type] || '?';
             div.appendChild(badge);
 
-            // タップで選択＆設定表示
+            // シングルタップで選択のみ
             div.addEventListener('click', () => {
+                this.selectedTemplate = index;
+                this.initTemplateList();
+            });
+
+            // ダブルタップで設定表示
+            div.addEventListener('dblclick', () => {
                 this.selectedTemplate = index;
                 this.editingTemplate = { ...template, sprites: { ...template.sprites } };
                 this.editingIndex = index;
