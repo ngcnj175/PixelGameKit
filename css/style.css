@@ -1848,7 +1848,8 @@ body {
 .sprite-select-item {
     width: 44px;
     height: 44px;
-    background: #3CBCFC;
+    background: transparent;
+    /* JSで動的に設定 */
     border: 2px solid var(--border-color);
     border-radius: 0;
     cursor: pointer;

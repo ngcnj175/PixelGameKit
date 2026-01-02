@@ -526,11 +526,15 @@ const StageEditor = {
         this.currentSelectingSlot = slot;
         this.selectedSpriteOrder = [...(this.editingTemplate?.sprites?.[slot]?.frames || [])];
 
+        // 背景色を動的に取得
+        const bgColor = App.projectData.stage?.backgroundColor || App.projectData.backgroundColor || '#3CBCFC';
+
         // スプライト一覧を横スクロール形式で表示
         list.innerHTML = '';
         App.projectData.sprites.forEach((sprite, index) => {
             const item = document.createElement('div');
             item.className = 'sprite-select-item';
+            item.style.backgroundColor = bgColor; // 動的背景色
             const orderIndex = this.selectedSpriteOrder.indexOf(index);
             if (orderIndex >= 0) {
                 item.classList.add('selected');
@@ -543,7 +547,7 @@ const StageEditor = {
             const canvas = document.createElement('canvas');
             canvas.width = 16;
             canvas.height = 16;
-            this.renderSpriteToMiniCanvas(sprite, canvas);
+            this.renderSpriteToMiniCanvas(sprite, canvas, bgColor);
             item.appendChild(canvas);
 
             item.addEventListener('click', () => this.toggleSpriteSelection(index, item));
@@ -979,12 +983,12 @@ const StageEditor = {
         }
     },
 
-    renderSpriteToMiniCanvas(sprite, canvas) {
+    renderSpriteToMiniCanvas(sprite, canvas, bgColor = '#3CBCFC') {
         const ctx = canvas.getContext('2d');
         const palette = App.nesPalette;
 
-        // 背景色を描画
-        ctx.fillStyle = '#3CBCFC';
+        // 背景色を描画（動的に設定可能）
+        ctx.fillStyle = bgColor;
         ctx.fillRect(0, 0, 16, 16);
 
         for (let y = 0; y < 16; y++) {
