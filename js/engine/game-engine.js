@@ -200,7 +200,9 @@ const GameEngine = {
     },
 
     render() {
-        this.ctx.fillStyle = '#1a1a2e';
+        // 背景色（Pixel画面の背景色を使用）
+        const bgColor = App.projectData.stage?.backgroundColor || App.projectData.backgroundColor || '#1a1a2e';
+        this.ctx.fillStyle = bgColor;
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
         this.renderStage();
@@ -216,8 +218,10 @@ const GameEngine = {
         const sprites = App.projectData.sprites;
         const palette = App.nesPalette;
 
-        this.renderLayer(stage.layers.bg, sprites, palette);
-        this.renderLayer(stage.layers.fg, sprites, palette);
+        // FGレイヤーのみ描画（BGは単色背景としてrender()で処理済み）
+        if (stage.layers.fg) {
+            this.renderLayer(stage.layers.fg, sprites, palette);
+        }
     },
 
     renderLayer(layer, sprites, palette) {

@@ -9,7 +9,7 @@ const StageEditor = {
 
     // 状態
     currentTool: 'pen',
-    currentLayer: 'bg',
+    currentLayer: 'fg', // FGのみ使用（BGは単色背景）
     selectedTemplate: null,
     templates: [],
 
@@ -26,7 +26,6 @@ const StageEditor = {
         }
 
         this.initTools();
-        this.initLayerToggle();
         this.initAddTileButton();
         this.initConfigPanel();
         this.initSpriteSelectPopup();
@@ -70,17 +69,10 @@ const StageEditor = {
         });
     },
 
-    // ========== レイヤー切替（BG/FGテキスト） ==========
-    initLayerToggle() {
-        document.querySelectorAll('#layer-toggle .layer-label').forEach(label => {
-            label.addEventListener('click', () => {
-                this.currentLayer = label.dataset.layer;
-                document.querySelectorAll('#layer-toggle .layer-label').forEach(l => {
-                    l.classList.toggle('active', l === label);
-                });
-                this.render();
-            });
-        });
+    // ========== 背景色取得 ==========
+    getBackgroundColor() {
+        // Pixel画面の背景色を使用（デフォルト）
+        return App.projectData.stage?.backgroundColor || App.projectData.backgroundColor || '#e8e8e8';
     },
 
     // ========== スプライトギャラリー（ドラッグ元） ==========
@@ -781,13 +773,12 @@ const StageEditor = {
         if (!this.canvas || !this.ctx) return;
         if (App.currentScreen !== 'stage') return;
 
-        const stage = App.projectData.stage;
-
-        this.ctx.fillStyle = '#e8e8e8';
+        // 背景色（Pixel画面の背景色を使用）
+        this.ctx.fillStyle = this.getBackgroundColor();
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-        this.renderLayer('bg', this.currentLayer === 'fg' ? 0.4 : 1);
-        this.renderLayer('fg', this.currentLayer === 'bg' ? 0.4 : 1);
+        // FGレイヤーのみ描画
+        this.renderLayer('fg', 1);
 
         this.renderGrid();
     },
