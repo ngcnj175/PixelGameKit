@@ -103,18 +103,53 @@ const GameEngine = {
     },
 
     initGame() {
-        const objects = App.projectData.objects;
+        const stage = App.projectData.stage;
+        const templates = App.projectData.templates || [];
 
-        const playerObj = objects.find(o => o.type === 'player');
-        if (playerObj) {
-            this.player = new Player(playerObj.x, playerObj.y);
-        } else {
-            this.player = new Player(1, 1);
+        // プレイヤーとエネミーの位置をテンプレートとステージから検索
+        let playerPos = null;
+        const enemyPositions = [];
+
+        // 各テンプレートのスプライトインデックスとタイプのマッピング
+        const spriteToTemplate = {};
+        templates.forEach((template, index) => {
+            const spriteIdx = template?.sprites?.idle?.frames?.[0] ?? template?.sprites?.main?.frames?.[0];
+            if (spriteIdx !== undefined) {
+                spriteToTemplate[spriteIdx] = template;
+            }
+        });
+
+        // ステージ上のタイルからプレイヤー・エネミーを検索
+        if (stage && stage.layers && stage.layers.fg) {
+            for (let y = 0; y < stage.height; y++) {
+                for (let x = 0; x < stage.width; x++) {
+                    const spriteIdx = stage.layers.fg[y][x];
+                    if (spriteIdx >= 0) {
+                        const template = spriteToTemplate[spriteIdx];
+                        if (template) {
+                            if (template.type === 'player' && !playerPos) {
+                                playerPos = { x, y, template };
+                            } else if (template.type === 'enemy') {
+                                enemyPositions.push({ x, y, template, behavior: template.config?.move || 'idle' });
+                            }
+                        }
+                    }
+                }
+            }
         }
 
-        this.enemies = objects
-            .filter(o => o.type === 'enemy')
-            .map(o => new Enemy(o.x, o.y, o.behavior || 'patrol'));
+        // プレイヤー初期化
+        if (playerPos) {
+            this.player = new Player(playerPos.x, playerPos.y, playerPos.template);
+        } else {
+            // プレイヤーがいない場合はデフォルト位置（テンプレートなし）
+            this.player = new Player(1, 1, null);
+        }
+
+        // エネミー初期化
+        this.enemies = enemyPositions.map(pos =>
+            new Enemy(pos.x, pos.y, pos.template, pos.behavior)
+        );
     },
 
     gameLoop() {
@@ -189,14 +224,37 @@ const GameEngine = {
 
     getCollision(x, y) {
         const stage = App.projectData.stage;
+        const templates = App.projectData.templates || [];
         const tileX = Math.floor(x);
         const tileY = Math.floor(y);
 
+        // 範囲外は壁として扱う
         if (tileX < 0 || tileX >= stage.width || tileY < 0 || tileY >= stage.height) {
             return 1;
         }
 
-        return stage.layers.collision[tileY][tileX];
+        // fgレイヤーからスプライトインデックスを取得
+        const spriteIdx = stage.layers.fg?.[tileY]?.[tileX];
+        if (spriteIdx === undefined || spriteIdx < 0) {
+            return 0; // 衝突なし（空タイル）
+        }
+
+        // テンプレートからタイルの種類と衝突設定を判定
+        const template = templates.find(t => {
+            const idx = t?.sprites?.idle?.frames?.[0] ?? t?.sprites?.main?.frames?.[0];
+            return idx === spriteIdx;
+        });
+
+        if (!template) {
+            return 0; // テンプレートが見つからない
+        }
+
+        // 素材タイルで衝突がオン = 壁
+        if (template.type === 'material' && template.config?.collision !== false) {
+            return 1;
+        }
+
+        return 0; // 衝突なし
     },
 
     render() {
@@ -226,11 +284,26 @@ const GameEngine = {
 
     renderLayer(layer, sprites, palette) {
         const stage = App.projectData.stage;
+        const templates = App.projectData.templates || [];
+
+        // スプライトIDからテンプレートを検索するマップ
+        const spriteToTemplate = {};
+        templates.forEach(template => {
+            const spriteIdx = template?.sprites?.idle?.frames?.[0] ?? template?.sprites?.main?.frames?.[0];
+            if (spriteIdx !== undefined) {
+                spriteToTemplate[spriteIdx] = template;
+            }
+        });
 
         for (let y = 0; y < stage.height; y++) {
             for (let x = 0; x < stage.width; x++) {
                 const tileId = layer[y][x];
                 if (tileId >= 0 && tileId < sprites.length) {
+                    // プレイヤー・敵タイルはスキップ（動的オブジェクトとして別途描画）
+                    const template = spriteToTemplate[tileId];
+                    if (template && (template.type === 'player' || template.type === 'enemy')) {
+                        continue;
+                    }
                     this.renderSprite(sprites[tileId], x, y, palette);
                 }
             }

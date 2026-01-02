@@ -3,43 +3,71 @@
  */
 
 class Player {
-    constructor(tileX, tileY) {
+    constructor(tileX, tileY, template = null) {
         this.x = tileX;
         this.y = tileY;
         this.vx = 0;
         this.vy = 0;
-        this.width = 0.8;
-        this.height = 0.8;
+        this.width = 0.9;
+        this.height = 0.9;
         this.onGround = false;
         this.facingRight = true;
 
-        this.moveSpeed = 0.15;
-        this.jumpPower = -10;
-        this.maxSpeed = 0.3;
+        // テンプレート情報（スプライト描画用）
+        this.template = template;
+        this.animFrame = 0;
+        this.animTimer = 0;
+
+        // マリオ風物理パラメータ
+        this.accel = 0.08;       // 加速度
+        this.friction = 0.85;    // 摩擦（地上）
+        this.airFriction = 0.95; // 空中摩擦
+        this.maxSpeed = 0.25;    // 最大速度
+        this.jumpPower = -0.45;  // ジャンプ力
+        this.gravity = 0.025;    // 重力
+        this.maxFallSpeed = 0.5; // 最大落下速度
     }
 
     update(engine) {
         this.handleInput();
 
-        this.vy += engine.GRAVITY;
+        // 重力
+        this.vy += this.gravity;
+        this.vy = Math.min(this.vy, this.maxFallSpeed);
 
+        // 位置更新
         this.x += this.vx;
         this.y += this.vy;
 
-        this.vy = Math.min(this.vy, 15);
-
+        // 衝突判定
         this.handleCollision(engine);
 
-        this.vx *= 0.8;
+        // 摩擦
+        if (this.onGround) {
+            this.vx *= this.friction;
+        } else {
+            this.vx *= this.airFriction;
+        }
+
+        // アニメーション更新
+        this.animTimer++;
+        const speed = this.template?.sprites?.idle?.speed || 10;
+        if (this.animTimer >= speed) {
+            this.animTimer = 0;
+            const frames = this.template?.sprites?.idle?.frames || [];
+            if (frames.length > 0) {
+                this.animFrame = (this.animFrame + 1) % frames.length;
+            }
+        }
     }
 
     handleInput() {
         if (GameController.isPressed('left')) {
-            this.vx -= this.moveSpeed;
+            this.vx -= this.accel;
             this.facingRight = false;
         }
         if (GameController.isPressed('right')) {
-            this.vx += this.moveSpeed;
+            this.vx += this.accel;
             this.facingRight = true;
         }
         if (GameController.isPressed('a') && this.onGround) {
@@ -47,6 +75,7 @@ class Player {
             this.onGround = false;
         }
 
+        // 最大速度制限
         this.vx = Math.max(-this.maxSpeed, Math.min(this.maxSpeed, this.vx));
     }
 
@@ -100,17 +129,34 @@ class Player {
         const screenX = (this.x - camera.x) * tileSize;
         const screenY = (this.y - camera.y) * tileSize;
 
-        ctx.fillStyle = '#4cc9f0';
-        ctx.fillRect(screenX, screenY, this.width * tileSize, this.height * tileSize);
+        // テンプレートのスプライトを取得
+        const frames = this.template?.sprites?.idle?.frames || [];
+        const spriteIdx = frames[this.animFrame] ?? frames[0];
+        const sprite = App.projectData.sprites[spriteIdx];
 
-        // 目
-        ctx.fillStyle = '#fff';
-        const eyeX = this.facingRight ? 0.5 : 0.2;
-        ctx.fillRect(
-            screenX + eyeX * tileSize,
-            screenY + 0.2 * tileSize,
-            0.15 * tileSize,
-            0.15 * tileSize
-        );
+        if (sprite) {
+            // スプライトを描画
+            const palette = App.nesPalette;
+            const pixelSize = tileSize / 16;
+
+            for (let y = 0; y < 16; y++) {
+                for (let x = 0; x < 16; x++) {
+                    const colorIndex = sprite.data[y][x];
+                    if (colorIndex >= 0) {
+                        ctx.fillStyle = palette[colorIndex];
+                        ctx.fillRect(
+                            screenX + x * pixelSize,
+                            screenY + y * pixelSize,
+                            pixelSize + 0.5,
+                            pixelSize + 0.5
+                        );
+                    }
+                }
+            }
+        } else {
+            // フォールバック: シンプルな四角
+            ctx.fillStyle = '#4cc9f0';
+            ctx.fillRect(screenX, screenY, tileSize, tileSize);
+        }
     }
 }

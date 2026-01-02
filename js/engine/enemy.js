@@ -3,22 +3,31 @@
  */
 
 class Enemy {
-    constructor(tileX, tileY, behavior = 'patrol') {
+    constructor(tileX, tileY, template = null, behavior = 'idle') {
         this.x = tileX;
         this.y = tileY;
         this.vx = 0;
         this.vy = 0;
-        this.width = 0.8;
-        this.height = 0.8;
+        this.width = 0.9;
+        this.height = 0.9;
         this.behavior = behavior;
         this.facingRight = true;
         this.onGround = false;
-        this.moveSpeed = 0.08;
+        this.moveSpeed = 0.05;
+
+        // テンプレート情報（スプライト描画用）
+        this.template = template;
+        this.animFrame = 0;
+        this.animTimer = 0;
+
+        // 重力
+        this.gravity = 0.025;
+        this.maxFallSpeed = 0.5;
     }
 
     update(engine) {
         switch (this.behavior) {
-            case 'static':
+            case 'idle':
                 break;
             case 'patrol':
                 this.patrol(engine);
@@ -31,14 +40,24 @@ class Enemy {
                 break;
         }
 
-        this.vy += engine.GRAVITY;
+        this.vy += this.gravity;
+        this.vy = Math.min(this.vy, this.maxFallSpeed);
 
         this.x += this.vx;
         this.y += this.vy;
 
-        this.vy = Math.min(this.vy, 15);
-
         this.handleCollision(engine);
+
+        // アニメーション更新
+        this.animTimer++;
+        const speed = this.template?.sprites?.idle?.speed || 10;
+        if (this.animTimer >= speed) {
+            this.animTimer = 0;
+            const frames = this.template?.sprites?.idle?.frames || [];
+            if (frames.length > 0) {
+                this.animFrame = (this.animFrame + 1) % frames.length;
+            }
+        }
     }
 
     patrol(engine) {
@@ -73,7 +92,7 @@ class Enemy {
         this.patrol(engine);
 
         if (this.onGround && Math.random() < 0.02) {
-            this.vy = -8;
+            this.vy = -0.3;
             this.onGround = false;
         }
     }
@@ -114,16 +133,34 @@ class Enemy {
         const screenX = (this.x - camera.x) * tileSize;
         const screenY = (this.y - camera.y) * tileSize;
 
-        ctx.fillStyle = '#e94560';
-        ctx.fillRect(screenX, screenY, this.width * tileSize, this.height * tileSize);
+        // テンプレートのスプライトを取得
+        const frames = this.template?.sprites?.idle?.frames || [];
+        const spriteIdx = frames[this.animFrame] ?? frames[0];
+        const sprite = App.projectData.sprites[spriteIdx];
 
-        ctx.fillStyle = '#fff';
-        const eyeX = this.facingRight ? 0.5 : 0.2;
-        ctx.fillRect(
-            screenX + eyeX * tileSize,
-            screenY + 0.2 * tileSize,
-            0.15 * tileSize,
-            0.15 * tileSize
-        );
+        if (sprite) {
+            // スプライトを描画
+            const palette = App.nesPalette;
+            const pixelSize = tileSize / 16;
+
+            for (let y = 0; y < 16; y++) {
+                for (let x = 0; x < 16; x++) {
+                    const colorIndex = sprite.data[y][x];
+                    if (colorIndex >= 0) {
+                        ctx.fillStyle = palette[colorIndex];
+                        ctx.fillRect(
+                            screenX + x * pixelSize,
+                            screenY + y * pixelSize,
+                            pixelSize + 0.5,
+                            pixelSize + 0.5
+                        );
+                    }
+                }
+            }
+        } else {
+            // フォールバック: シンプルな四角
+            ctx.fillStyle = '#e94560';
+            ctx.fillRect(screenX, screenY, tileSize, tileSize);
+        }
     }
 }
