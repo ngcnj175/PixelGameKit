@@ -19,6 +19,9 @@ const StageEditor = {
     editingIndex: -1, // -1:新規, 0以上:編集
     draggedSpriteIndex: null,
 
+    // タイルクリック状態（ダブルタップ検出用）
+    tileClickState: { index: null, timer: null, count: 0 },
+
     init() {
         this.canvas = document.getElementById('stage-canvas');
         if (this.canvas) {
@@ -424,11 +427,46 @@ const StageEditor = {
             });
         });
 
-        // スプライトをキャンバスに描画
-        document.querySelectorAll('.sprite-slot canvas').forEach(canvas => {
-            const spriteIdx = parseInt(canvas.dataset.sprite);
-            if (!isNaN(spriteIdx) && App.projectData.sprites[spriteIdx]) {
-                this.renderSpriteToMiniCanvas(App.projectData.sprites[spriteIdx], canvas);
+        // 既存のアニメーションタイマーをクリア
+        if (this.configAnimationIntervals) {
+            this.configAnimationIntervals.forEach(id => clearInterval(id));
+        }
+        this.configAnimationIntervals = [];
+
+        // スプライトをキャンバスに描画（アニメーションも対応）
+        document.querySelectorAll('.sprite-slot').forEach(slotEl => {
+            const slot = slotEl.dataset.slot;
+            const canvas = slotEl.querySelector('canvas');
+            if (!canvas || !slot) return;
+
+            const spriteData = this.editingTemplate?.sprites?.[slot];
+            const frames = spriteData?.frames || [];
+            const speed = spriteData?.speed || 8;
+
+            if (frames.length === 0) return;
+
+            // 初期フレーム描画
+            const firstSprite = App.projectData.sprites[frames[0]];
+            if (firstSprite) {
+                this.renderSpriteToMiniCanvas(firstSprite, canvas);
+            }
+
+            // 複数フレームの場合はアニメーション
+            if (frames.length > 1) {
+                let frameIndex = 0;
+                const animInterval = setInterval(() => {
+                    // パネルが閉じられたらアニメ停止
+                    if (!this.isConfigOpen) {
+                        clearInterval(animInterval);
+                        return;
+                    }
+                    frameIndex = (frameIndex + 1) % frames.length;
+                    const sprite = App.projectData.sprites[frames[frameIndex]];
+                    if (sprite) {
+                        this.renderSpriteToMiniCanvas(sprite, canvas);
+                    }
+                }, 1000 / speed);
+                this.configAnimationIntervals.push(animInterval);
             }
         });
     },
@@ -632,20 +670,37 @@ const StageEditor = {
             badge.textContent = typeIcons[template.type] || '?';
             div.appendChild(badge);
 
-            // シングルタップで選択のみ
-            div.addEventListener('click', () => {
-                this.selectedTemplate = index;
-                this.initTemplateList();
-            });
+            // タップ/クリック処理（シングル：選択、ダブル：設定表示）
+            const handleTap = () => {
+                const state = this.tileClickState;
 
-            // ダブルタップで設定表示
-            div.addEventListener('dblclick', () => {
-                this.selectedTemplate = index;
-                this.editingTemplate = { ...template, sprites: { ...template.sprites } };
-                this.editingIndex = index;
-                this.initTemplateList();
-                this.openConfigPanel();
-            });
+                // 同じタイルへの2回目のクリック（ダブルタップ）
+                if (state.index === index && state.count === 1) {
+                    clearTimeout(state.timer);
+                    state.count = 0;
+                    state.index = null;
+
+                    // ダブルタップ：設定表示
+                    this.selectedTemplate = index;
+                    this.editingTemplate = { ...template, sprites: { ...template.sprites } };
+                    this.editingIndex = index;
+                    this.openConfigPanel();
+                } else {
+                    // 最初のクリック
+                    clearTimeout(state.timer);
+                    state.index = index;
+                    state.count = 1;
+                    state.timer = setTimeout(() => {
+                        // シングルタップ：選択のみ
+                        state.count = 0;
+                        state.index = null;
+                        this.selectedTemplate = index;
+                        this.initTemplateList();
+                    }, 300);
+                }
+            };
+
+            div.addEventListener('click', handleTap);
 
             // 長押しで削除
             let longPressTimer = null;
