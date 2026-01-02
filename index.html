@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/svg+xml" href="assets/icons/icon-192.svg">
     <link rel="apple-touch-icon" href="assets/icons/icon-192.svg">
-    <title>PixelGameKit v1.6.3</title>
+    <title>PixelGameKit v1.7.0</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 
@@ -287,16 +287,8 @@
                     <!-- 閉じるボタン -->
                     <button id="config-close-btn" class="panel-close-btn">✕</button>
 
-                    <!-- 属性選択 -->
-                    <div class="config-row">
-                        <label>属性:</label>
-                        <select id="tile-type-select">
-                            <option value="player">プレイヤー</option>
-                            <option value="enemy">敵</option>
-                            <option value="material" selected>素材</option>
-                            <option value="item">アイテム</option>
-                        </select>
-                    </div>
+                    <!-- 属性表示（ラベルのみ、変更不可） -->
+                    <div id="tile-type-label" class="config-type-label">素材</div>
 
                     <!-- スプライト設定（属性によって表示内容変更） -->
                     <div id="sprite-config-section">
@@ -336,16 +328,33 @@
 
         <!-- 属性選択ポップアップ（+ボタン押下時） -->
         <div id="type-select-popup" class="popup-overlay hidden">
-            <div class="popup-content">
-                <div class="popup-title">属性を選択</div>
-                <div class="type-list">
-                    <button class="type-select-item" data-type="player">プレイヤー</button>
-                    <button class="type-select-item" data-type="enemy">敵</button>
-                    <button class="type-select-item" data-type="material">素材</button>
-                    <button class="type-select-item" data-type="item">アイテム</button>
-                    <button class="type-select-item" data-type="goal">ゴール</button>
+            <div class="popup-content type-select-content">
+                <div class="popup-header">
+                    <span class="popup-title">属性を選択</span>
+                    <button id="type-select-cancel" class="popup-close">✕</button>
                 </div>
-                <button class="popup-cancel">キャンセル</button>
+                <div class="type-list">
+                    <button class="type-select-item" data-type="player">
+                        <span class="type-icon">🎮</span>
+                        <span class="type-name">プレイヤー</span>
+                    </button>
+                    <button class="type-select-item" data-type="enemy">
+                        <span class="type-icon">👾</span>
+                        <span class="type-name">敵</span>
+                    </button>
+                    <button class="type-select-item" data-type="material">
+                        <span class="type-icon">🧱</span>
+                        <span class="type-name">素材</span>
+                    </button>
+                    <button class="type-select-item" data-type="item">
+                        <span class="type-icon">⭐</span>
+                        <span class="type-name">アイテム</span>
+                    </button>
+                    <button class="type-select-item" data-type="goal">
+                        <span class="type-icon">🚩</span>
+                        <span class="type-name">ゴール</span>
+                    </button>
+                </div>
             </div>
         </div>
 

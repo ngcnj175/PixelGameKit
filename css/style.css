@@ -729,14 +729,15 @@ body {
     min-width: 40px;
 }
 
-#tile-type-select {
-    flex: 1;
-    padding: 6px 10px;
-    font-size: 13px;
-    border: 2px solid var(--border-color);
-    border-radius: 0;
-    background: var(--bg-screen);
+/* 属性ラベル（中央寄せ） */
+.config-type-label {
+    text-align: center;
+    font-size: 14px;
+    font-weight: bold;
     color: var(--text-dark);
+    padding: 8px 0;
+    margin-bottom: 8px;
+    border-bottom: 1px solid var(--border-color);
 }
 
 /* スプライト設定セクション */
@@ -1930,29 +1931,50 @@ body {
     margin-bottom: 12px;
 }
 
+.type-select-content {
+    width: 280px;
+    background: #fff;
+}
+
 .type-list {
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    margin-bottom: 12px;
+    gap: 8px;
+    padding: 16px;
 }
 
 .type-select-item {
-    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
     border: 2px solid var(--border-color);
-    border-radius: 8px;
-    background: var(--bg-screen);
+    border-radius: 0;
+    background: #fff;
     font-size: 14px;
     font-weight: bold;
+    color: var(--text-dark);
     cursor: pointer;
-    text-align: center;
+    text-align: left;
     transition: all 0.1s;
+}
+
+.type-select-item:hover {
+    border-color: var(--color-dark);
 }
 
 .type-select-item:active {
     background: var(--color-dark);
-    color: var(--color-light);
+    color: #fff;
     border-color: var(--color-dark);
+}
+
+.type-icon {
+    font-size: 20px;
+}
+
+.type-name {
+    flex: 1;
 }
 
 .popup-cancel {

@@ -115,13 +115,46 @@ const StageEditor = {
     initAddTileButton() {
         const addBtn = document.getElementById('add-tile-btn');
         if (addBtn) {
-            addBtn.addEventListener('click', () => this.addNewTile());
+            addBtn.addEventListener('click', () => this.openTypeSelectPopup());
         }
     },
 
-    addNewTile() {
-        // 新規タイル作成（デフォルト: 素材）
-        this.editingTemplate = this.createDefaultTemplate('material');
+    // 属性選択ポップアップを開く
+    openTypeSelectPopup() {
+        const popup = document.getElementById('type-select-popup');
+        if (popup) {
+            popup.classList.remove('hidden');
+            this.initTypeSelectEvents();
+        }
+    },
+
+    closeTypeSelectPopup() {
+        const popup = document.getElementById('type-select-popup');
+        if (popup) {
+            popup.classList.add('hidden');
+        }
+    },
+
+    initTypeSelectEvents() {
+        // キャンセルボタン
+        const cancelBtn = document.getElementById('type-select-cancel');
+        if (cancelBtn) {
+            cancelBtn.onclick = () => this.closeTypeSelectPopup();
+        }
+
+        // 属性選択ボタン
+        document.querySelectorAll('.type-select-item').forEach(btn => {
+            btn.onclick = () => {
+                const type = btn.dataset.type;
+                this.closeTypeSelectPopup();
+                this.addNewTile(type);
+            };
+        });
+    },
+
+    addNewTile(type) {
+        // 新規タイル作成
+        this.editingTemplate = this.createDefaultTemplate(type);
         this.editingIndex = -1;
         this.openConfigPanel();
     },
@@ -179,26 +212,15 @@ const StageEditor = {
         if (saveBtn) {
             saveBtn.addEventListener('click', () => this.saveTemplate());
         }
-
-        const typeSelect = document.getElementById('tile-type-select');
-        if (typeSelect) {
-            typeSelect.addEventListener('change', (e) => this.onTypeChange(e.target.value));
-        }
     },
 
-    onTypeChange(newType) {
-        if (!this.editingTemplate) return;
-
-        if (this.editingTemplate.type !== newType) {
-            // 属性変更時はリセット確認
-            if (confirm('スプライト設定がリセットされます。よろしいですか？')) {
-                this.editingTemplate = this.createDefaultTemplate(newType);
-                this.renderConfigContent();
-            } else {
-                // キャンセル時は元に戻す
-                document.getElementById('tile-type-select').value = this.editingTemplate.type;
-            }
-        }
+    // 属性ラベル表示用のマッピング
+    typeLabels: {
+        player: '🎮 プレイヤー',
+        enemy: '👾 敵',
+        material: '🧱 素材',
+        item: '⭐ アイテム',
+        goal: '🚩 ゴール'
     },
 
     openConfigPanel() {
@@ -207,10 +229,10 @@ const StageEditor = {
             panel.classList.remove('hidden');
             this.isConfigOpen = true;
 
-            // 属性セレクトを設定
-            const typeSelect = document.getElementById('tile-type-select');
-            if (typeSelect) {
-                typeSelect.value = this.editingTemplate.type;
+            // 属性ラベルを更新
+            const typeLabel = document.getElementById('tile-type-label');
+            if (typeLabel) {
+                typeLabel.textContent = this.typeLabels[this.editingTemplate.type] || this.editingTemplate.type;
             }
 
             this.renderConfigContent();
@@ -717,12 +739,23 @@ const StageEditor = {
             div.addEventListener('touchstart', () => {
                 longPressTimer = setTimeout(() => {
                     if (confirm('このタイルを削除しますか？')) {
+                        // キャンバスから該当タイルをクリア
+                        this.clearTileFromCanvas(index);
+
+                        // テンプレートを削除
                         App.projectData.templates.splice(index, 1);
+
+                        // 削除後のインデックス調整（キャンバス上の参照を更新）
+                        this.updateCanvasTileIndices(index);
+
                         if (this.selectedTemplate === index) {
                             this.selectedTemplate = null;
                             this.closeConfigPanel();
+                        } else if (this.selectedTemplate > index) {
+                            this.selectedTemplate--;
                         }
                         this.initTemplateList();
+                        this.render();
                     }
                 }, 800);
             }, { passive: true });
@@ -732,6 +765,40 @@ const StageEditor = {
 
             container.appendChild(div);
         });
+    },
+
+    // キャンバスから指定インデックスのタイルをすべてクリア
+    clearTileFromCanvas(templateIndex) {
+        const stage = App.projectData.stage;
+        if (!stage || !stage.layers) return;
+
+        const layer = stage.layers.fg;
+        if (!layer) return;
+
+        // タイルの最初のスプライトインデックスを取得
+        const template = App.projectData.templates[templateIndex];
+        if (!template) return;
+
+        const spriteIdx = template.sprites?.idle?.frames?.[0] ?? template.sprites?.main?.frames?.[0];
+        if (spriteIdx === undefined) return;
+
+        // キャンバス上の該当タイルを-1に置換
+        for (let y = 0; y < stage.height; y++) {
+            for (let x = 0; x < stage.width; x++) {
+                if (layer[y][x] === spriteIdx) {
+                    layer[y][x] = -1;
+                }
+            }
+        }
+    },
+
+    // テンプレート削除後のインデックス調整
+    // 削除されたインデックスより大きいスプライト参照を持つタイルは調整不要
+    // （タイル配置はスプライトインデックスを使用しているため）
+    updateCanvasTileIndices(deletedIndex) {
+        // 注意: 現在の実装ではタイル配置時にスプライトインデックスを使用しているため
+        // テンプレートインデックスの調整は不要
+        // 将来的にテンプレートインデックスを使用する場合はここで調整
     },
 
     // ========== キャンバス ==========
