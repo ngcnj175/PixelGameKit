@@ -994,29 +994,7 @@ body {
     overflow-y: hidden;
 }
 
-#sprite-select-list {
-    display: flex;
-    gap: 6px;
-    min-width: min-content;
-}
-
-/* スプライト選択アイテム */
-.sprite-select-item {
-    width: 44px;
-    height: 44px;
-    border: none;
-    border-radius: 0;
-    background: var(--bg-screen);
-    cursor: pointer;
-    position: relative;
-    flex-shrink: 0;
-}
-
-.sprite-select-item canvas {
-    width: 100%;
-    height: 100%;
-    image-rendering: pixelated;
-}
+/* スプライト選択アイテムは後方で定義 */
 
 /* 選択順番号 */
 .sprite-select-order {
@@ -1875,10 +1853,11 @@ body {
     background: transparent;
     cursor: pointer;
     padding: 0;
+    position: relative;
 }
 
 .sprite-select-item.selected {
-    box-shadow: inset 0 0 0 2px #fff;
+    border-color: var(--color-dark);
 }
 
 .sprite-select-item canvas {
@@ -1886,13 +1865,6 @@ body {
     height: 100%;
     image-rendering: pixelated;
     display: block;
-}
-
-.sprite-select-item.selected canvas {
-    /* 選択時は2px分小さく表示して白枠を見せる */
-    width: calc(100% - 4px);
-    height: calc(100% - 4px);
-    margin: 2px;
 }
 
 /* ========================================
