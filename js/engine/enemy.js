@@ -130,6 +130,9 @@ class Enemy {
     }
 
     render(ctx, tileSize, camera) {
+        // テンプレートがない場合は描画しない
+        if (!this.template) return;
+
         const screenX = (this.x - camera.x) * tileSize;
         const screenY = (this.y - camera.y) * tileSize;
 
@@ -157,10 +160,6 @@ class Enemy {
                     }
                 }
             }
-        } else {
-            // フォールバック: シンプルな四角
-            ctx.fillStyle = '#e94560';
-            ctx.fillRect(screenX, screenY, tileSize, tileSize);
         }
     }
 }

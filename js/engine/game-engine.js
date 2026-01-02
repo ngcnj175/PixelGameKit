@@ -138,12 +138,14 @@ const GameEngine = {
             }
         }
 
-        // プレイヤー初期化
+        // プレイヤー初期化（ステージ上に配置されている場合のみ）
         if (playerPos) {
             this.player = new Player(playerPos.x, playerPos.y, playerPos.template);
+            console.log('Player created at', playerPos.x, playerPos.y);
         } else {
-            // プレイヤーがいない場合はデフォルト位置（テンプレートなし）
-            this.player = new Player(1, 1, null);
+            // プレイヤーがステージ上にいない場合は生成しない
+            this.player = null;
+            console.log('No player found on stage');
         }
 
         // エネミー初期化

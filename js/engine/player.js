@@ -4,7 +4,8 @@
 
 class Player {
     constructor(tileX, tileY, template = null) {
-        this.x = tileX;
+        // タイル中央に配置（衝突判定を避けるため）
+        this.x = tileX + 0.05;
         this.y = tileY;
         this.vx = 0;
         this.vy = 0;
@@ -62,15 +63,19 @@ class Player {
     }
 
     handleInput() {
-        if (GameController.isPressed('left')) {
+        const left = GameController.isPressed('left');
+        const right = GameController.isPressed('right');
+        const a = GameController.isPressed('a');
+
+        if (left) {
             this.vx -= this.accel;
             this.facingRight = false;
         }
-        if (GameController.isPressed('right')) {
+        if (right) {
             this.vx += this.accel;
             this.facingRight = true;
         }
-        if (GameController.isPressed('a') && this.onGround) {
+        if (a && this.onGround) {
             this.vy = this.jumpPower;
             this.onGround = false;
         }
@@ -126,6 +131,9 @@ class Player {
     }
 
     render(ctx, tileSize, camera) {
+        // テンプレートがない場合は描画しない
+        if (!this.template) return;
+
         const screenX = (this.x - camera.x) * tileSize;
         const screenY = (this.y - camera.y) * tileSize;
 
@@ -153,10 +161,6 @@ class Player {
                     }
                 }
             }
-        } else {
-            // フォールバック: シンプルな四角
-            ctx.fillStyle = '#4cc9f0';
-            ctx.fillRect(screenX, screenY, tileSize, tileSize);
         }
     }
 }
