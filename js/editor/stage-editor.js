@@ -377,6 +377,8 @@ const StageEditor = {
                 const slot = slider.dataset.slot;
                 if (slot && this.editingTemplate?.sprites?.[slot]) {
                     this.editingTemplate.sprites[slot].speed = parseInt(e.target.value);
+                    // アニメーションをリアルタイム更新
+                    this.updateConfigAnimations();
                 }
             });
         });
@@ -427,6 +429,12 @@ const StageEditor = {
             });
         });
 
+        // アニメーションを初期化
+        this.updateConfigAnimations();
+    },
+
+    // 設定パネル内のアニメーションを更新
+    updateConfigAnimations() {
         // 既存のアニメーションタイマーをクリア
         if (this.configAnimationIntervals) {
             this.configAnimationIntervals.forEach(id => clearInterval(id));
@@ -670,7 +678,7 @@ const StageEditor = {
             badge.textContent = typeIcons[template.type] || '?';
             div.appendChild(badge);
 
-            // タップ/クリック処理（シングル：選択、ダブル：設定表示）
+            // タップ/クリック処理（シングル：即座に選択、ダブル：設定表示）
             const handleTap = () => {
                 const state = this.tileClickState;
 
@@ -681,22 +689,23 @@ const StageEditor = {
                     state.index = null;
 
                     // ダブルタップ：設定表示
-                    this.selectedTemplate = index;
                     this.editingTemplate = { ...template, sprites: { ...template.sprites } };
                     this.editingIndex = index;
-                    this.initTemplateList(); // 選択状態を更新
                     this.openConfigPanel();
                 } else {
-                    // 最初のクリック
+                    // 最初のクリック：即座に選択
                     clearTimeout(state.timer);
                     state.index = index;
                     state.count = 1;
+
+                    // 即座に選択を反映（遅延なし）
+                    this.selectedTemplate = index;
+                    this.initTemplateList();
+
+                    // ダブルタップ用タイマー（選択後もダブルタップを受け付ける）
                     state.timer = setTimeout(() => {
-                        // シングルタップ：選択のみ
                         state.count = 0;
                         state.index = null;
-                        this.selectedTemplate = index;
-                        this.initTemplateList();
                     }, 300);
                 }
             };
