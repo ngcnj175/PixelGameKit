@@ -972,9 +972,11 @@ body {
 }
 
 .popup-title {
+    flex: 1;
     font-size: 14px;
     font-weight: bold;
     color: var(--text-dark);
+    text-align: center;
 }
 
 .popup-close {
@@ -1870,8 +1872,8 @@ body {
 .sprite-select-item {
     width: 100%;
     aspect-ratio: 1;
-    border: 2px solid var(--border-color);
-    border-radius: 6px;
+    border: none;
+    border-radius: 0;
     background: var(--bg-screen);
     cursor: pointer;
     padding: 4px;
@@ -1879,8 +1881,8 @@ body {
 
 .sprite-select-item:active,
 .sprite-select-item.selected {
-    border-color: var(--accent-blue);
-    background: rgba(74, 144, 226, 0.1);
+    /* ナンバリングのみで表示 */
+    background: rgba(0, 0, 0, 0.05);
 }
 
 .sprite-select-item canvas {
