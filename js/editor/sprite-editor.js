@@ -402,7 +402,7 @@ const SpriteEditor = {
 
         const palette = App.nesPalette;
         // 背景色: 薄グレー
-        const bgColor = '#e8e8e8';
+        const bgColor = '#3CBCFC';
 
         this.ctx.fillStyle = bgColor;
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
@@ -441,7 +441,7 @@ const SpriteEditor = {
         const palette = App.nesPalette;
 
         // 背景色: 薄グレー
-        canvas.style.backgroundColor = '#e8e8e8';
+        canvas.style.backgroundColor = '#3CBCFC';
         ctx.clearRect(0, 0, 16, 16);
 
         for (let y = 0; y < 16; y++) {

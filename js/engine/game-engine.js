@@ -201,7 +201,7 @@ const GameEngine = {
 
     render() {
         // 背景色（Pixel画面の背景色を使用）
-        const bgColor = App.projectData.stage?.backgroundColor || App.projectData.backgroundColor || '#1a1a2e';
+        const bgColor = App.projectData.stage?.backgroundColor || App.projectData.backgroundColor || '#3CBCFC';
         this.ctx.fillStyle = bgColor;
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 

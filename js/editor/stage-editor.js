@@ -72,7 +72,7 @@ const StageEditor = {
     // ========== 背景色取得 ==========
     getBackgroundColor() {
         // Pixel画面の背景色を使用（デフォルト）
-        return App.projectData.stage?.backgroundColor || App.projectData.backgroundColor || '#e8e8e8';
+        return App.projectData.stage?.backgroundColor || App.projectData.backgroundColor || '#3CBCFC';
     },
 
     // ========== スプライトギャラリー（ドラッグ元） ==========
