@@ -166,6 +166,11 @@ const StageEditor = {
             closeBtn.addEventListener('click', () => this.closeConfigPanel());
         }
 
+        const saveBtn = document.getElementById('config-save-btn');
+        if (saveBtn) {
+            saveBtn.addEventListener('click', () => this.saveTemplate());
+        }
+
         const typeSelect = document.getElementById('tile-type-select');
         if (typeSelect) {
             typeSelect.addEventListener('change', (e) => this.onTypeChange(e.target.value));

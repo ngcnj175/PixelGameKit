@@ -893,6 +893,15 @@ body {
     color: var(--color-light);
 }
 
+.config-btn.primary {
+    background: var(--color-dark);
+    color: var(--color-light);
+}
+
+.config-btn.primary:active {
+    opacity: 0.8;
+}
+
 /* ========================================
    スプライト選択ポップアップ
    ======================================== */
