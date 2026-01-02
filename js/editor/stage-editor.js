@@ -216,11 +216,11 @@ const StageEditor = {
 
     // 属性ラベル表示用のマッピング
     typeLabels: {
-        player: '🎮 プレイヤー',
-        enemy: '👾 敵',
-        material: '🧱 素材',
-        item: '⭐ アイテム',
-        goal: '🚩 ゴール'
+        player: 'プレイヤー',
+        enemy: '敵',
+        material: '素材',
+        item: 'アイテム',
+        goal: 'ゴール'
     },
 
     openConfigPanel() {

@@ -767,7 +767,7 @@ body {
     height: 36px;
     border: 2px solid var(--border-color);
     border-radius: 0;
-    background: var(--bg-screen);
+    background: #fff;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1004,7 +1004,7 @@ body {
 .sprite-select-item {
     width: 44px;
     height: 44px;
-    border: 2px solid var(--border-color);
+    border: 1px solid var(--border-color);
     border-radius: 0;
     background: var(--bg-screen);
     cursor: pointer;
@@ -1014,7 +1014,7 @@ body {
 
 .sprite-select-item.selected {
     border-color: var(--color-dark);
-    border-width: 3px;
+    border-width: 2px;
 }
 
 .sprite-select-item canvas {
@@ -1955,7 +1955,7 @@ body {
     font-weight: bold;
     color: var(--text-dark);
     cursor: pointer;
-    text-align: left;
+    text-align: center;
     transition: all 0.1s;
 }
 
@@ -1967,14 +1967,6 @@ body {
     background: var(--color-dark);
     color: #fff;
     border-color: var(--color-dark);
-}
-
-.type-icon {
-    font-size: 20px;
-}
-
-.type-name {
-    flex: 1;
 }
 
 .popup-cancel {
