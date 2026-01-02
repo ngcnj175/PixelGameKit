@@ -972,11 +972,9 @@ body {
 }
 
 .popup-title {
-    flex: 1;
     font-size: 14px;
     font-weight: bold;
     color: var(--text-dark);
-    text-align: center;
 }
 
 .popup-close {
@@ -1872,23 +1870,29 @@ body {
 .sprite-select-item {
     width: 100%;
     aspect-ratio: 1;
-    border: none;
+    border: 2px solid var(--border-color);
     border-radius: 0;
-    background: var(--bg-screen);
+    background: transparent;
     cursor: pointer;
-    padding: 4px;
+    padding: 0;
 }
 
-.sprite-select-item:active,
 .sprite-select-item.selected {
-    /* ナンバリングのみで表示 */
-    background: rgba(0, 0, 0, 0.05);
+    box-shadow: inset 0 0 0 2px #fff;
 }
 
 .sprite-select-item canvas {
     width: 100%;
     height: 100%;
     image-rendering: pixelated;
+    display: block;
+}
+
+.sprite-select-item.selected canvas {
+    /* 選択時は2px分小さく表示して白枠を見せる */
+    width: calc(100% - 4px);
+    height: calc(100% - 4px);
+    margin: 2px;
 }
 
 /* ========================================
