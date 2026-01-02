@@ -702,6 +702,13 @@ const StageEditor = {
                     this.selectedTemplate = index;
                     this.initTemplateList();
 
+                    // 設定パネルが開いていれば、そのタイルの設定に切り替え
+                    if (this.isConfigOpen) {
+                        this.editingTemplate = { ...template, sprites: { ...template.sprites } };
+                        this.editingIndex = index;
+                        this.renderConfigContent();
+                    }
+
                     // ダブルタップ用タイマー（選択後もダブルタップを受け付ける）
                     state.timer = setTimeout(() => {
                         state.count = 0;
