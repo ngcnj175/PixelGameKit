@@ -229,7 +229,8 @@ const SpriteEditor = {
 
     // ========== ツール ==========
     initTools() {
-        document.querySelectorAll('.paint-tool-btn').forEach(btn => {
+        // PIXEL画面専用のツールボタンのみ選択
+        document.querySelectorAll('#paint-tools .paint-tool-btn').forEach(btn => {
             const newBtn = btn.cloneNode(true);
             if (btn.parentNode) btn.parentNode.replaceChild(newBtn, btn);
 
@@ -273,7 +274,8 @@ const SpriteEditor = {
                         break;
                     default:
                         this.currentTool = tool;
-                        document.querySelectorAll('.paint-tool-btn').forEach(b => {
+                        // PIXEL画面のツールのみアクティブ切替
+                        document.querySelectorAll('#paint-tools .paint-tool-btn').forEach(b => {
                             b.classList.toggle('active', b.dataset.tool === tool);
                         });
                         break;

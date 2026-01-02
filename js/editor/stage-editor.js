@@ -36,21 +36,35 @@ const StageEditor = {
     },
 
     refresh() {
+        // キャンバスを再取得（DOM更新対応）
+        this.canvas = document.getElementById('stage-canvas');
+        if (this.canvas) {
+            this.ctx = this.canvas.getContext('2d');
+        }
+
         this.initTemplateList();
+        this.initCanvasEvents(); // イベントリスナー再設定
         this.resize();
         this.render();
     },
 
     // ========== ツールバー ==========
     initTools() {
-        document.querySelectorAll('.stage-tool-btn').forEach(btn => {
+        // ステージ画面専用のツールボタンを選択
+        document.querySelectorAll('#stage-tools .paint-tool-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const tool = btn.dataset.tool;
-                if (tool === 'undo') return;
+                // 特殊ツール（undo, copy, paste等）はスキップ
+                if (['undo', 'copy', 'paste', 'flip-v', 'flip-h'].includes(tool)) {
+                    return;
+                }
 
                 this.currentTool = tool;
-                document.querySelectorAll('.stage-tool-btn').forEach(b => {
-                    b.classList.toggle('active', b === btn);
+                document.querySelectorAll('#stage-tools .paint-tool-btn').forEach(b => {
+                    // 描画ツールのみアクティブ切替
+                    if (['pen', 'eraser', 'fill', 'eyedropper'].includes(b.dataset.tool)) {
+                        b.classList.toggle('active', b === btn);
+                    }
                 });
             });
         });
@@ -673,9 +687,17 @@ const StageEditor = {
     processPixel(e) {
         if (App.currentScreen !== 'stage') return;
 
+        // イベントからクライアント座標を取得（undefined対策）
+        const clientX = e.clientX ?? e.touches?.[0]?.clientX;
+        const clientY = e.clientY ?? e.touches?.[0]?.clientY;
+        if (clientX === undefined || clientY === undefined) return;
+
         const rect = this.canvas.getBoundingClientRect();
-        const x = Math.floor((e.clientX - rect.left) / this.tileSize);
-        const y = Math.floor((e.clientY - rect.top) / this.tileSize);
+        const x = Math.floor((clientX - rect.left) / this.tileSize);
+        const y = Math.floor((clientY - rect.top) / this.tileSize);
+
+        // 座標がNaNの場合は処理しない
+        if (isNaN(x) || isNaN(y)) return;
 
         const stage = App.projectData.stage;
         if (x < 0 || x >= stage.width || y < 0 || y >= stage.height) return;
