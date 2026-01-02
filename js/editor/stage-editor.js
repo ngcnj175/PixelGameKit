@@ -592,12 +592,37 @@ const StageEditor = {
             div.className = 'tile-item' + (this.selectedTemplate === index ? ' selected' : '');
 
             // サムネイル（IDLEまたはメイン）
-            const spriteIdx = template.sprites?.idle?.frames?.[0] ?? template.sprites?.main?.frames?.[0];
-            if (spriteIdx !== undefined && App.projectData.sprites[spriteIdx]) {
+            const frames = template.sprites?.idle?.frames || template.sprites?.main?.frames || [];
+            const speed = template.sprites?.idle?.speed || template.sprites?.main?.speed || 8;
+
+            if (frames.length > 0) {
                 const miniCanvas = document.createElement('canvas');
                 miniCanvas.width = 16;
                 miniCanvas.height = 16;
-                this.renderSpriteToMiniCanvas(App.projectData.sprites[spriteIdx], miniCanvas);
+
+                // 初期フレーム描画
+                const firstSprite = App.projectData.sprites[frames[0]];
+                if (firstSprite) {
+                    this.renderSpriteToMiniCanvas(firstSprite, miniCanvas);
+                }
+
+                // 複数フレームの場合はアニメーション
+                if (frames.length > 1) {
+                    let frameIndex = 0;
+                    const animInterval = setInterval(() => {
+                        // 画面がステージでなくなったらアニメ停止
+                        if (App.currentScreen !== 'stage') {
+                            clearInterval(animInterval);
+                            return;
+                        }
+                        frameIndex = (frameIndex + 1) % frames.length;
+                        const sprite = App.projectData.sprites[frames[frameIndex]];
+                        if (sprite) {
+                            this.renderSpriteToMiniCanvas(sprite, miniCanvas);
+                        }
+                    }, 1000 / speed);
+                }
+
                 div.appendChild(miniCanvas);
             }
 
@@ -826,7 +851,9 @@ const StageEditor = {
         const ctx = canvas.getContext('2d');
         const palette = App.nesPalette;
 
-        ctx.clearRect(0, 0, 16, 16);
+        // 背景色を描画
+        ctx.fillStyle = '#3CBCFC';
+        ctx.fillRect(0, 0, 16, 16);
 
         for (let y = 0; y < 16; y++) {
             for (let x = 0; x < 16; x++) {
