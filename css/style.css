@@ -1848,7 +1848,7 @@ body {
 .sprite-select-item {
     width: 44px;
     height: 44px;
-    background: var(--bg-screen);
+    background: #3CBCFC;
     border: 2px solid var(--border-color);
     border-radius: 0;
     cursor: pointer;
