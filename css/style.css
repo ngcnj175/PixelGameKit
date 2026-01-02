@@ -1004,17 +1004,12 @@ body {
 .sprite-select-item {
     width: 44px;
     height: 44px;
-    border: 1px solid var(--border-color);
+    border: none;
     border-radius: 0;
     background: var(--bg-screen);
     cursor: pointer;
     position: relative;
     flex-shrink: 0;
-}
-
-.sprite-select-item.selected {
-    border-color: var(--color-dark);
-    border-width: 2px;
 }
 
 .sprite-select-item canvas {
@@ -1939,18 +1934,14 @@ body {
 .type-list {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    padding: 16px;
+    gap: 0;
+    padding: 8px 16px;
 }
 
 .type-select-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 14px 16px;
-    border: 2px solid var(--border-color);
-    border-radius: 0;
-    background: #fff;
+    padding: 12px 16px;
+    border: none;
+    background: transparent;
     font-size: 14px;
     font-weight: bold;
     color: var(--text-dark);
@@ -1960,13 +1951,12 @@ body {
 }
 
 .type-select-item:hover {
-    border-color: var(--color-dark);
+    background: rgba(0, 0, 0, 0.05);
 }
 
 .type-select-item:active {
     background: var(--color-dark);
     color: #fff;
-    border-color: var(--color-dark);
 }
 
 .popup-cancel {
