@@ -1865,6 +1865,7 @@ body {
     height: 100%;
     image-rendering: pixelated;
     display: block;
+    object-fit: contain;
 }
 
 /* ========================================
