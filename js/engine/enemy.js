@@ -8,8 +8,8 @@ class Enemy {
         this.y = tileY;
         this.vx = 0;
         this.vy = 0;
-        this.width = 0.9;
-        this.height = 0.9;
+        this.width = 0.8;
+        this.height = 0.8;
         this.behavior = behavior;
         this.facingRight = true;
         this.onGround = false;
@@ -21,13 +21,30 @@ class Enemy {
         this.animTimer = 0;
 
         // 重力
-        this.gravity = 0.025;
-        this.maxFallSpeed = 0.5;
+        this.gravity = 0.02;
+        this.maxFallSpeed = 0.4;
+
+        // ライフ（テンプレートから取得）
+        this.lives = template?.config?.life || 1;
+
+        // 死亡状態
+        this.isDying = false;
+        this.deathTimer = 0;
     }
 
     update(engine) {
+        // 死亡中は落下のみ
+        if (this.isDying) {
+            this.vy += this.gravity;
+            this.y += this.vy;
+            this.deathTimer++;
+            return this.deathTimer > 120; // 2秒後に消滅
+        }
+
+        // 行動パターン
         switch (this.behavior) {
             case 'idle':
+                this.vx = 0;
                 break;
             case 'patrol':
                 this.patrol(engine);
@@ -38,15 +55,23 @@ class Enemy {
             case 'jump':
                 this.jumpPatrol(engine);
                 break;
+            default:
+                this.vx = 0;
         }
 
+        // 重力
         this.vy += this.gravity;
-        this.vy = Math.min(this.vy, this.maxFallSpeed);
+        if (this.vy > this.maxFallSpeed) {
+            this.vy = this.maxFallSpeed;
+        }
 
+        // X方向の移動と衝突
         this.x += this.vx;
-        this.y += this.vy;
+        this.handleHorizontalCollision(engine);
 
-        this.handleCollision(engine);
+        // Y方向の移動と衝突
+        this.y += this.vy;
+        this.handleVerticalCollision(engine);
 
         // アニメーション更新
         this.animTimer++;
@@ -58,25 +83,41 @@ class Enemy {
                 this.animFrame = (this.animFrame + 1) % frames.length;
             }
         }
+
+        return false; // 消滅しない
+    }
+
+    takeDamage(fromRight) {
+        this.lives--;
+        if (this.lives <= 0) {
+            this.die(fromRight);
+        }
+    }
+
+    die(fromRight) {
+        this.isDying = true;
+        this.vy = -0.3;
+        this.vx = fromRight ? -0.1 : 0.1;
+        this.onGround = false;
     }
 
     patrol(engine) {
+        // 崖落下防止：前方の足元にタイルがなければ反転
+        const checkX = this.facingRight ? Math.floor(this.x + this.width + 0.1) : Math.floor(this.x - 0.1);
+        const footY = Math.floor(this.y + this.height + 0.1);
+
+        if (engine.getCollision(checkX, footY) === 0) {
+            this.facingRight = !this.facingRight;
+        }
+
         this.vx = this.facingRight ? this.moveSpeed : -this.moveSpeed;
-
-        const nextX = this.x + (this.facingRight ? this.width + 0.1 : -0.1);
-        const tileY = Math.floor(this.y + this.height);
-
-        if (engine.getCollision(Math.floor(nextX), Math.floor(this.y)) === 1) {
-            this.facingRight = !this.facingRight;
-        }
-
-        if (engine.getCollision(Math.floor(nextX), tileY) === 0) {
-            this.facingRight = !this.facingRight;
-        }
     }
 
     chase(engine) {
-        if (!engine.player) return;
+        if (!engine.player) {
+            this.vx = 0;
+            return;
+        }
 
         const dx = engine.player.x - this.x;
 
@@ -97,32 +138,45 @@ class Enemy {
         }
     }
 
-    handleCollision(engine) {
-        this.onGround = false;
+    handleHorizontalCollision(engine) {
+        if (this.isDying) return;
 
-        const leftTile = Math.floor(this.x);
-        const rightTile = Math.floor(this.x + this.width);
-        const topTile = Math.floor(this.y);
-        const bottomTile = Math.floor(this.y + this.height);
+        const left = Math.floor(this.x);
+        const right = Math.floor(this.x + this.width);
+        const top = Math.floor(this.y);
+        const bottom = Math.floor(this.y + this.height - 0.01);
 
-        for (let ty = topTile; ty <= bottomTile; ty++) {
-            if (engine.getCollision(leftTile, ty) === 1) {
-                this.x = leftTile + 1;
+        for (let ty = top; ty <= bottom; ty++) {
+            if (engine.getCollision(left, ty) === 1) {
+                this.x = left + 1;
                 this.vx = 0;
                 this.facingRight = true;
             }
-            if (engine.getCollision(rightTile, ty) === 1) {
-                this.x = rightTile - this.width;
+            if (engine.getCollision(right, ty) === 1) {
+                this.x = right - this.width;
                 this.vx = 0;
                 this.facingRight = false;
             }
         }
+    }
 
-        const newBottomTile = Math.floor(this.y + this.height);
-        for (let tx = Math.floor(this.x); tx <= Math.floor(this.x + this.width); tx++) {
-            const collision = engine.getCollision(tx, newBottomTile);
-            if (collision === 1 || collision === 2) {
-                this.y = newBottomTile - this.height;
+    handleVerticalCollision(engine) {
+        if (this.isDying) return;
+
+        this.onGround = false;
+
+        const left = Math.floor(this.x);
+        const right = Math.floor(this.x + this.width - 0.01);
+        const top = Math.floor(this.y);
+        const bottom = Math.floor(this.y + this.height);
+
+        for (let tx = left; tx <= right; tx++) {
+            if (this.vy < 0 && engine.getCollision(tx, top) === 1) {
+                this.y = top + 1;
+                this.vy = 0;
+            }
+            if (this.vy >= 0 && engine.getCollision(tx, bottom) === 1) {
+                this.y = bottom - this.height;
                 this.vy = 0;
                 this.onGround = true;
             }
@@ -130,21 +184,26 @@ class Enemy {
     }
 
     render(ctx, tileSize, camera) {
-        // テンプレートがない場合は描画しない
         if (!this.template) return;
 
         const screenX = (this.x - camera.x) * tileSize;
         const screenY = (this.y - camera.y) * tileSize;
 
-        // テンプレートのスプライトを取得
         const frames = this.template?.sprites?.idle?.frames || [];
         const spriteIdx = frames[this.animFrame] ?? frames[0];
         const sprite = App.projectData.sprites[spriteIdx];
 
         if (sprite) {
-            // スプライトを描画
             const palette = App.nesPalette;
             const pixelSize = tileSize / 16;
+
+            // 死亡アニメーション中は上下反転
+            if (this.isDying) {
+                ctx.save();
+                ctx.translate(screenX + tileSize / 2, screenY + tileSize / 2);
+                ctx.scale(1, -1);
+                ctx.translate(-(screenX + tileSize / 2), -(screenY + tileSize / 2));
+            }
 
             for (let y = 0; y < 16; y++) {
                 for (let x = 0; x < 16; x++) {
@@ -159,6 +218,10 @@ class Enemy {
                         );
                     }
                 }
+            }
+
+            if (this.isDying) {
+                ctx.restore();
             }
         }
     }

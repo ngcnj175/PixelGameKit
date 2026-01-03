@@ -31,6 +31,7 @@ const GameEngine = {
         this.isRunning = true;
         this.isPaused = false;
         this.hasStarted = true;
+        this.startMessageTimer = 90; // START!表示時間（1.5秒）
         this.resize();
         this.initGame();
         this.gameLoop();
@@ -106,6 +107,10 @@ const GameEngine = {
         const stage = App.projectData.stage;
         const templates = App.projectData.templates || [];
 
+        console.log('=== initGame Debug ===');
+        console.log('Templates count:', templates.length);
+        console.log('Templates:', templates);
+
         // プレイヤーとエネミーの位置をテンプレートとステージから検索
         let playerPos = null;
         const enemyPositions = [];
@@ -114,10 +119,12 @@ const GameEngine = {
         const spriteToTemplate = {};
         templates.forEach((template, index) => {
             const spriteIdx = template?.sprites?.idle?.frames?.[0] ?? template?.sprites?.main?.frames?.[0];
+            console.log(`Template ${index}:`, template.name, 'type:', template.type, 'spriteIdx:', spriteIdx);
             if (spriteIdx !== undefined) {
                 spriteToTemplate[spriteIdx] = template;
             }
         });
+        console.log('spriteToTemplate:', spriteToTemplate);
 
         // ステージ上のタイルからプレイヤー・エネミーを検索
         if (stage && stage.layers && stage.layers.fg) {
@@ -171,6 +178,7 @@ const GameEngine = {
             this.player.update(this);
 
             // カメラをプレイヤー中心に
+            // ビューのタイル数を計算（スケール適用済みTILE_SIZEを使用）
             const viewWidth = this.canvas.width / this.TILE_SIZE;
             const viewHeight = this.canvas.height / this.TILE_SIZE;
 
@@ -189,22 +197,39 @@ const GameEngine = {
     },
 
     checkCollisions() {
-        if (!this.player) return;
+        if (!this.player || this.player.isDead) return;
 
         this.enemies.forEach((enemy, index) => {
+            if (enemy.isDying) return; // 死亡中の敵はスキップ
+
             if (this.player.collidesWith(enemy)) {
-                if (this.player.vy > 0 && this.player.y < enemy.y) {
-                    this.enemies.splice(index, 1);
-                    this.player.vy = -8;
-                } else {
-                    this.stop();
-                    setTimeout(() => {
-                        alert('ゲームオーバー！');
-                        this.start();
-                    }, 100);
+                // 上から踏みつけ判定
+                if (this.player.vy > 0 && this.player.y + this.player.height < enemy.y + enemy.height * 0.5) {
+                    // 敵にダメージ
+                    const fromRight = this.player.x > enemy.x;
+                    enemy.takeDamage(fromRight);
+                    this.player.vy = -0.25; // 小さくバウンス
+                } else if (!this.player.invincible) {
+                    // プレイヤーがダメージを受ける
+                    const fromRight = enemy.x > this.player.x;
+                    this.player.takeDamage(fromRight);
                 }
             }
         });
+
+        // 消滅した敵を削除
+        this.enemies = this.enemies.filter(e => !e.update(this));
+
+        // 死亡判定
+        if (this.player.isDead && this.player.deathParticles.length === 0) {
+            // パーティクルが消えたらゲームオーバー
+            this.stop();
+            setTimeout(() => {
+                alert('ゲームオーバー！');
+                this.hasStarted = false;
+                this.restart();
+            }, 500);
+        }
     },
 
     checkClearCondition() {
@@ -271,6 +296,70 @@ const GameEngine = {
         if (this.player) {
             this.player.render(this.ctx, this.TILE_SIZE, this.camera);
         }
+
+        // UI描画
+        this.renderUI();
+    },
+
+    renderUI() {
+        // ライフ表示
+        if (this.player && !this.player.isDead) {
+            const lifeSprites = this.player.template?.sprites?.life;
+            const spriteIdx = lifeSprites?.frames?.[0];
+            const sprite = spriteIdx !== undefined ? App.projectData.sprites[spriteIdx] : null;
+
+            const heartSize = 20;
+            // スプライトが登録されている場合のみ表示
+            if (sprite) {
+                for (let i = 0; i < this.player.lives; i++) {
+                    const posX = 10 + i * (heartSize + 2);
+                    const posY = 10;
+
+                    const palette = App.nesPalette;
+                    const pixelSize = heartSize / 16;
+                    for (let sy = 0; sy < 16; sy++) {
+                        for (let sx = 0; sx < 16; sx++) {
+                            const colorIndex = sprite.data[sy][sx];
+                            if (colorIndex >= 0) {
+                                this.ctx.fillStyle = palette[colorIndex];
+                                this.ctx.fillRect(
+                                    posX + sx * pixelSize,
+                                    posY + sy * pixelSize,
+                                    pixelSize + 0.5,
+                                    pixelSize + 0.5
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // START表示
+        if (this.startMessageTimer > 0) {
+            this.startMessageTimer--;
+
+            const centerX = this.canvas.width / 2;
+            const centerY = this.canvas.height / 2;
+
+            this.ctx.font = '16px Arial';
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'middle';
+            this.ctx.fillStyle = '#ffffff';
+            this.ctx.fillText('START', centerX, centerY);
+        }
+
+        // PAUSE表示
+        if (this.isPaused) {
+            const centerX = this.canvas.width / 2;
+            const centerY = this.canvas.height / 2;
+
+            this.ctx.font = '16px Arial';
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'middle';
+            this.ctx.fillStyle = '#ffffff';
+            this.ctx.fillText('PAUSE', centerX, centerY);
+        }
     },
 
     renderStage() {
@@ -297,13 +386,34 @@ const GameEngine = {
             }
         });
 
+        // Collisionなしの素材を先に描画（後ろ）
         for (let y = 0; y < stage.height; y++) {
             for (let x = 0; x < stage.width; x++) {
                 const tileId = layer[y][x];
                 if (tileId >= 0 && tileId < sprites.length) {
-                    // プレイヤー・敵タイルはスキップ（動的オブジェクトとして別途描画）
                     const template = spriteToTemplate[tileId];
                     if (template && (template.type === 'player' || template.type === 'enemy')) {
+                        continue;
+                    }
+                    // Collisionなしの素材のみ描画
+                    if (template && template.type === 'material' && template.config?.collision === false) {
+                        this.renderSprite(sprites[tileId], x, y, palette);
+                    }
+                }
+            }
+        }
+
+        // その他のタイルを描画（前）
+        for (let y = 0; y < stage.height; y++) {
+            for (let x = 0; x < stage.width; x++) {
+                const tileId = layer[y][x];
+                if (tileId >= 0 && tileId < sprites.length) {
+                    const template = spriteToTemplate[tileId];
+                    if (template && (template.type === 'player' || template.type === 'enemy')) {
+                        continue;
+                    }
+                    // Collisionなし素材はスキップ（既に描画済み）
+                    if (template && template.type === 'material' && template.config?.collision === false) {
                         continue;
                     }
                     this.renderSprite(sprites[tileId], x, y, palette);

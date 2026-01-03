@@ -28,24 +28,33 @@ const GameController = {
 
         directions.forEach(dir => {
             const btn = document.getElementById('btn-' + dir);
-            if (!btn) return;
+            if (!btn) {
+                console.log('D-pad button not found:', dir);
+                return;
+            }
 
             // マウス
             btn.addEventListener('mousedown', (e) => {
                 e.preventDefault();
+                console.log('D-pad mousedown:', dir);
                 this.press(dir);
             });
-            btn.addEventListener('mouseup', () => this.release(dir));
+            btn.addEventListener('mouseup', () => {
+                console.log('D-pad mouseup:', dir);
+                this.release(dir);
+            });
             btn.addEventListener('mouseleave', () => this.release(dir));
 
             // タッチ
             btn.addEventListener('touchstart', (e) => {
                 e.preventDefault();
+                console.log('D-pad touchstart:', dir);
                 this.press(dir);
             }, { passive: false });
 
             btn.addEventListener('touchend', (e) => {
                 e.preventDefault();
+                console.log('D-pad touchend:', dir);
                 this.release(dir);
             }, { passive: false });
 

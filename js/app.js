@@ -96,6 +96,10 @@ const App = {
         if (saved) {
             this.projectData = saved;
             console.log('Project loaded from storage');
+            // パレットを復元
+            if (this.projectData.palette) {
+                this.nesPalette = this.projectData.palette;
+            }
         } else {
             this.projectData = this.createDefaultProject();
             console.log('New project created');
@@ -110,6 +114,10 @@ const App = {
                 if (data) {
                     this.projectData = data;
                     console.log('Project loaded from URL');
+                    // パレットを復元
+                    if (this.projectData.palette) {
+                        this.nesPalette = this.projectData.palette;
+                    }
                     history.replaceState(null, '', window.location.pathname);
                 }
             } catch (e) {
@@ -132,6 +140,8 @@ const App = {
             }
             // 新規プロジェクト作成
             this.projectData = this.createDefaultProject();
+            // パレットもデフォルトにリセット
+            this.nesPalette = ['#000000'];
             this.currentProjectName = null;
             this.updateGameInfo();
             this.refreshCurrentScreen();
@@ -158,6 +168,10 @@ const App = {
                     try {
                         const data = JSON.parse(event.target.result);
                         this.projectData = data;
+                        // パレットを復元
+                        if (this.projectData.palette) {
+                            this.nesPalette = this.projectData.palette;
+                        }
                         this.currentProjectName = file.name.replace(/\.(json|pgk)$/i, '');
                         this.updateGameInfo();
                         this.refreshCurrentScreen();
@@ -288,6 +302,9 @@ const App = {
     },
 
     saveProject() {
+        // パレットをプロジェクトデータに同期
+        this.projectData.palette = this.nesPalette.slice();
+
         // LocalStorageにも保存
         Storage.save('currentProject', this.projectData);
 
@@ -306,6 +323,8 @@ const App = {
         const name = prompt('ファイル名を入力してください', defaultName);
         if (name) {
             this.currentProjectName = name;
+            // パレットをプロジェクトデータに同期
+            this.projectData.palette = this.nesPalette.slice();
             Storage.save('currentProject', this.projectData);
             this.downloadProject(name);
             alert(`${name}.json を保存しました`);

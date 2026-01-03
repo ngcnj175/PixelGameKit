@@ -176,6 +176,7 @@ const StageEditor = {
     getSpriteKeysForType(type) {
         switch (type) {
             case 'player':
+                return ['idle', 'walk', 'jump', 'attack', 'shot', 'life'];
             case 'enemy':
                 return ['idle', 'walk', 'jump', 'attack', 'shot'];
             case 'material':
@@ -189,9 +190,9 @@ const StageEditor = {
     getDefaultConfig(type) {
         switch (type) {
             case 'player':
-                return { life: 3, speed: 5, jumpPower: 10, wJump: false, shotMaxRange: 1 };
+                return { life: 3, lifeCount: 3, speed: 5, jumpPower: 10, wJump: false, shotMaxRange: 1 };
             case 'enemy':
-                return { life: 1, speed: 3, jumpPower: 5, shotMaxRange: 1, move: 'idle' };
+                return { life: 1, lifeCount: 1, speed: 3, jumpPower: 5, shotMaxRange: 1, move: 'idle' };
             case 'material':
                 return { collision: true, life: -1 };
             case 'item':
@@ -279,7 +280,7 @@ const StageEditor = {
         // スロット表示名
         const labels = {
             idle: 'IDLE', walk: 'WALK', jump: 'JUMP',
-            attack: 'ATTACK', shot: 'SHOT', main: 'MAIN'
+            attack: 'ATTACK', shot: 'SHOT', life: 'LIFE', main: 'MAIN'
         };
 
         return `
@@ -303,10 +304,10 @@ const StageEditor = {
         let html = '';
 
         if (type === 'player' || type === 'enemy') {
-            html += this.renderSlider('LIFE', 'life', config.life ?? 3, 1, 10);
+            html += this.renderSlider('MAX LIFE', 'life', config.life ?? 3, 1, 10);
             html += this.renderSlider('SPEED', 'speed', config.speed ?? 5, 1, 10);
             html += this.renderSliderWithCheck('JUMP POWER', 'jumpPower', config.jumpPower ?? 10, 1, 20, 'W JUMP', 'wJump', config.wJump);
-            html += this.renderSlider('ShotMaxRange', 'shotMaxRange', config.shotMaxRange ?? 1, 1, 16);
+            html += this.renderSlider('SHOT MAX RANGE', 'shotMaxRange', config.shotMaxRange ?? 1, 1, 16);
 
             if (type === 'enemy') {
                 html += `
