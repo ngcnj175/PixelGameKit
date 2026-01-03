@@ -22,6 +22,10 @@ const StageEditor = {
     // タイルクリック状態（ダブルタップ検出用）
     tileClickState: { index: null, timer: null, count: 0 },
 
+    // UNDO履歴
+    undoHistory: [],
+    maxUndoHistory: 20,
+
     init() {
         this.canvas = document.getElementById('stage-canvas');
         if (this.canvas) {
@@ -56,8 +60,15 @@ const StageEditor = {
         document.querySelectorAll('#stage-tools .paint-tool-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const tool = btn.dataset.tool;
-                // 特殊ツール（undo, copy, paste等）はスキップ
-                if (['undo', 'copy', 'paste', 'flip-v', 'flip-h'].includes(tool)) {
+
+                // UNDOツール
+                if (tool === 'undo') {
+                    this.undo();
+                    return;
+                }
+
+                // 特殊ツール（copy, paste等）はスキップ
+                if (['copy', 'paste', 'flip-v', 'flip-h'].includes(tool)) {
                     return;
                 }
 
@@ -811,6 +822,7 @@ const StageEditor = {
         let isDrawing = false;
 
         const handleStart = (e) => {
+            this.saveToHistory();
             isDrawing = true;
             this.processPixel(e);
         };
@@ -1020,5 +1032,35 @@ const StageEditor = {
             this.ctx.lineTo(this.canvas.width, y * this.tileSize);
             this.ctx.stroke();
         }
+    },
+
+    // ========== UNDO機能 ==========
+    saveToHistory() {
+        const stage = App.projectData.stage;
+        // FGレイヤーの現在の状態をディープコピー
+        const snapshot = stage.layers.fg.map(row => [...row]);
+
+        this.undoHistory.push(snapshot);
+
+        // 履歴が多すぎる場合は古いものを削除
+        if (this.undoHistory.length > this.maxUndoHistory) {
+            this.undoHistory.shift();
+        }
+    },
+
+    undo() {
+        if (this.undoHistory.length === 0) {
+            console.log('No undo history');
+            return;
+        }
+
+        const snapshot = this.undoHistory.pop();
+        const stage = App.projectData.stage;
+
+        // スナップショットを復元
+        stage.layers.fg = snapshot;
+
+        this.render();
+        console.log('Undo applied');
     }
 };

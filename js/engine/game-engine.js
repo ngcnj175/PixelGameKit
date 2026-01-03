@@ -78,16 +78,33 @@ const GameEngine = {
     },
 
     startFromTitle() {
-        // 先にゲームを初期化（残像防止）
-        this.resize();
-        this.initGame();
+        // ローディング表示
+        this.titleState = 'loading';
+        this.renderLoading();
 
-        // ワイプ開始
-        this.titleState = 'wipe';
-        this.wipeTimer = 0;
-        this.isRunning = true;
-        this.hasStarted = true;
-        this.gameLoop();
+        // 非同期で初期化してからワイプ開始
+        setTimeout(() => {
+            this.resize();
+            this.initGame();
+
+            // ワイプ開始
+            this.titleState = 'wipe';
+            this.wipeTimer = 0;
+            this.isRunning = true;
+            this.hasStarted = true;
+            this.gameLoop();
+        }, 50);
+    },
+
+    renderLoading() {
+        const ctx = this.ctx;
+        ctx.fillStyle = '#333333';
+        ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        ctx.font = '12px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText('Loading...', this.canvas.width / 2, this.canvas.height / 2);
     },
 
     // リスタート（Startボタン長押し用）
