@@ -115,6 +115,11 @@ const GameEngine = {
         this.titleState = 'title';
         this.resize();
         this.initGame();
+
+        // ゲーム画面を一度レンダリングしてキャッシュ（残像防止）
+        this.renderGameScreen();
+
+        // タイトル画面表示
         this.renderTitleScreen();
     },
 
@@ -503,9 +508,15 @@ const GameEngine = {
         const tileX = Math.floor(x);
         const tileY = Math.floor(y);
 
-        // 範囲外は壁として扱う
-        if (tileX < 0 || tileX >= stage.width || tileY < 0 || tileY >= stage.height) {
-            return 1;
+        // 左右と上は壁として扱う、下は衝突なし（落下可能）
+        if (tileX < 0 || tileX >= stage.width) {
+            return 1; // 左右は壁
+        }
+        if (tileY < 0) {
+            return 1; // 上は壁
+        }
+        if (tileY >= stage.height) {
+            return 0; // 下は衝突なし（落下）
         }
 
         // fgレイヤーからスプライトインデックスを取得

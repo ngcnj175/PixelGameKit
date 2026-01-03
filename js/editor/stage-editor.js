@@ -58,6 +58,32 @@ const StageEditor = {
     initTools() {
         // ステージ画面専用のツールボタンを選択
         document.querySelectorAll('#stage-tools .paint-tool-btn').forEach(btn => {
+            let longPressTimer = null;
+
+            // 長押し検出（消しゴム全削除用）
+            btn.addEventListener('mousedown', () => {
+                if (btn.dataset.tool === 'eraser') {
+                    longPressTimer = setTimeout(() => {
+                        this.clearAllTiles();
+                        longPressTimer = null;
+                    }, 800);
+                }
+            });
+
+            btn.addEventListener('mouseup', () => {
+                if (longPressTimer) {
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
+                }
+            });
+
+            btn.addEventListener('mouseleave', () => {
+                if (longPressTimer) {
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
+                }
+            });
+
             btn.addEventListener('click', () => {
                 const tool = btn.dataset.tool;
 
@@ -248,6 +274,9 @@ const StageEditor = {
             }
 
             this.renderConfigContent();
+
+            // パネルを先頭にスクロール
+            panel.scrollTop = 0;
         }
     },
 
@@ -1040,6 +1069,13 @@ const StageEditor = {
 
     // ========== UNDO機能 ==========
     saveToHistory() {
+        // デバウンス（100ms以内の連続呼び出しを無視）
+        const now = Date.now();
+        if (this.lastSaveTime && now - this.lastSaveTime < 100) {
+            return;
+        }
+        this.lastSaveTime = now;
+
         const stage = App.projectData.stage;
         // FGレイヤーの現在の状態をディープコピー
         const snapshot = stage.layers.fg.map(row => [...row]);
@@ -1066,5 +1102,23 @@ const StageEditor = {
 
         this.render();
         console.log('Undo applied');
+    },
+
+    clearAllTiles() {
+        if (!confirm('すべてのタイルを削除しますか？')) {
+            return;
+        }
+
+        this.saveToHistory();
+
+        const stage = App.projectData.stage;
+        for (let y = 0; y < stage.height; y++) {
+            for (let x = 0; x < stage.width; x++) {
+                stage.layers.fg[y][x] = -1;
+            }
+        }
+
+        this.render();
+        console.log('All tiles cleared');
     }
 };
