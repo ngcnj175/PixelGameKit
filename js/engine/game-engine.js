@@ -304,7 +304,7 @@ const GameEngine = {
         ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
         ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-        ctx.font = 'bold 20px Arial';
+        ctx.font = '16px Arial';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = '#ffffff';
@@ -318,7 +318,7 @@ const GameEngine = {
 
         this.titleBlinkTimer++;
         if (Math.floor(this.titleBlinkTimer / 30) % 2 === 0) {
-            ctx.font = '12px Arial';
+            ctx.font = '16px Arial';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillStyle = '#ffffff';

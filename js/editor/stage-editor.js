@@ -56,6 +56,10 @@ const StageEditor = {
 
     // ========== ツールバー ==========
     initTools() {
+        // 重複リスナー防止
+        if (this.toolsInitialized) return;
+        this.toolsInitialized = true;
+
         // ステージ画面専用のツールボタンを選択
         document.querySelectorAll('#stage-tools .paint-tool-btn').forEach(btn => {
             let longPressTimer = null;

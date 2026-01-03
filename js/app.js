@@ -132,43 +132,27 @@ const App = {
 
         // 新規プロジェクト
         document.getElementById('new-icon-btn')?.addEventListener('click', () => {
-            this.showThreeChoiceDialog(
-                '新規プロジェクトを開きます。\n現在の編集内容を保存しますか？',
-                () => {
-                    // 保存する → ファイル名入力画面
-                    this.saveAsNewFile();
-                },
-                () => {
-                    // 保存しない → 新規プロジェクト作成
-                    this.projectData = this.createDefaultProject();
-                    this.nesPalette = ['#000000'];
-                    this.currentProjectName = null;
-                    this.updateGameInfo();
-                    this.refreshCurrentScreen();
-                },
-                () => {
-                    // キャンセル → 何もしない
+            if (this.hasUnsavedChanges()) {
+                if (confirm('現在の編集内容を保存しますか？')) {
+                    this.saveProject();
                 }
-            );
+            }
+            this.projectData = this.createDefaultProject();
+            this.nesPalette = ['#000000'];
+            this.currentProjectName = null;
+            this.updateGameInfo();
+            this.refreshCurrentScreen();
         });
 
         // ファイル読み込み（ファイル選択ダイアログ）
         const fileInput = document.getElementById('file-input');
         document.getElementById('load-icon-btn')?.addEventListener('click', () => {
-            this.showThreeChoiceDialog(
-                'プロジェクトファイルを開きます。\n現在の編集内容を保存しますか？',
-                () => {
-                    // 保存する → ファイル名入力画面
-                    this.saveAsNewFile();
-                },
-                () => {
-                    // 保存しない → ファイル選択
-                    fileInput?.click();
-                },
-                () => {
-                    // キャンセル → 何もしない
+            if (this.hasUnsavedChanges()) {
+                if (confirm('現在の編集内容を保存しますか？')) {
+                    this.saveProject();
                 }
-            );
+            }
+            fileInput?.click();
         });
 
         fileInput?.addEventListener('change', (e) => {
