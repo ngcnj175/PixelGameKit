@@ -78,22 +78,12 @@ const GameEngine = {
     },
 
     startFromTitle() {
-        // ローディング表示
-        this.titleState = 'loading';
-        this.renderLoading();
-
-        // 非同期で初期化してからワイプ開始
-        setTimeout(() => {
-            this.resize();
-            this.initGame();
-
-            // ワイプ開始
-            this.titleState = 'wipe';
-            this.wipeTimer = 0;
-            this.isRunning = true;
-            this.hasStarted = true;
-            this.gameLoop();
-        }, 50);
+        // showPreviewで既に初期化済み、即座にワイプ開始
+        this.titleState = 'wipe';
+        this.wipeTimer = 0;
+        this.isRunning = true;
+        this.hasStarted = true;
+        this.gameLoop();
     },
 
     renderLoading() {

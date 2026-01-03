@@ -819,6 +819,10 @@ const StageEditor = {
     initCanvasEvents() {
         if (!this.canvas) return;
 
+        // 重複リスナー防止
+        if (this.canvasEventsInitialized) return;
+        this.canvasEventsInitialized = true;
+
         let isDrawing = false;
 
         const handleStart = (e) => {

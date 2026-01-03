@@ -105,11 +105,11 @@ class Player {
         this.y += this.vy;
         this.handleVerticalCollision(engine);
 
-        // 画面外落下で一発死亡
+        // 画面外落下で即死（パーティクルなし）
         const stageHeight = App.projectData.stage?.height || 16;
-        if (this.y > stageHeight + 2) {
-            this.lives = 0;
-            this.die();
+        if (this.y > stageHeight + 1) {
+            this.isDead = true;
+            this.deathParticles = []; // パーティクルなし
             return;
         }
 
