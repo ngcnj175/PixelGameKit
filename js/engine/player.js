@@ -37,7 +37,7 @@ class Player {
         this.deathParticles = [];
 
         // 状態
-        this.state = 'idle'; // idle, walk, jump, attack
+        this.state = 'idle';
         this.isAttacking = false;
         this.attackTimer = 0;
 
@@ -49,6 +49,11 @@ class Player {
         // SHOT設定
         this.shotMaxRange = template?.config?.shotMaxRange || 0;
         this.attackCooldown = 0;
+
+        // W JUMP（2段ジャンプ）
+        this.wJumpEnabled = template?.config?.wJump || false;
+        this.canDoubleJump = false;
+        this.hasDoubleJumped = false;
     }
 
     update(engine) {
@@ -122,8 +127,10 @@ class Player {
     updateAnimation() {
         this.animTimer++;
         const spriteSlot = this.getSpriteSlot();
-        const speed = this.template?.sprites?.[spriteSlot]?.speed || 10;
-        if (this.animTimer >= speed) {
+        const speed = this.template?.sprites?.[spriteSlot]?.speed || 5;
+        // スプライトエディターと同等のタイミング（speed = 秒間フレーム数）
+        const interval = Math.floor(60 / speed);
+        if (this.animTimer >= interval) {
             this.animTimer = 0;
             const frames = this.template?.sprites?.[spriteSlot]?.frames || [];
             if (frames.length > 0) {
@@ -156,10 +163,23 @@ class Player {
             this.vx = this.moveSpeed;
             this.facingRight = true;
         }
-        if (GameController.isPressed('a') && this.onGround) {
-            this.vy = this.jumpPower;
-            this.onGround = false;
+
+        // ジャンプ処理
+        if (GameController.isPressed('a')) {
+            if (this.onGround) {
+                // 通常ジャンプ
+                this.vy = this.jumpPower;
+                this.onGround = false;
+                this.hasDoubleJumped = false;
+                this.canDoubleJump = this.wJumpEnabled;
+            } else if (this.wJumpEnabled && this.canDoubleJump && !this.hasDoubleJumped && !this._jumpKeyWasPressed) {
+                // 2段ジャンプ
+                this.vy = this.jumpPower;
+                this.hasDoubleJumped = true;
+                this.canDoubleJump = false;
+            }
         }
+        this._jumpKeyWasPressed = GameController.isPressed('a');
 
         // Bキー攻撃
         if (GameController.isPressed('b') && this.shotMaxRange > 0 && this.attackCooldown <= 0) {
@@ -356,9 +376,9 @@ class Player {
                     const colorIndex = sprite.data[y][x];
                     if (colorIndex >= 0) {
                         let color = palette[colorIndex];
-                        // スターパワー中は色相シフト
+                        // スターパワー中は色相シフト（2倍速）
                         if (this.starPower) {
-                            const hue = (this.starTimer * 10 + x + y) % 360;
+                            const hue = (this.starTimer * 20 + x + y) % 360;
                             color = `hsl(${hue}, 100%, 50%)`;
                         }
                         ctx.fillStyle = color;

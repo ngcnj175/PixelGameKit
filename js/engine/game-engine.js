@@ -78,12 +78,15 @@ const GameEngine = {
     },
 
     startFromTitle() {
+        // 先にゲームを初期化（残像防止）
+        this.resize();
+        this.initGame();
+
+        // ワイプ開始
         this.titleState = 'wipe';
         this.wipeTimer = 0;
         this.isRunning = true;
         this.hasStarted = true;
-        this.resize();
-        this.initGame();
         this.gameLoop();
     },
 
@@ -451,8 +454,12 @@ const GameEngine = {
             }
         });
 
-        // 消滅した敵を削除
-        this.enemies = this.enemies.filter(e => !e.update(this));
+        // 消滅した敵を削除（画面外に落下した敵）
+        this.enemies = this.enemies.filter(e => {
+            if (e.isDying && e.deathTimer > 120) return false;
+            if (e.y > App.projectData.stage.height + 5) return false;
+            return true;
+        });
 
         // 死亡判定
         if (this.player.isDead && this.player.deathParticles.length === 0) {
@@ -599,7 +606,7 @@ const GameEngine = {
                 const tileId = layer[y][x];
                 if (tileId >= 0 && tileId < sprites.length) {
                     const template = spriteToTemplate[tileId];
-                    if (template && (template.type === 'player' || template.type === 'enemy')) {
+                    if (template && (template.type === 'player' || template.type === 'enemy' || template.type === 'item')) {
                         continue;
                     }
                     // Collisionなしの素材のみ描画
@@ -616,7 +623,7 @@ const GameEngine = {
                 const tileId = layer[y][x];
                 if (tileId >= 0 && tileId < sprites.length) {
                     const template = spriteToTemplate[tileId];
-                    if (template && (template.type === 'player' || template.type === 'enemy')) {
+                    if (template && (template.type === 'player' || template.type === 'enemy' || template.type === 'item')) {
                         continue;
                     }
                     // Collisionなし素材はスキップ（既に描画済み）

@@ -98,8 +98,9 @@ class Enemy {
         // アニメーション
         this.animTimer++;
         const spriteSlot = this.getSpriteSlot();
-        const speed = this.template?.sprites?.[spriteSlot]?.speed || 10;
-        if (this.animTimer >= speed) {
+        const speed = this.template?.sprites?.[spriteSlot]?.speed || 5;
+        const interval = Math.floor(60 / speed);
+        if (this.animTimer >= interval) {
             this.animTimer = 0;
             const frames = this.template?.sprites?.[spriteSlot]?.frames || [];
             if (frames.length > 0) {
