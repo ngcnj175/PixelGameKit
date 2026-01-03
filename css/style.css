@@ -190,13 +190,11 @@ body {
 
 #game-canvas {
     background: var(--bg-screen);
-    border: 3px solid var(--color-dark);
+    border: none;
     border-radius: 0;
-    /* 角丸なし */
     image-rendering: pixelated;
     image-rendering: crisp-edges;
     aspect-ratio: 1 / 1;
-    /* 正方形固定 */
     max-height: 100%;
     max-width: 100%;
     object-fit: contain;

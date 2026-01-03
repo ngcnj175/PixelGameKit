@@ -8,16 +8,23 @@ const GameEngine = {
     animationId: null,
     isRunning: false,
     isPaused: false,
-    hasStarted: false,  // 初回スタートしたかどうか
+    hasStarted: false,
 
     player: null,
     enemies: [],
+    projectiles: [],
+    items: [],
 
     GRAVITY: 0.5,
     TILE_SIZE: 16,
 
-    // カメラ（プレイヤー中心スクロール）
+    // カメラ
     camera: { x: 0, y: 0 },
+
+    // タイトル画面
+    titleState: 'title', // 'title', 'wipe', 'playing'
+    wipeTimer: 0,
+    titleBlinkTimer: 0,
 
     init() {
         this.canvas = document.getElementById('game-canvas');
@@ -47,23 +54,37 @@ const GameEngine = {
 
     // 一時停止トグル（Startボタン用）
     togglePause() {
+        if (this.titleState === 'title') {
+            // タイトル画面から開始
+            this.startFromTitle();
+            return;
+        }
+
         if (!this.hasStarted) {
-            // 初回はゲームを開始
             this.start();
             return;
         }
 
         if (this.isPaused) {
-            // 再開
             this.isPaused = false;
             if (!this.isRunning) {
                 this.isRunning = true;
                 this.gameLoop();
             }
         } else if (this.isRunning) {
-            // 一時停止
             this.isPaused = true;
+            this.render(); // PAUSE表示のため再描画
         }
+    },
+
+    startFromTitle() {
+        this.titleState = 'wipe';
+        this.wipeTimer = 0;
+        this.isRunning = true;
+        this.hasStarted = true;
+        this.resize();
+        this.initGame();
+        this.gameLoop();
     },
 
     // リスタート（Startボタン長押し用）
@@ -71,17 +92,20 @@ const GameEngine = {
         this.stop();
         this.hasStarted = false;
         this.isPaused = false;
+        this.titleState = 'title';
+        this.wipeTimer = 0;
         this.initGame();
         this.resize();
-        this.render();
+        this.renderTitleScreen();
         console.log('Game restarted');
     },
 
     // プレビュー表示（ゲーム開始前）
     showPreview() {
+        this.titleState = 'title';
         this.resize();
         this.initGame();
-        this.render();
+        this.renderTitleScreen();
     },
 
     resize() {
@@ -164,6 +188,17 @@ const GameEngine = {
     gameLoop() {
         if (!this.isRunning) return;
 
+        // ワイプ演出中
+        if (this.titleState === 'wipe') {
+            this.wipeTimer++;
+            if (this.wipeTimer >= 30) {
+                this.titleState = 'playing';
+            }
+            this.renderWipe();
+            this.animationId = requestAnimationFrame(() => this.gameLoop());
+            return;
+        }
+
         // 一時停止中はupdateをスキップ（描画は続行）
         if (!this.isPaused) {
             this.update();
@@ -171,6 +206,60 @@ const GameEngine = {
         this.render();
 
         this.animationId = requestAnimationFrame(() => this.gameLoop());
+    },
+
+    renderTitleScreen() {
+        const ctx = this.ctx;
+        ctx.fillStyle = '#333333';
+        ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+        this.titleBlinkTimer++;
+        if (Math.floor(this.titleBlinkTimer / 30) % 2 === 0) {
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText('PUSH START', this.canvas.width / 2, this.canvas.height / 2);
+        }
+
+        // タイトル画面のループ
+        if (this.titleState === 'title') {
+            requestAnimationFrame(() => this.renderTitleScreen());
+        }
+    },
+
+    renderWipe() {
+        const ctx = this.ctx;
+        const progress = this.wipeTimer / 30;
+
+        // まずゲーム画面を描画
+        this.renderGameScreen();
+
+        // ワイプ効果（中央から広がる円）
+        const maxRadius = Math.sqrt(Math.pow(this.canvas.width, 2) + Math.pow(this.canvas.height, 2)) / 2;
+        const radius = maxRadius * progress;
+
+        ctx.save();
+        ctx.globalCompositeOperation = 'destination-in';
+        ctx.beginPath();
+        ctx.arc(this.canvas.width / 2, this.canvas.height / 2, radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    },
+
+    renderGameScreen() {
+        const bgColor = App.projectData.stage?.backgroundColor || App.projectData.backgroundColor || '#3CBCFC';
+        this.ctx.fillStyle = bgColor;
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+        this.renderStage();
+        this.enemies.forEach(enemy => enemy.render(this.ctx, this.TILE_SIZE, this.camera));
+
+        if (this.player) {
+            this.player.render(this.ctx, this.TILE_SIZE, this.camera);
+        }
+
+        this.renderUI();
     },
 
     update() {
@@ -285,20 +374,7 @@ const GameEngine = {
     },
 
     render() {
-        // 背景色（Pixel画面の背景色を使用）
-        const bgColor = App.projectData.stage?.backgroundColor || App.projectData.backgroundColor || '#3CBCFC';
-        this.ctx.fillStyle = bgColor;
-        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-
-        this.renderStage();
-        this.enemies.forEach(enemy => enemy.render(this.ctx, this.TILE_SIZE, this.camera));
-
-        if (this.player) {
-            this.player.render(this.ctx, this.TILE_SIZE, this.camera);
-        }
-
-        // UI描画
-        this.renderUI();
+        this.renderGameScreen();
     },
 
     renderUI() {
@@ -333,20 +409,6 @@ const GameEngine = {
                     }
                 }
             }
-        }
-
-        // START表示
-        if (this.startMessageTimer > 0) {
-            this.startMessageTimer--;
-
-            const centerX = this.canvas.width / 2;
-            const centerY = this.canvas.height / 2;
-
-            this.ctx.font = '16px Arial';
-            this.ctx.textAlign = 'center';
-            this.ctx.textBaseline = 'middle';
-            this.ctx.fillStyle = '#ffffff';
-            this.ctx.fillText('START', centerX, centerY);
         }
 
         // PAUSE表示

@@ -307,7 +307,7 @@ const StageEditor = {
             html += this.renderSlider('MAX LIFE', 'life', config.life ?? 3, 1, 10);
             html += this.renderSlider('SPEED', 'speed', config.speed ?? 5, 1, 10);
             html += this.renderSliderWithCheck('JUMP POWER', 'jumpPower', config.jumpPower ?? 10, 1, 20, 'W JUMP', 'wJump', config.wJump);
-            html += this.renderSlider('SHOT MAX RANGE', 'shotMaxRange', config.shotMaxRange ?? 1, 1, 16);
+            html += this.renderSlider('SHOT MAX RANGE', 'shotMaxRange', config.shotMaxRange ?? 0, 0, 16);
 
             if (type === 'enemy') {
                 html += `
@@ -339,8 +339,6 @@ const StageEditor = {
                     <select class="param-select" data-key="itemType">
                         <option value="star" ${config.itemType === 'star' ? 'selected' : ''}>STAR</option>
                         <option value="lifeup" ${config.itemType === 'lifeup' ? 'selected' : ''}>LifeUp</option>
-                        <option value="weapon" ${config.itemType === 'weapon' ? 'selected' : ''}>WeaponGet</option>
-                        <option value="event" ${config.itemType === 'event' ? 'selected' : ''}>EventFlag</option>
                     </select>
                 </div>
             `;
