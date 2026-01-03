@@ -1,5 +1,5 @@
 /**
- * PixelGameKit - プレイヤー（カメラ対応）
+ * PixelGameKit - プレイヤー（完全版）
  */
 
 class Player {
@@ -15,7 +15,7 @@ class Player {
         this.onGround = false;
         this.facingRight = true;
 
-        // テンプレート情報（スプライト描画用）
+        // テンプレート情報
         this.template = template;
         this.animFrame = 0;
         this.animTimer = 0;
@@ -26,25 +26,38 @@ class Player {
         this.gravity = 0.02;
         this.maxFallSpeed = 0.4;
 
-        // ダメージシステム（テンプレートからライフ数を取得）
+        // ダメージシステム
         const templateLives = template?.config?.life || 3;
         this.lives = templateLives;
         this.maxLives = templateLives;
         this.invincible = false;
         this.invincibleTimer = 0;
-        this.invincibleDuration = 120; // 2秒（60fps * 2）
+        this.invincibleDuration = 120;
         this.isDead = false;
         this.deathParticles = [];
+
+        // 状態
+        this.state = 'idle'; // idle, walk, jump, attack
+        this.isAttacking = false;
+        this.attackTimer = 0;
+
+        // スター無敵
+        this.starPower = false;
+        this.starTimer = 0;
+        this.starDuration = 300; // 5秒
+
+        // SHOT設定
+        this.shotMaxRange = template?.config?.shotMaxRange || 0;
+        this.attackCooldown = 0;
     }
 
     update(engine) {
-        // 死亡中はパーティクルのみ更新
         if (this.isDead) {
             this.updateDeathParticles();
             return;
         }
 
-        // 無敵時間の更新
+        // 無敵時間更新
         if (this.invincible) {
             this.invincibleTimer--;
             if (this.invincibleTimer <= 0) {
@@ -52,7 +65,28 @@ class Player {
             }
         }
 
-        this.handleInput();
+        // スター無敵更新
+        if (this.starPower) {
+            this.starTimer--;
+            if (this.starTimer <= 0) {
+                this.starPower = false;
+            }
+        }
+
+        // 攻撃クールダウン
+        if (this.attackCooldown > 0) {
+            this.attackCooldown--;
+        }
+
+        // 攻撃中タイマー
+        if (this.isAttacking) {
+            this.attackTimer--;
+            if (this.attackTimer <= 0) {
+                this.isAttacking = false;
+            }
+        }
+
+        this.handleInput(engine);
 
         // 重力
         this.vy += this.gravity;
@@ -60,27 +94,58 @@ class Player {
             this.vy = this.maxFallSpeed;
         }
 
-        // X方向の移動と衝突
+        // 移動と衝突
         this.x += this.vx;
         this.handleHorizontalCollision(engine);
-
-        // Y方向の移動と衝突
         this.y += this.vy;
         this.handleVerticalCollision(engine);
 
-        // アニメーション更新
+        // 状態決定
+        this.updateState();
+
+        // アニメーション
+        this.updateAnimation();
+    }
+
+    updateState() {
+        if (this.isAttacking) {
+            this.state = 'attack';
+        } else if (!this.onGround) {
+            this.state = 'jump';
+        } else if (this.vx !== 0) {
+            this.state = 'walk';
+        } else {
+            this.state = 'idle';
+        }
+    }
+
+    updateAnimation() {
         this.animTimer++;
-        const speed = this.template?.sprites?.idle?.speed || 10;
+        const spriteSlot = this.getSpriteSlot();
+        const speed = this.template?.sprites?.[spriteSlot]?.speed || 10;
         if (this.animTimer >= speed) {
             this.animTimer = 0;
-            const frames = this.template?.sprites?.idle?.frames || [];
+            const frames = this.template?.sprites?.[spriteSlot]?.frames || [];
             if (frames.length > 0) {
                 this.animFrame = (this.animFrame + 1) % frames.length;
             }
         }
     }
 
-    handleInput() {
+    getSpriteSlot() {
+        switch (this.state) {
+            case 'attack':
+                return this.template?.sprites?.attack?.frames?.length > 0 ? 'attack' : 'idle';
+            case 'jump':
+                return this.template?.sprites?.jump?.frames?.length > 0 ? 'jump' : 'idle';
+            case 'walk':
+                return this.template?.sprites?.walk?.frames?.length > 0 ? 'walk' : 'idle';
+            default:
+                return 'idle';
+        }
+    }
+
+    handleInput(engine) {
         this.vx = 0;
 
         if (GameController.isPressed('left')) {
@@ -95,24 +160,67 @@ class Player {
             this.vy = this.jumpPower;
             this.onGround = false;
         }
+
+        // Bキー攻撃
+        if (GameController.isPressed('b') && this.shotMaxRange > 0 && this.attackCooldown <= 0) {
+            this.attack(engine);
+        }
+    }
+
+    attack(engine) {
+        this.isAttacking = true;
+        this.attackTimer = 15;
+        this.attackCooldown = 30;
+        this.animFrame = 0;
+
+        // SHOTプロジェクタイル発射
+        const shotSprite = this.template?.sprites?.shot?.frames?.[0];
+        if (shotSprite !== undefined) {
+            const direction = this.facingRight ? 1 : -1;
+            engine.projectiles.push({
+                x: this.x + (this.facingRight ? this.width : -0.2),
+                y: this.y + this.height / 2 - 0.25,
+                vx: 0.15 * direction,
+                vy: 0,
+                width: 0.5,
+                height: 0.5,
+                spriteIdx: shotSprite,
+                owner: 'player',
+                maxRange: this.shotMaxRange,
+                startX: this.x,
+                facingRight: this.facingRight
+            });
+        }
     }
 
     takeDamage(fromRight) {
-        if (this.invincible || this.isDead) return;
+        if (this.invincible || this.isDead || this.starPower) return;
 
         this.lives--;
 
         if (this.lives <= 0) {
-            // 死亡
             this.die();
         } else {
-            // ダメージを受ける
             this.invincible = true;
             this.invincibleTimer = this.invincibleDuration;
-
-            // ノックバック（2倍）
             this.vy = -0.4;
             this.vx = fromRight ? -0.3 : 0.3;
+        }
+    }
+
+    collectItem(itemType) {
+        switch (itemType) {
+            case 'star':
+                this.starPower = true;
+                this.starTimer = this.starDuration;
+                this.invincible = true;
+                this.invincibleTimer = this.starDuration;
+                break;
+            case 'lifeup':
+                if (this.lives < this.maxLives) {
+                    this.lives++;
+                }
+                break;
         }
     }
 
@@ -123,20 +231,14 @@ class Player {
 
     createDeathParticles() {
         this.deathParticles = [];
-
-        // テンプレートのスプライトを取得
         const frames = this.template?.sprites?.idle?.frames || [];
         const spriteIdx = frames[0];
         const sprite = App.projectData.sprites[spriteIdx];
-
         if (!sprite) return;
 
         const palette = App.nesPalette;
-
-        // 4x4ブロック単位でパーティクルに変換
         for (let py = 0; py < 16; py += 4) {
             for (let px = 0; px < 16; px += 4) {
-                // 4x4ブロックの最初の有効な色を使用
                 let color = null;
                 for (let dy = 0; dy < 4 && !color; dy++) {
                     for (let dx = 0; dx < 4 && !color; dx++) {
@@ -148,10 +250,10 @@ class Player {
                     this.deathParticles.push({
                         x: this.x + px / 16,
                         y: this.y + py / 16,
-                        vx: (Math.random() - 0.5) * 0.1, // 遅い速度
-                        vy: -Math.random() * 0.15 - 0.05, // 遅い速度
+                        vx: (Math.random() - 0.5) * 0.1,
+                        vy: -Math.random() * 0.15 - 0.05,
                         color: color,
-                        size: 4, // 4x4サイズ
+                        size: 4,
                         life: 90 + Math.random() * 30
                     });
                 }
@@ -163,10 +265,9 @@ class Player {
         this.deathParticles.forEach(p => {
             p.x += p.vx;
             p.y += p.vy;
-            p.vy += 0.01; // 重力
+            p.vy += 0.01;
             p.life--;
         });
-
         this.deathParticles = this.deathParticles.filter(p => p.life > 0);
     }
 
@@ -190,7 +291,6 @@ class Player {
 
     handleVerticalCollision(engine) {
         this.onGround = false;
-
         const left = Math.floor(this.x);
         const right = Math.floor(this.x + this.width - 0.01);
         const top = Math.floor(this.y);
@@ -217,7 +317,6 @@ class Player {
     }
 
     render(ctx, tileSize, camera) {
-        // 死亡中はパーティクルを描画
         if (this.isDead) {
             this.renderDeathParticles(ctx, tileSize, camera);
             return;
@@ -225,15 +324,16 @@ class Player {
 
         if (!this.template) return;
 
-        // 無敵中は点滅（4フレームごと）
-        if (this.invincible && Math.floor(this.invincibleTimer / 4) % 2 === 0) {
-            return; // 描画しない（点滅）
+        // 無敵中は点滅
+        if (this.invincible && !this.starPower && Math.floor(this.invincibleTimer / 4) % 2 === 0) {
+            return;
         }
 
         const screenX = (this.x - camera.x) * tileSize;
         const screenY = (this.y - camera.y) * tileSize;
 
-        const frames = this.template?.sprites?.idle?.frames || [];
+        const spriteSlot = this.getSpriteSlot();
+        const frames = this.template?.sprites?.[spriteSlot]?.frames || this.template?.sprites?.idle?.frames || [];
         const spriteIdx = frames[this.animFrame] ?? frames[0];
         const sprite = App.projectData.sprites[spriteIdx];
 
@@ -241,22 +341,29 @@ class Player {
             const palette = App.nesPalette;
             const pixelSize = tileSize / 16;
 
-            // 無敵中は半透明
-            if (this.invincible) {
+            // スターパワー中は虹色
+            if (this.starPower) {
+                ctx.globalAlpha = 0.8;
+            } else if (this.invincible) {
                 ctx.globalAlpha = 0.5;
             }
+
+            // 左向きの場合は反転描画
+            const flipX = !this.facingRight;
 
             for (let y = 0; y < 16; y++) {
                 for (let x = 0; x < 16; x++) {
                     const colorIndex = sprite.data[y][x];
                     if (colorIndex >= 0) {
-                        ctx.fillStyle = palette[colorIndex];
-                        ctx.fillRect(
-                            screenX + x * pixelSize,
-                            screenY + y * pixelSize,
-                            pixelSize + 0.5,
-                            pixelSize + 0.5
-                        );
+                        let color = palette[colorIndex];
+                        // スターパワー中は色相シフト
+                        if (this.starPower) {
+                            const hue = (this.starTimer * 10 + x + y) % 360;
+                            color = `hsl(${hue}, 100%, 50%)`;
+                        }
+                        ctx.fillStyle = color;
+                        const drawX = flipX ? screenX + (15 - x) * pixelSize : screenX + x * pixelSize;
+                        ctx.fillRect(drawX, screenY + y * pixelSize, pixelSize + 0.5, pixelSize + 0.5);
                     }
                 }
             }
@@ -267,12 +374,10 @@ class Player {
 
     renderDeathParticles(ctx, tileSize, camera) {
         const pixelSize = tileSize / 16;
-
         this.deathParticles.forEach(p => {
             const screenX = (p.x - camera.x) * tileSize;
             const screenY = (p.y - camera.y) * tileSize;
             const size = (p.size || 1) * pixelSize;
-
             ctx.fillStyle = p.color;
             ctx.fillRect(screenX, screenY, size, size);
         });

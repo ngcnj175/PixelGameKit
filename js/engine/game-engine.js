@@ -183,6 +183,34 @@ const GameEngine = {
         this.enemies = enemyPositions.map(pos =>
             new Enemy(pos.x, pos.y, pos.template, pos.behavior)
         );
+
+        // プロジェクタイルとアイテムをリセット
+        this.projectiles = [];
+        this.items = [];
+
+        // ステージ上のアイテムを検索
+        if (stage && stage.layers && stage.layers.fg) {
+            for (let y = 0; y < stage.height; y++) {
+                for (let x = 0; x < stage.width; x++) {
+                    const spriteIdx = stage.layers.fg[y][x];
+                    if (spriteIdx >= 0) {
+                        const template = spriteToTemplate[spriteIdx];
+                        if (template && template.type === 'item') {
+                            this.items.push({
+                                x: x,
+                                y: y,
+                                width: 0.8,
+                                height: 0.8,
+                                template: template,
+                                spriteIdx: spriteIdx,
+                                itemType: template.config?.itemType || 'star',
+                                collected: false
+                            });
+                        }
+                    }
+                }
+            }
+        }
     },
 
     gameLoop() {
@@ -232,18 +260,25 @@ const GameEngine = {
         const ctx = this.ctx;
         const progress = this.wipeTimer / 30;
 
-        // まずゲーム画面を描画
+        // まず全体をダークグレーで塗りつぶし（残像防止）
+        ctx.fillStyle = '#333333';
+        ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+        // ワイプ効果（中央から広がる正方形）
+        const maxSize = Math.max(this.canvas.width, this.canvas.height);
+        const size = maxSize * progress;
+        const x = (this.canvas.width - size) / 2;
+        const y = (this.canvas.height - size) / 2;
+
+        // クリップ領域として正方形を設定
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(x, y, size, size);
+        ctx.clip();
+
+        // ゲーム画面を描画
         this.renderGameScreen();
 
-        // ワイプ効果（中央から広がる円）
-        const maxRadius = Math.sqrt(Math.pow(this.canvas.width, 2) + Math.pow(this.canvas.height, 2)) / 2;
-        const radius = maxRadius * progress;
-
-        ctx.save();
-        ctx.globalCompositeOperation = 'destination-in';
-        ctx.beginPath();
-        ctx.arc(this.canvas.width / 2, this.canvas.height / 2, radius, 0, Math.PI * 2);
-        ctx.fill();
         ctx.restore();
     },
 
@@ -253,13 +288,48 @@ const GameEngine = {
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
         this.renderStage();
+
+        // アイテム描画
+        this.items.forEach(item => {
+            if (!item.collected) {
+                this.renderProjectileOrItem(item);
+            }
+        });
+
         this.enemies.forEach(enemy => enemy.render(this.ctx, this.TILE_SIZE, this.camera));
 
         if (this.player) {
             this.player.render(this.ctx, this.TILE_SIZE, this.camera);
         }
 
+        // プロジェクタイル描画
+        this.projectiles.forEach(proj => {
+            this.renderProjectileOrItem(proj);
+        });
+
         this.renderUI();
+    },
+
+    renderProjectileOrItem(obj) {
+        const sprite = App.projectData.sprites[obj.spriteIdx];
+        if (!sprite) return;
+
+        const screenX = (obj.x - this.camera.x) * this.TILE_SIZE;
+        const screenY = (obj.y - this.camera.y) * this.TILE_SIZE;
+        const palette = App.nesPalette;
+        const pixelSize = this.TILE_SIZE / 16;
+        const flipX = obj.facingRight === false;
+
+        for (let y = 0; y < 16; y++) {
+            for (let x = 0; x < 16; x++) {
+                const colorIndex = sprite.data[y][x];
+                if (colorIndex >= 0) {
+                    this.ctx.fillStyle = palette[colorIndex];
+                    const drawX = flipX ? screenX + (15 - x) * pixelSize : screenX + x * pixelSize;
+                    this.ctx.fillRect(drawX, screenY + y * pixelSize, pixelSize + 0.5, pixelSize + 0.5);
+                }
+            }
+        }
     },
 
     update() {
@@ -281,25 +351,100 @@ const GameEngine = {
         }
 
         this.enemies.forEach(enemy => enemy.update(this));
+
+        // プロジェクタイル更新
+        this.updateProjectiles();
+
+        // アイテム衝突判定
+        this.checkItemCollisions();
+
         this.checkCollisions();
         this.checkClearCondition();
+    },
+
+    updateProjectiles() {
+        this.projectiles = this.projectiles.filter(proj => {
+            // 移動
+            proj.x += proj.vx;
+            proj.y += proj.vy;
+
+            // 飛距離チェック
+            const distance = Math.abs(proj.x - proj.startX);
+            if (distance >= proj.maxRange) {
+                return false;
+            }
+
+            // 壁との衝突
+            if (this.getCollision(Math.floor(proj.x), Math.floor(proj.y)) === 1) {
+                return false;
+            }
+
+            // プレイヤーのSHOT → 敵との衝突
+            if (proj.owner === 'player') {
+                for (const enemy of this.enemies) {
+                    if (!enemy.isDying && this.projectileHits(proj, enemy)) {
+                        const fromRight = proj.vx > 0;
+                        enemy.takeDamage(fromRight);
+                        return false;
+                    }
+                }
+            }
+
+            // 敵のSHOT → プレイヤーとの衝突
+            if (proj.owner === 'enemy' && this.player && !this.player.isDead) {
+                if (this.projectileHits(proj, this.player)) {
+                    const fromRight = proj.vx > 0;
+                    this.player.takeDamage(fromRight);
+                    return false;
+                }
+            }
+
+            return true;
+        });
+    },
+
+    projectileHits(proj, target) {
+        return proj.x < target.x + target.width &&
+            proj.x + proj.width > target.x &&
+            proj.y < target.y + target.height &&
+            proj.y + proj.height > target.y;
+    },
+
+    checkItemCollisions() {
+        if (!this.player || this.player.isDead) return;
+
+        this.items.forEach(item => {
+            if (item.collected) return;
+
+            if (this.player.collidesWith(item)) {
+                item.collected = true;
+                this.player.collectItem(item.itemType);
+            }
+        });
     },
 
     checkCollisions() {
         if (!this.player || this.player.isDead) return;
 
         this.enemies.forEach((enemy, index) => {
-            if (enemy.isDying) return; // 死亡中の敵はスキップ
+            if (enemy.isDying) return;
 
             if (this.player.collidesWith(enemy)) {
-                // 上から踏みつけ判定
-                if (this.player.vy > 0 && this.player.y + this.player.height < enemy.y + enemy.height * 0.5) {
-                    // 敵にダメージ
+                // スターパワー中は敵即死
+                if (this.player.starPower) {
                     const fromRight = this.player.x > enemy.x;
                     enemy.takeDamage(fromRight);
-                    this.player.vy = -0.25; // 小さくバウンス
+                    enemy.lives = 0;
+                    enemy.die(fromRight);
+                    return;
+                }
+
+                // 上から踏みつけ判定
+                if (this.player.vy > 0 && this.player.y + this.player.height < enemy.y + enemy.height * 0.5) {
+                    const fromRight = this.player.x > enemy.x;
+                    enemy.takeDamage(fromRight);
+                    this.player.vy = -0.25;
                 } else if (!this.player.invincible) {
-                    // プレイヤーがダメージを受ける
                     const fromRight = enemy.x > this.player.x;
                     this.player.takeDamage(fromRight);
                 }
