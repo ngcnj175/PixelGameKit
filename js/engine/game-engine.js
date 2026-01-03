@@ -116,6 +116,17 @@ const GameEngine = {
         this.resize();
         this.initGame();
 
+        // カメラをプレイヤー位置に設定（残像防止）
+        if (this.player) {
+            const stage = App.projectData.stage;
+            const viewWidth = this.canvas.width / this.TILE_SIZE;
+            const viewHeight = this.canvas.height / this.TILE_SIZE;
+            this.camera.x = this.player.x - viewWidth / 2 + 0.5;
+            this.camera.y = this.player.y - viewHeight / 2 + 0.5;
+            this.camera.x = Math.max(0, Math.min(this.camera.x, stage.width - viewWidth));
+            this.camera.y = Math.max(0, Math.min(this.camera.y, stage.height - viewHeight));
+        }
+
         // ゲーム画面を一度レンダリングしてキャッシュ（残像防止）
         this.renderGameScreen();
 

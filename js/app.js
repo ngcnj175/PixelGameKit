@@ -132,30 +132,29 @@ const App = {
 
         // 新規プロジェクト
         document.getElementById('new-icon-btn')?.addEventListener('click', () => {
-            // 未保存データがあれば保存を促す
-            if (this.hasUnsavedChanges()) {
-                if (confirm('現在の編集内容を保存しますか？')) {
-                    this.saveProject();
-                }
+            // 新規プロジェクトを開きます。
+            const choice = confirm('新規プロジェクトを開きます。\n現在の編集内容を保存しますか？\n\nOK: 保存する\nキャンセル: 保存しない');
+            if (choice) {
+                // 保存する
+                this.saveAsNewFile();
+                return; // 保存後は処理中断（保存後に新規作成は手動）
             }
-            // 新規プロジェクト作成
+            // 保存しない → 新規プロジェクト作成
             this.projectData = this.createDefaultProject();
-            // パレットもデフォルトにリセット
             this.nesPalette = ['#000000'];
             this.currentProjectName = null;
             this.updateGameInfo();
             this.refreshCurrentScreen();
-            alert('新規プロジェクトを作成しました');
         });
 
         // ファイル読み込み（ファイル選択ダイアログ）
         const fileInput = document.getElementById('file-input');
         document.getElementById('load-icon-btn')?.addEventListener('click', () => {
-            // 未保存データがあれば保存を促す
-            if (this.hasUnsavedChanges()) {
-                if (confirm('現在の編集内容を保存しますか？')) {
-                    this.saveProject();
-                }
+            // プロジェクトファイルを開きます。
+            const choice = confirm('プロジェクトファイルを開きます。\n現在の編集内容を保存しますか？\n\nOK: 保存する\nキャンセル: 保存しない');
+            if (choice) {
+                this.saveAsNewFile();
+                return;
             }
             fileInput?.click();
         });
@@ -320,14 +319,13 @@ const App = {
 
     saveAsNewFile() {
         const defaultName = this.projectData?.meta?.name || 'MyGame';
-        const name = prompt('ファイル名を入力してください', defaultName);
+        const name = prompt('名前を付けて保存します。\nファイル名を入力してください', defaultName);
         if (name) {
             this.currentProjectName = name;
             // パレットをプロジェクトデータに同期
             this.projectData.palette = this.nesPalette.slice();
             Storage.save('currentProject', this.projectData);
             this.downloadProject(name);
-            alert(`${name}.json を保存しました`);
         }
     },
 

@@ -60,29 +60,30 @@ const StageEditor = {
         document.querySelectorAll('#stage-tools .paint-tool-btn').forEach(btn => {
             let longPressTimer = null;
 
-            // 長押し検出（消しゴム全削除用）
-            btn.addEventListener('mousedown', () => {
+            const startLongPress = () => {
                 if (btn.dataset.tool === 'eraser') {
                     longPressTimer = setTimeout(() => {
                         this.clearAllTiles();
                         longPressTimer = null;
                     }, 800);
                 }
-            });
+            };
 
-            btn.addEventListener('mouseup', () => {
+            const cancelLongPress = () => {
                 if (longPressTimer) {
                     clearTimeout(longPressTimer);
                     longPressTimer = null;
                 }
-            });
+            };
 
-            btn.addEventListener('mouseleave', () => {
-                if (longPressTimer) {
-                    clearTimeout(longPressTimer);
-                    longPressTimer = null;
-                }
-            });
+            // マウスイベント
+            btn.addEventListener('mousedown', startLongPress);
+            btn.addEventListener('mouseup', cancelLongPress);
+            btn.addEventListener('mouseleave', cancelLongPress);
+
+            // タッチイベント
+            btn.addEventListener('touchstart', startLongPress, { passive: true });
+            btn.addEventListener('touchend', cancelLongPress);
 
             btn.addEventListener('click', () => {
                 const tool = btn.dataset.tool;

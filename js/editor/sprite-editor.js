@@ -639,7 +639,6 @@ const SpriteEditor = {
     copySprite() {
         const sprite = App.projectData.sprites[this.currentSprite];
         this.clipboard = JSON.parse(JSON.stringify(sprite.data));
-        alert('コピーしました');
     },
 
     pasteSprite() {
