@@ -860,6 +860,7 @@ const StageEditor = {
         let isDrawing = false;
 
         const handleStart = (e) => {
+            if (isDrawing) return; // 重複呼び出し防止
             this.saveToHistory();
             isDrawing = true;
             this.processPixel(e);

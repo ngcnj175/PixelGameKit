@@ -132,11 +132,20 @@ const App = {
 
         // 新規プロジェクト
         document.getElementById('new-icon-btn')?.addEventListener('click', () => {
-            if (this.hasUnsavedChanges()) {
-                if (confirm('現在の編集内容を保存しますか？')) {
-                    this.saveProject();
-                }
+            if (!confirm('新規プロジェクトを開きます。')) {
+                return; // キャンセル
             }
+            // OKの場合 → 保存確認
+            const defaultName = this.projectData?.meta?.name || 'MyGame';
+            const name = prompt('現在のプロジェクトを保存します。\nファイル名を入力してください。', defaultName);
+            if (name) {
+                // OKの場合 → 保存後に初期化
+                this.currentProjectName = name;
+                this.projectData.palette = this.nesPalette.slice();
+                Storage.save('currentProject', this.projectData);
+                this.downloadProject(name);
+            }
+            // キャンセルでもOKでも初期化
             this.projectData = this.createDefaultProject();
             this.nesPalette = ['#000000'];
             this.currentProjectName = null;
@@ -147,12 +156,9 @@ const App = {
         // ファイル読み込み（ファイル選択ダイアログ）
         const fileInput = document.getElementById('file-input');
         document.getElementById('load-icon-btn')?.addEventListener('click', () => {
-            if (this.hasUnsavedChanges()) {
-                if (confirm('現在の編集内容を保存しますか？')) {
-                    this.saveProject();
-                }
+            if (confirm('既存のプロジェクトを開きます。')) {
+                fileInput?.click();
             }
-            fileInput?.click();
         });
 
         fileInput?.addEventListener('change', (e) => {
@@ -315,7 +321,7 @@ const App = {
 
     saveAsNewFile() {
         const defaultName = this.projectData?.meta?.name || 'MyGame';
-        const name = prompt('名前を付けて保存します。\nファイル名を入力してください', defaultName);
+        const name = prompt('現在のプロジェクトを保存します。\nファイル名を入力してください。', defaultName);
         if (name) {
             this.currentProjectName = name;
             // パレットをプロジェクトデータに同期

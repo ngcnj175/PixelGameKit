@@ -454,13 +454,18 @@ const GameEngine = {
                 return false;
             }
 
-            // プレイヤーのSHOT → 敵との衝突
+            // プレイヤーのSHOT → 敵との衝突（ダメージ無敵中は無効）
             if (proj.owner === 'player') {
-                for (const enemy of this.enemies) {
-                    if (!enemy.isDying && this.projectileHits(proj, enemy)) {
-                        const fromRight = proj.vx > 0;
-                        enemy.takeDamage(fromRight);
-                        return false;
+                // ダメージ無敵中（starPowerでない）は敵に当たらない
+                if (this.player && this.player.invincible && !this.player.starPower) {
+                    // スキップ（ショットは残る）
+                } else {
+                    for (const enemy of this.enemies) {
+                        if (!enemy.isDying && this.projectileHits(proj, enemy)) {
+                            const fromRight = proj.vx > 0;
+                            enemy.takeDamage(fromRight);
+                            return false;
+                        }
                     }
                 }
             }

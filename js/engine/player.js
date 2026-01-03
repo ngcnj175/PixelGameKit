@@ -384,10 +384,13 @@ class Player {
                     const colorIndex = sprite.data[y][x];
                     if (colorIndex >= 0) {
                         let color = palette[colorIndex];
-                        // スターパワー中は色相シフト（2倍速）
+                        // スターパワー中はファミコン風パレットサイクリング
                         if (this.starPower) {
-                            const hue = (this.starTimer * 20 + x + y) % 360;
-                            color = `hsl(${hue}, 100%, 50%)`;
+                            // 4色パターンを3フレームごとに切り替え
+                            const starColors = ['#FF0000', '#FFFFFF', '#00FF00', '#0000FF'];
+                            const colorPhase = Math.floor(this.starTimer / 3) % 4;
+                            // 元の明るさに基づいて色を調整
+                            color = starColors[colorPhase];
                         }
                         ctx.fillStyle = color;
                         const drawX = flipX ? screenX + (15 - x) * pixelSize : screenX + x * pixelSize;
