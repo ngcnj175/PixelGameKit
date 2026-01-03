@@ -132,31 +132,43 @@ const App = {
 
         // 新規プロジェクト
         document.getElementById('new-icon-btn')?.addEventListener('click', () => {
-            // 新規プロジェクトを開きます。
-            const choice = confirm('新規プロジェクトを開きます。\n現在の編集内容を保存しますか？\n\nOK: 保存する\nキャンセル: 保存しない');
-            if (choice) {
-                // 保存する
-                this.saveAsNewFile();
-                return; // 保存後は処理中断（保存後に新規作成は手動）
-            }
-            // 保存しない → 新規プロジェクト作成
-            this.projectData = this.createDefaultProject();
-            this.nesPalette = ['#000000'];
-            this.currentProjectName = null;
-            this.updateGameInfo();
-            this.refreshCurrentScreen();
+            this.showThreeChoiceDialog(
+                '新規プロジェクトを開きます。\n現在の編集内容を保存しますか？',
+                () => {
+                    // 保存する → ファイル名入力画面
+                    this.saveAsNewFile();
+                },
+                () => {
+                    // 保存しない → 新規プロジェクト作成
+                    this.projectData = this.createDefaultProject();
+                    this.nesPalette = ['#000000'];
+                    this.currentProjectName = null;
+                    this.updateGameInfo();
+                    this.refreshCurrentScreen();
+                },
+                () => {
+                    // キャンセル → 何もしない
+                }
+            );
         });
 
         // ファイル読み込み（ファイル選択ダイアログ）
         const fileInput = document.getElementById('file-input');
         document.getElementById('load-icon-btn')?.addEventListener('click', () => {
-            // プロジェクトファイルを開きます。
-            const choice = confirm('プロジェクトファイルを開きます。\n現在の編集内容を保存しますか？\n\nOK: 保存する\nキャンセル: 保存しない');
-            if (choice) {
-                this.saveAsNewFile();
-                return;
-            }
-            fileInput?.click();
+            this.showThreeChoiceDialog(
+                'プロジェクトファイルを開きます。\n現在の編集内容を保存しますか？',
+                () => {
+                    // 保存する → ファイル名入力画面
+                    this.saveAsNewFile();
+                },
+                () => {
+                    // 保存しない → ファイル選択
+                    fileInput?.click();
+                },
+                () => {
+                    // キャンセル → 何もしない
+                }
+            );
         });
 
         fileInput?.addEventListener('change', (e) => {
@@ -338,6 +350,51 @@ const App = {
         a.download = `${filename}.json`;
         a.click();
         URL.revokeObjectURL(url);
+    },
+
+    showThreeChoiceDialog(message, onSave, onNoSave, onCancel) {
+        const overlay = document.createElement('div');
+        overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999;';
+
+        const modal = document.createElement('div');
+        modal.style.cssText = 'background:white;padding:20px;border-radius:8px;text-align:center;max-width:300px;';
+
+        const msg = document.createElement('p');
+        msg.style.cssText = 'margin:0 0 20px 0;white-space:pre-line;font-size:14px;';
+        msg.textContent = message;
+
+        const btnContainer = document.createElement('div');
+        btnContainer.style.cssText = 'display:flex;flex-direction:column;gap:10px;';
+
+        const saveBtn = document.createElement('button');
+        saveBtn.textContent = '保存する';
+        saveBtn.style.cssText = 'padding:12px;border:none;background:#4a4a4a;color:white;border-radius:4px;cursor:pointer;font-size:14px;';
+
+        const noSaveBtn = document.createElement('button');
+        noSaveBtn.textContent = '保存しない';
+        noSaveBtn.style.cssText = 'padding:12px;border:1px solid #4a4a4a;background:white;border-radius:4px;cursor:pointer;font-size:14px;';
+
+        const cancelBtn = document.createElement('button');
+        cancelBtn.textContent = 'キャンセル';
+        cancelBtn.style.cssText = 'padding:12px;border:1px solid #ccc;background:#f5f5f5;border-radius:4px;cursor:pointer;font-size:14px;';
+
+        btnContainer.appendChild(saveBtn);
+        btnContainer.appendChild(noSaveBtn);
+        btnContainer.appendChild(cancelBtn);
+        modal.appendChild(msg);
+        modal.appendChild(btnContainer);
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+
+        const closeModal = () => {
+            if (document.body.contains(overlay)) {
+                document.body.removeChild(overlay);
+            }
+        };
+
+        saveBtn.addEventListener('click', () => { closeModal(); onSave(); });
+        noSaveBtn.addEventListener('click', () => { closeModal(); onNoSave(); });
+        cancelBtn.addEventListener('click', () => { closeModal(); onCancel(); });
     }
 };
 

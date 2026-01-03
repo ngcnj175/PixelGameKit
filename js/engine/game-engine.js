@@ -22,9 +22,10 @@ const GameEngine = {
     camera: { x: 0, y: 0 },
 
     // タイトル画面
-    titleState: 'title', // 'title', 'wipe', 'playing'
+    titleState: 'title', // 'title', 'wipe', 'playing', 'gameover'
     wipeTimer: 0,
     titleBlinkTimer: 0,
+    gameOverTimer: 0,
 
     init() {
         this.canvas = document.getElementById('game-canvas');
@@ -78,7 +79,21 @@ const GameEngine = {
     },
 
     startFromTitle() {
-        // showPreviewで既に初期化済み、即座にワイプ開始
+        // ゲーム状態を完全リセット
+        this.initGame();
+
+        // カメラをプレイヤー初期位置に設定
+        if (this.player) {
+            const stage = App.projectData.stage;
+            const viewWidth = this.canvas.width / this.TILE_SIZE;
+            const viewHeight = this.canvas.height / this.TILE_SIZE;
+            this.camera.x = this.player.x - viewWidth / 2 + 0.5;
+            this.camera.y = this.player.y - viewHeight / 2 + 0.5;
+            this.camera.x = Math.max(0, Math.min(this.camera.x, stage.width - viewWidth));
+            this.camera.y = Math.max(0, Math.min(this.camera.y, stage.height - viewHeight));
+        }
+
+        // ワイプ開始
         this.titleState = 'wipe';
         this.wipeTimer = 0;
         this.isRunning = true;
@@ -253,13 +268,47 @@ const GameEngine = {
             return;
         }
 
+        // GAME OVER表示中
+        if (this.titleState === 'gameover') {
+            this.gameOverTimer++;
+            this.renderGameOver();
+            if (this.gameOverTimer >= 180) { // 3秒（60fps x 3）
+                this.restart();
+                return;
+            }
+            this.animationId = requestAnimationFrame(() => this.gameLoop());
+            return;
+        }
+
         // 一時停止中はupdateをスキップ（描画は続行）
         if (!this.isPaused) {
             this.update();
         }
         this.render();
 
+        // プレイヤー死亡チェック
+        if (this.player && this.player.isDead && this.player.deathParticles.length === 0) {
+            this.titleState = 'gameover';
+            this.gameOverTimer = 0;
+        }
+
         this.animationId = requestAnimationFrame(() => this.gameLoop());
+    },
+
+    renderGameOver() {
+        // ゲーム画面を描画
+        this.renderGameScreen();
+
+        // GAME OVER オーバーレイ
+        const ctx = this.ctx;
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+        ctx.font = 'bold 20px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText('GAME OVER', this.canvas.width / 2, this.canvas.height / 2);
     },
 
     renderTitleScreen() {
