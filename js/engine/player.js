@@ -237,7 +237,8 @@ class Player {
             this.invincible = true;
             this.invincibleTimer = this.invincibleDuration;
             this.vy = -0.4;
-            this.vx = fromRight ? -0.3 : 0.3;
+            // 向いている方向の逆に飛ばされる
+            this.vx = this.facingRight ? -0.3 : 0.3;
         }
     }
 
@@ -355,7 +356,31 @@ class Player {
     }
 
     render(ctx, tileSize, camera) {
-        if (this.isDead) {
+        // 死亡中も落下するスプライトを表示
+        if (this.isDead && this.isDying) {
+            // 落下演出中はスプライトを表示
+            const screenX = (this.x - camera.x) * tileSize;
+            const screenY = (this.y - camera.y) * tileSize;
+            const frames = this.template?.sprites?.idle?.frames || [];
+            const spriteIdx = frames[0];
+            const sprite = App.projectData.sprites[spriteIdx];
+            if (sprite) {
+                const palette = App.nesPalette;
+                const pixelSize = tileSize / 16;
+                const flipX = !this.facingRight;
+                for (let y = 0; y < 16; y++) {
+                    for (let x = 0; x < 16; x++) {
+                        const colorIndex = sprite.data[y][x];
+                        if (colorIndex >= 0) {
+                            ctx.fillStyle = palette[colorIndex];
+                            const drawX = flipX ? screenX + (15 - x) * pixelSize : screenX + x * pixelSize;
+                            ctx.fillRect(drawX, screenY + y * pixelSize, pixelSize + 0.5, pixelSize + 0.5);
+                        }
+                    }
+                }
+            }
+            return;
+        } else if (this.isDead) {
             this.renderDeathParticles(ctx, tileSize, camera);
             return;
         }
@@ -396,8 +421,8 @@ class Player {
                         let color = palette[colorIndex];
                         // スターパワー中はファミコン風パレットサイクリング
                         if (this.starPower) {
-                            // 4色パターンを1フレームごとに切り替え（高速）
-                            const starColors = ['#FF0000', '#FFFFFF', '#00FF00', '#0000FF'];
+                            // 4色パターンを1フレームごとに切り替え（高速、明るい色）
+                            const starColors = ['#FF6B6B', '#FFFF6B', '#6BFF6B', '#6BFFFF'];
                             const colorPhase = Math.floor(this.starTimer) % 4;
                             color = starColors[colorPhase];
                         }

@@ -575,16 +575,7 @@ const GameEngine = {
             return true;
         });
 
-        // 死亡判定
-        if (this.player.isDead && this.player.deathParticles.length === 0) {
-            // パーティクルが消えたらゲームオーバー
-            this.stop();
-            setTimeout(() => {
-                alert('ゲームオーバー！');
-                this.hasStarted = false;
-                this.restart();
-            }, 500);
-        }
+        // 死亡判定はgameLoopで処理（ここでは何もしない）
     },
 
     checkClearCondition() {
