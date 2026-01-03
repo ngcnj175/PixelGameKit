@@ -58,7 +58,12 @@ class Player {
 
     update(engine) {
         if (this.isDead) {
-            this.updateDeathParticles();
+            // 敵と同じ落下演出
+            if (this.isDying) {
+                this.deathTimer++;
+                this.vy += engine.GRAVITY * 0.5;
+                this.y += this.vy;
+            }
             return;
         }
 
@@ -254,7 +259,12 @@ class Player {
 
     die() {
         this.isDead = true;
-        this.createDeathParticles();
+        this.isDying = true;
+        this.deathTimer = 0;
+        // 敵と同じ落下死亡演出
+        this.vy = -0.4; // 上に跳ねる
+        this.vx = 0;
+        this.deathParticles = []; // パーティクルは使わない
     }
 
     createDeathParticles() {
@@ -386,10 +396,9 @@ class Player {
                         let color = palette[colorIndex];
                         // スターパワー中はファミコン風パレットサイクリング
                         if (this.starPower) {
-                            // 4色パターンを3フレームごとに切り替え
+                            // 4色パターンを1フレームごとに切り替え（高速）
                             const starColors = ['#FF0000', '#FFFFFF', '#00FF00', '#0000FF'];
-                            const colorPhase = Math.floor(this.starTimer / 3) % 4;
-                            // 元の明るさに基づいて色を調整
+                            const colorPhase = Math.floor(this.starTimer) % 4;
                             color = starColors[colorPhase];
                         }
                         ctx.fillStyle = color;

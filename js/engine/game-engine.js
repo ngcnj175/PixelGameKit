@@ -268,14 +268,24 @@ const GameEngine = {
             return;
         }
 
-        // GAME OVER表示中
+        // GAME OVER演出中（ワイプ閉じ→GAME OVER→PUSH START）
         if (this.titleState === 'gameover') {
             this.gameOverTimer++;
-            this.renderGameOver();
-            if (this.gameOverTimer >= 180) { // 3秒（60fps x 3）
+
+            // フェーズ1: 閉じるワイプ（0-30フレーム）
+            if (this.gameOverTimer <= 30) {
+                this.renderCloseWipe();
+            }
+            // フェーズ2: GAME OVER表示（30-150フレーム）
+            else if (this.gameOverTimer <= 150) {
+                this.renderGameOverText();
+            }
+            // フェーズ3: タイトルに戻る
+            else {
                 this.restart();
                 return;
             }
+
             this.animationId = requestAnimationFrame(() => this.gameLoop());
             return;
         }
@@ -286,8 +296,8 @@ const GameEngine = {
         }
         this.render();
 
-        // プレイヤー死亡チェック
-        if (this.player && this.player.isDead && this.player.deathParticles.length === 0) {
+        // プレイヤー死亡チェック（落下で画面外に出たらゲームオーバーへ）
+        if (this.player && this.player.isDead && this.player.y > App.projectData.stage.height + 2) {
             this.titleState = 'gameover';
             this.gameOverTimer = 0;
         }
@@ -295,13 +305,30 @@ const GameEngine = {
         this.animationId = requestAnimationFrame(() => this.gameLoop());
     },
 
-    renderGameOver() {
-        // ゲーム画面を描画
+    renderCloseWipe() {
+        const ctx = this.ctx;
+        const progress = this.gameOverTimer / 30;
+
+        // 全体をゲーム画面で描画
         this.renderGameScreen();
 
-        // GAME OVER オーバーレイ
+        // 外側から中央に閉じる正方形
+        const maxSize = Math.max(this.canvas.width, this.canvas.height);
+        const size = maxSize * (1 - progress);
+        const x = (this.canvas.width - size) / 2;
+        const y = (this.canvas.height - size) / 2;
+
+        // 外側をダークグレーで塗りつぶし
+        ctx.fillStyle = '#333333';
+        ctx.fillRect(0, 0, this.canvas.width, y); // 上
+        ctx.fillRect(0, y + size, this.canvas.width, this.canvas.height - y - size); // 下
+        ctx.fillRect(0, y, x, size); // 左
+        ctx.fillRect(x + size, y, this.canvas.width - x - size, size); // 右
+    },
+
+    renderGameOverText() {
         const ctx = this.ctx;
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        ctx.fillStyle = '#333333';
         ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
         ctx.font = '16px Arial';
@@ -309,6 +336,11 @@ const GameEngine = {
         ctx.textBaseline = 'middle';
         ctx.fillStyle = '#ffffff';
         ctx.fillText('GAME OVER', this.canvas.width / 2, this.canvas.height / 2);
+    },
+
+    renderGameOver() {
+        // 互換性のため残す
+        this.renderGameOverText();
     },
 
     renderTitleScreen() {
@@ -516,6 +548,11 @@ const GameEngine = {
                     enemy.takeDamage(fromRight);
                     enemy.lives = 0;
                     enemy.die(fromRight);
+                    return;
+                }
+
+                // ダメージ無敵中（starPowerでない）は踏み攻撃も無効
+                if (this.player.invincible && !this.player.starPower) {
                     return;
                 }
 
