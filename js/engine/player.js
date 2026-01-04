@@ -240,9 +240,9 @@ class Player {
         } else {
             this.invincible = true;
             this.invincibleTimer = this.invincibleDuration;
-            this.vy = -0.4;
-            // 向いている方向の逆に飛ばされる
-            this.vx = this.facingRight ? -0.3 : 0.3;
+            this.vy = -0.3;
+            // 向いている方向の逆に飛ばされる（死亡時と同じ距離）
+            this.vx = this.facingRight ? -0.1 : 0.1;
         }
     }
 
