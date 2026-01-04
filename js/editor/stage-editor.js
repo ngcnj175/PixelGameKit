@@ -936,11 +936,8 @@ const StageEditor = {
         switch (this.currentTool) {
             case 'pen':
                 if (this.selectedTemplate !== null) {
-                    const template = this.templates[this.selectedTemplate];
-                    const spriteIdx = template?.sprites?.idle?.frames?.[0] ?? template?.sprites?.main?.frames?.[0];
-                    if (spriteIdx !== undefined) {
-                        layer[y][x] = spriteIdx;
-                    }
+                    // テンプレートID + 100 を保存
+                    layer[y][x] = this.selectedTemplate + 100;
                 }
                 break;
             case 'eraser':
@@ -948,16 +945,22 @@ const StageEditor = {
                 break;
             case 'fill':
                 if (this.selectedTemplate !== null) {
-                    const template = this.templates[this.selectedTemplate];
-                    const spriteIdx = template?.sprites?.idle?.frames?.[0] ?? template?.sprites?.main?.frames?.[0];
-                    if (spriteIdx !== undefined) {
-                        this.floodFill(x, y, layer[y][x], spriteIdx);
-                    }
+                    // テンプレートID + 100 を保存
+                    const newValue = this.selectedTemplate + 100;
+                    this.floodFill(x, y, layer[y][x], newValue);
                 }
                 break;
             case 'eyedropper':
                 const tileId = layer[y][x];
-                if (tileId >= 0) {
+                if (tileId >= 100) {
+                    // テンプレートIDベース（新形式）
+                    const templateIdx = tileId - 100;
+                    if (templateIdx >= 0 && templateIdx < this.templates.length) {
+                        this.selectedTemplate = templateIdx;
+                        this.initTemplateList();
+                    }
+                } else if (tileId >= 0) {
+                    // スプライトIDベース（旧形式）- 互換性
                     const idx = this.templates.findIndex(t =>
                         (t.sprites?.idle?.frames?.[0] === tileId) || (t.sprites?.main?.frames?.[0] === tileId)
                     );
@@ -1024,6 +1027,7 @@ const StageEditor = {
         const stage = App.projectData.stage;
         const layer = stage.layers[layerName];
         const sprites = App.projectData.sprites;
+        const templates = App.projectData.templates || [];
         const palette = App.nesPalette;
 
         this.ctx.globalAlpha = alpha;
@@ -1031,8 +1035,18 @@ const StageEditor = {
         for (let y = 0; y < stage.height; y++) {
             for (let x = 0; x < stage.width; x++) {
                 const tileId = layer[y][x];
-                if (tileId >= 0 && tileId < sprites.length) {
-                    this.renderSprite(sprites[tileId], x, y, palette);
+                let sprite;
+                if (tileId >= 100) {
+                    // テンプレートIDベース（新形式）
+                    const template = templates[tileId - 100];
+                    const spriteIdx = template?.sprites?.idle?.frames?.[0] ?? template?.sprites?.main?.frames?.[0];
+                    sprite = sprites[spriteIdx];
+                } else if (tileId >= 0 && tileId < sprites.length) {
+                    // スプライトIDベース（旧形式）- 互換性
+                    sprite = sprites[tileId];
+                }
+                if (sprite) {
+                    this.renderSprite(sprite, x, y, palette);
                 }
             }
         }

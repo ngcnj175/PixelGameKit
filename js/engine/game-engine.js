@@ -612,17 +612,24 @@ const GameEngine = {
             return 0; // 下は衝突なし（落下）
         }
 
-        // fgレイヤーからスプライトインデックスを取得
-        const spriteIdx = stage.layers.fg?.[tileY]?.[tileX];
-        if (spriteIdx === undefined || spriteIdx < 0) {
+        // fgレイヤーからtileIdを取得
+        const tileId = stage.layers.fg?.[tileY]?.[tileX];
+        if (tileId === undefined || tileId < 0) {
             return 0; // 衝突なし（空タイル）
         }
 
         // テンプレートからタイルの種類と衝突設定を判定
-        const template = templates.find(t => {
-            const idx = t?.sprites?.idle?.frames?.[0] ?? t?.sprites?.main?.frames?.[0];
-            return idx === spriteIdx;
-        });
+        let template;
+        if (tileId >= 100) {
+            // テンプレートIDベース（新形式）
+            template = templates[tileId - 100];
+        } else {
+            // スプライトIDベース（旧形式）- 互換性
+            template = templates.find(t => {
+                const idx = t?.sprites?.idle?.frames?.[0] ?? t?.sprites?.main?.frames?.[0];
+                return idx === tileId;
+            });
+        }
 
         if (!template) {
             return 0; // テンプレートが見つからない
@@ -702,28 +709,35 @@ const GameEngine = {
         const stage = App.projectData.stage;
         const templates = App.projectData.templates || [];
 
-        // スプライトIDからテンプレートを検索するマップ
-        const spriteToTemplate = {};
-        templates.forEach(template => {
-            const spriteIdx = template?.sprites?.idle?.frames?.[0] ?? template?.sprites?.main?.frames?.[0];
-            if (spriteIdx !== undefined) {
-                spriteToTemplate[spriteIdx] = template;
+        // ヘルパー: tileIdからスプライトとテンプレートを取得
+        const getTileInfo = (tileId) => {
+            if (tileId >= 100) {
+                // テンプレートIDベース（新形式）
+                const template = templates[tileId - 100];
+                const spriteIdx = template?.sprites?.idle?.frames?.[0] ?? template?.sprites?.main?.frames?.[0];
+                return { template, sprite: sprites[spriteIdx], spriteIdx };
+            } else if (tileId >= 0 && tileId < sprites.length) {
+                // スプライトIDベース（旧形式）- 互換性
+                const template = templates.find(t =>
+                    (t.sprites?.idle?.frames?.[0] === tileId) || (t.sprites?.main?.frames?.[0] === tileId)
+                );
+                return { template, sprite: sprites[tileId], spriteIdx: tileId };
             }
-        });
+            return { template: null, sprite: null, spriteIdx: -1 };
+        };
 
         // Collisionなしの素材を先に描画（後ろ）
         for (let y = 0; y < stage.height; y++) {
             for (let x = 0; x < stage.width; x++) {
                 const tileId = layer[y][x];
-                if (tileId >= 0 && tileId < sprites.length) {
-                    const template = spriteToTemplate[tileId];
-                    if (template && (template.type === 'player' || template.type === 'enemy' || template.type === 'item')) {
-                        continue;
-                    }
-                    // Collisionなしの素材のみ描画
-                    if (template && template.type === 'material' && template.config?.collision === false) {
-                        this.renderSprite(sprites[tileId], x, y, palette);
-                    }
+                const { template, sprite } = getTileInfo(tileId);
+                if (!sprite) continue;
+                if (template && (template.type === 'player' || template.type === 'enemy' || template.type === 'item')) {
+                    continue;
+                }
+                // Collisionなしの素材のみ描画
+                if (template && template.type === 'material' && template.config?.collision === false) {
+                    this.renderSprite(sprite, x, y, palette);
                 }
             }
         }
@@ -732,17 +746,16 @@ const GameEngine = {
         for (let y = 0; y < stage.height; y++) {
             for (let x = 0; x < stage.width; x++) {
                 const tileId = layer[y][x];
-                if (tileId >= 0 && tileId < sprites.length) {
-                    const template = spriteToTemplate[tileId];
-                    if (template && (template.type === 'player' || template.type === 'enemy' || template.type === 'item')) {
-                        continue;
-                    }
-                    // Collisionなし素材はスキップ（既に描画済み）
-                    if (template && template.type === 'material' && template.config?.collision === false) {
-                        continue;
-                    }
-                    this.renderSprite(sprites[tileId], x, y, palette);
+                const { template, sprite } = getTileInfo(tileId);
+                if (!sprite) continue;
+                if (template && (template.type === 'player' || template.type === 'enemy' || template.type === 'item')) {
+                    continue;
                 }
+                // Collisionなし素材はスキップ（既に描画済み）
+                if (template && template.type === 'material' && template.config?.collision === false) {
+                    continue;
+                }
+                this.renderSprite(sprite, x, y, palette);
             }
         }
     },

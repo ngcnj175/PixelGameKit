@@ -172,8 +172,8 @@ class Player {
     }
 
     handleInput(engine) {
-        // ノックバック中またはダメージ無敵中は操作を完全にスキップ
-        if (this.isKnockback || (this.invincible && !this.starPower)) {
+        // ノックバック中のみ操作をスキップ（着地後は即操作可能）
+        if (this.isKnockback) {
             return;
         }
 
@@ -248,9 +248,9 @@ class Player {
             this.invincible = true;
             this.invincibleTimer = this.invincibleDuration;
             this.isKnockback = true; // ノックバック開始
-            this.vy = -0.3;
+            this.vy = -0.25; // 強く
             // 向いている方向の逆に飛ばされる
-            this.vx = this.facingRight ? -0.15 : 0.15;
+            this.vx = this.facingRight ? -0.12 : 0.12; // 強く
             this.onGround = false;
         }
     }
