@@ -126,7 +126,10 @@ const App = {
                     'sprite-list',
                     'tile-list',
                     'tile-config-panel',
-                    'stage-settings-content'
+                    'stage-settings-content',
+                    'paint-tools',
+                    'color-scroll-container',
+                    'stage-tools'
                 ];
                 if (target.id && allowedIds.includes(target.id)) {
                     // スクロール可能な要素のみ許可
