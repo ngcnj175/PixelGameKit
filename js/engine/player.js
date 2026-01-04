@@ -33,6 +33,7 @@ class Player {
         this.invincible = false;
         this.invincibleTimer = 0;
         this.invincibleDuration = 120;
+        this.isKnockback = false; // ノックバック中フラグ
         this.isDead = false;
         this.deathParticles = [];
 
@@ -73,6 +74,10 @@ class Player {
             this.invincibleTimer--;
             if (this.invincibleTimer <= 0) {
                 this.invincible = false;
+                // 無敵終了時にvxをリセット（ノックバック停止）
+                if (!this.starPower) {
+                    this.vx = 0;
+                }
             }
         }
 
@@ -167,10 +172,12 @@ class Player {
     }
 
     handleInput(engine) {
-        // 無敵中（ダメージのノックバック中）はvxをリセットしない
-        if (!this.invincible || this.starPower) {
-            this.vx = 0;
+        // ノックバック中またはダメージ無敵中は操作を完全にスキップ
+        if (this.isKnockback || (this.invincible && !this.starPower)) {
+            return;
         }
+
+        this.vx = 0;
 
         if (GameController.isPressed('left')) {
             this.vx = -this.moveSpeed;
@@ -240,9 +247,11 @@ class Player {
         } else {
             this.invincible = true;
             this.invincibleTimer = this.invincibleDuration;
+            this.isKnockback = true; // ノックバック開始
             this.vy = -0.3;
-            // 向いている方向の逆に飛ばされる（死亡時と同じ距離）
-            this.vx = this.facingRight ? -0.1 : 0.1;
+            // 向いている方向の逆に飛ばされる
+            this.vx = this.facingRight ? -0.15 : 0.15;
+            this.onGround = false;
         }
     }
 
@@ -348,6 +357,11 @@ class Player {
                 this.y = bottom - this.height;
                 this.vy = 0;
                 this.onGround = true;
+                // 着地でノックバック終了
+                if (this.isKnockback) {
+                    this.isKnockback = false;
+                    this.vx = 0;
+                }
             }
         }
     }

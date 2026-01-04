@@ -672,7 +672,17 @@ const StageEditor = {
             App.projectData.templates = [];
         }
 
+        // 既存テンプレート編集時：古いスプライトIDを新しいIDで置換
         if (this.editingIndex >= 0) {
+            const oldTemplate = App.projectData.templates[this.editingIndex];
+            const oldSpriteId = oldTemplate?.sprites?.idle?.frames?.[0] ?? oldTemplate?.sprites?.main?.frames?.[0];
+            const newSpriteId = this.editingTemplate.sprites?.idle?.frames?.[0] ?? this.editingTemplate.sprites?.main?.frames?.[0];
+
+            // スプライトIDが変更された場合、ステージ内を置換
+            if (oldSpriteId !== undefined && newSpriteId !== undefined && oldSpriteId !== newSpriteId) {
+                this.replaceSpritesInStage(oldSpriteId, newSpriteId);
+            }
+
             App.projectData.templates[this.editingIndex] = this.editingTemplate;
         } else {
             App.projectData.templates.push(this.editingTemplate);
@@ -681,6 +691,22 @@ const StageEditor = {
 
         this.closeConfigPanel();
         this.initTemplateList();
+        this.render(); // ステージを再描画
+    },
+
+    // ステージ内のスプライトIDを置換
+    replaceSpritesInStage(oldId, newId) {
+        const stage = App.projectData.stage;
+        if (!stage?.layers?.fg) return;
+
+        const layer = stage.layers.fg;
+        for (let y = 0; y < layer.length; y++) {
+            for (let x = 0; x < layer[y].length; x++) {
+                if (layer[y][x] === oldId) {
+                    layer[y][x] = newId;
+                }
+            }
+        }
     },
 
     // ========== タイルテンプレート一覧 ==========
