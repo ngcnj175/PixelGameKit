@@ -269,6 +269,10 @@ const StageEditor = {
     },
 
     openConfigPanel() {
+        // ステージ設定パネルを閉じる
+        const stageSettingsPanel = document.getElementById('stage-settings-panel');
+        if (stageSettingsPanel) stageSettingsPanel.classList.add('collapsed');
+
         const panel = document.getElementById('tile-config-panel');
         if (panel && this.editingTemplate) {
             panel.classList.remove('hidden');
@@ -887,6 +891,15 @@ const StageEditor = {
 
         let isDrawing = false;
 
+        // 2本指パン用の状態
+        this.canvasScrollX = 0;
+        this.canvasScrollY = 0;
+        let isPanning = false;
+        let panStartX = 0;
+        let panStartY = 0;
+        let lastScrollX = 0;
+        let lastScrollY = 0;
+
         const handleStart = (e) => {
             if (isDrawing) return; // 重複呼び出し防止
             this.saveToHistory();
@@ -907,12 +920,58 @@ const StageEditor = {
         this.canvas.addEventListener('mouseup', handleEnd);
         this.canvas.addEventListener('mouseleave', handleEnd);
 
-        this.canvas.addEventListener('touchstart', (e) => handleStart(e.touches[0]), { passive: true });
-        this.canvas.addEventListener('touchmove', (e) => {
-            e.preventDefault();
-            handleMove(e.touches[0]);
+        // タッチイベント（1本指：タイル操作、2本指：パン）
+        this.canvas.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 2) {
+                // 2本指：パン開始
+                isPanning = true;
+                isDrawing = false;
+                const touch1 = e.touches[0];
+                const touch2 = e.touches[1];
+                panStartX = (touch1.clientX + touch2.clientX) / 2;
+                panStartY = (touch1.clientY + touch2.clientY) / 2;
+                lastScrollX = this.canvasScrollX;
+                lastScrollY = this.canvasScrollY;
+                e.preventDefault();
+            } else if (e.touches.length === 1 && !isPanning) {
+                // 1本指：タイル操作
+                handleStart(e.touches[0]);
+            }
         }, { passive: false });
-        this.canvas.addEventListener('touchend', handleEnd);
+
+        this.canvas.addEventListener('touchmove', (e) => {
+            if (e.touches.length === 2 && isPanning) {
+                // 2本指：パン中
+                const touch1 = e.touches[0];
+                const touch2 = e.touches[1];
+                const currentX = (touch1.clientX + touch2.clientX) / 2;
+                const currentY = (touch1.clientY + touch2.clientY) / 2;
+
+                this.canvasScrollX = lastScrollX + (currentX - panStartX);
+                this.canvasScrollY = lastScrollY + (currentY - panStartY);
+
+                // スクロール範囲を制限
+                const maxScrollX = Math.max(0, (App.projectData.stage.width - 16) * this.tileSize);
+                const maxScrollY = Math.max(0, (App.projectData.stage.height - 16) * this.tileSize);
+                this.canvasScrollX = Math.max(-maxScrollX, Math.min(0, this.canvasScrollX));
+                this.canvasScrollY = Math.max(-maxScrollY, Math.min(0, this.canvasScrollY));
+
+                this.render();
+                e.preventDefault();
+            } else if (e.touches.length === 1 && !isPanning) {
+                e.preventDefault();
+                handleMove(e.touches[0]);
+            }
+        }, { passive: false });
+
+        this.canvas.addEventListener('touchend', (e) => {
+            if (e.touches.length < 2) {
+                isPanning = false;
+            }
+            if (e.touches.length === 0) {
+                handleEnd();
+            }
+        });
     },
 
     processPixel(e) {
@@ -924,8 +983,10 @@ const StageEditor = {
         if (clientX === undefined || clientY === undefined) return;
 
         const rect = this.canvas.getBoundingClientRect();
-        const x = Math.floor((clientX - rect.left) / this.tileSize);
-        const y = Math.floor((clientY - rect.top) / this.tileSize);
+        const scrollX = this.canvasScrollX || 0;
+        const scrollY = this.canvasScrollY || 0;
+        const x = Math.floor((clientX - rect.left - scrollX) / this.tileSize);
+        const y = Math.floor((clientY - rect.top - scrollY) / this.tileSize);
 
         // 座標がNaNの場合は処理しない
         if (isNaN(x) || isNaN(y)) return;
@@ -1058,6 +1119,8 @@ const StageEditor = {
 
     renderSprite(sprite, tileX, tileY, palette) {
         const pixelSize = this.tileSize / 16;
+        const scrollX = this.canvasScrollX || 0;
+        const scrollY = this.canvasScrollY || 0;
 
         for (let y = 0; y < 16; y++) {
             for (let x = 0; x < 16; x++) {
@@ -1065,8 +1128,8 @@ const StageEditor = {
                 if (colorIndex >= 0) {
                     this.ctx.fillStyle = palette[colorIndex];
                     this.ctx.fillRect(
-                        tileX * this.tileSize + x * pixelSize,
-                        tileY * this.tileSize + y * pixelSize,
+                        tileX * this.tileSize + x * pixelSize + scrollX,
+                        tileY * this.tileSize + y * pixelSize + scrollY,
                         pixelSize + 0.5,
                         pixelSize + 0.5
                     );
@@ -1096,22 +1159,31 @@ const StageEditor = {
 
     renderGrid() {
         const stage = App.projectData.stage;
+        const scrollX = this.canvasScrollX || 0;
+        const scrollY = this.canvasScrollY || 0;
 
         this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
         this.ctx.lineWidth = 1;
 
+        // 表示範囲のグリッドのみ描画
         for (let x = 0; x <= stage.width; x++) {
-            this.ctx.beginPath();
-            this.ctx.moveTo(x * this.tileSize, 0);
-            this.ctx.lineTo(x * this.tileSize, this.canvas.height);
-            this.ctx.stroke();
+            const px = x * this.tileSize + scrollX;
+            if (px >= 0 && px <= this.canvas.width) {
+                this.ctx.beginPath();
+                this.ctx.moveTo(px, 0);
+                this.ctx.lineTo(px, this.canvas.height);
+                this.ctx.stroke();
+            }
         }
 
         for (let y = 0; y <= stage.height; y++) {
-            this.ctx.beginPath();
-            this.ctx.moveTo(0, y * this.tileSize);
-            this.ctx.lineTo(this.canvas.width, y * this.tileSize);
-            this.ctx.stroke();
+            const py = y * this.tileSize + scrollY;
+            if (py >= 0 && py <= this.canvas.height) {
+                this.ctx.beginPath();
+                this.ctx.moveTo(0, py);
+                this.ctx.lineTo(this.canvas.width, py);
+                this.ctx.stroke();
+            }
         }
     },
 
@@ -1375,17 +1447,26 @@ const StageEditor = {
         const newBg = App.create2DArray(newWidth, newHeight, -1);
         const newCollision = App.create2DArray(newWidth, newHeight, 0);
 
-        // 既存データをコピー
-        for (let y = 0; y < Math.min(oldHeight, newHeight); y++) {
+        // 縦：+は上に追加（既存データは下にシフト）、-は上から削除
+        // 横：+は右に追加、-は右から削除
+        const heightDiff = newHeight - oldHeight;
+        const yOffset = heightDiff > 0 ? heightDiff : 0; // 拡大時の縦オフセット
+        const srcYStart = heightDiff < 0 ? -heightDiff : 0; // 縮小時のソース開始行
+
+        // 既存データをコピー（上に追加/上から削除対応）
+        for (let srcY = srcYStart; srcY < oldHeight; srcY++) {
+            const dstY = srcY - srcYStart + yOffset;
+            if (dstY >= newHeight) break;
+
             for (let x = 0; x < Math.min(oldWidth, newWidth); x++) {
-                if (stage.layers.fg[y] && stage.layers.fg[y][x] !== undefined) {
-                    newFg[y][x] = stage.layers.fg[y][x];
+                if (stage.layers.fg[srcY] && stage.layers.fg[srcY][x] !== undefined) {
+                    newFg[dstY][x] = stage.layers.fg[srcY][x];
                 }
-                if (stage.layers.bg[y] && stage.layers.bg[y][x] !== undefined) {
-                    newBg[y][x] = stage.layers.bg[y][x];
+                if (stage.layers.bg[srcY] && stage.layers.bg[srcY][x] !== undefined) {
+                    newBg[dstY][x] = stage.layers.bg[srcY][x];
                 }
-                if (stage.layers.collision[y] && stage.layers.collision[y][x] !== undefined) {
-                    newCollision[y][x] = stage.layers.collision[y][x];
+                if (stage.layers.collision[srcY] && stage.layers.collision[srcY][x] !== undefined) {
+                    newCollision[dstY][x] = stage.layers.collision[srcY][x];
                 }
             }
         }

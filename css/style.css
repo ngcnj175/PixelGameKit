@@ -2191,3 +2191,14 @@ body {
 .setting-row label {
     min-width: auto;
 }
+
+/* 縦並び設定行（BGM用） */
+.setting-row-vertical {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+}
+
+.setting-row-vertical label {
+    margin-bottom: 2px;
+}
