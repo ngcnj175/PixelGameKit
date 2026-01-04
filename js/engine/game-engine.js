@@ -713,9 +713,15 @@ const GameEngine = {
         const getTileInfo = (tileId) => {
             if (tileId >= 100) {
                 // テンプレートIDベース（新形式）
-                const template = templates[tileId - 100];
-                const spriteIdx = template?.sprites?.idle?.frames?.[0] ?? template?.sprites?.main?.frames?.[0];
-                return { template, sprite: sprites[spriteIdx], spriteIdx };
+                const templateIdx = tileId - 100;
+                if (templateIdx >= 0 && templateIdx < templates.length) {
+                    const template = templates[templateIdx];
+                    const spriteIdx = template?.sprites?.idle?.frames?.[0] ?? template?.sprites?.main?.frames?.[0];
+                    if (spriteIdx !== undefined && sprites[spriteIdx]) {
+                        return { template, sprite: sprites[spriteIdx], spriteIdx };
+                    }
+                }
+                return { template: null, sprite: null, spriteIdx: -1 };
             } else if (tileId >= 0 && tileId < sprites.length) {
                 // スプライトIDベース（旧形式）- 互換性
                 const template = templates.find(t =>
@@ -732,10 +738,11 @@ const GameEngine = {
                 const tileId = layer[y][x];
                 const { template, sprite } = getTileInfo(tileId);
                 if (!sprite) continue;
+                // player/enemy/itemはスキップ
                 if (template && (template.type === 'player' || template.type === 'enemy' || template.type === 'item')) {
                     continue;
                 }
-                // Collisionなしの素材のみ描画
+                // materialかつcollision=falseのみ先に描画
                 if (template && template.type === 'material' && template.config?.collision === false) {
                     this.renderSprite(sprite, x, y, palette);
                 }
@@ -748,13 +755,15 @@ const GameEngine = {
                 const tileId = layer[y][x];
                 const { template, sprite } = getTileInfo(tileId);
                 if (!sprite) continue;
+                // player/enemy/itemはスキップ
                 if (template && (template.type === 'player' || template.type === 'enemy' || template.type === 'item')) {
                     continue;
                 }
-                // Collisionなし素材はスキップ（既に描画済み）
+                // materialかつcollision=falseはスキップ（既に描画済み）
                 if (template && template.type === 'material' && template.config?.collision === false) {
                     continue;
                 }
+                // その他（materialでcollision=true、またはテンプレートなし）は描画
                 this.renderSprite(sprite, x, y, palette);
             }
         }
