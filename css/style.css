@@ -1959,9 +1959,9 @@ body {
    ======================================== */
 
 #stage-settings-panel {
-    background: var(--bg-device);
+    background: #f5f5f5;
     border-bottom: 1px solid var(--border-color);
-    overflow: hidden;
+    overflow: visible;
 }
 
 #stage-settings-header {
@@ -1973,7 +1973,7 @@ body {
     font-size: 13px;
     font-weight: 600;
     color: var(--text-dark);
-    background: rgba(0, 0, 0, 0.02);
+    background: #f5f5f5;
 }
 
 #stage-settings-toggle {
@@ -1990,9 +1990,8 @@ body {
 }
 
 #stage-settings-content {
-    max-height: 200px;
-    overflow-y: auto;
     padding: 8px 12px 12px;
+    background: #f5f5f5;
 }
 
 .setting-row {
