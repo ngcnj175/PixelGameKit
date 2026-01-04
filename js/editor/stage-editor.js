@@ -1270,17 +1270,8 @@ const StageEditor = {
         // 現在の値を反映
         this.updateStageSettingsUI();
 
-        // 名前（リアルタイム保存）
-        const nameInput = document.getElementById('stage-name-input');
-        if (nameInput) {
-            nameInput.addEventListener('change', () => {
-                App.projectData.stage.name = nameInput.value;
-                // ゲーム画面タイトルと連動
-                if (App.projectData.meta) {
-                    App.projectData.meta.name = nameInput.value || '新規プロジェクト';
-                }
-            });
-        }
+        // 名前は保存ボタン押下時のみ反映（リアルタイム保存しない）
+        // イベントリスナーは不要
 
         // エリアサイズ変更（UI表示のみ、保存ボタンで反映）
         if (areaWMinus) {
@@ -1383,6 +1374,17 @@ const StageEditor = {
         // 保存ボタン
         if (saveBtn) {
             saveBtn.addEventListener('click', () => {
+                // タイトル保存
+                const nameInput = document.getElementById('stage-name-input');
+                if (nameInput) {
+                    App.projectData.stage.name = nameInput.value;
+                    // ゲーム画面タイトルと連動
+                    if (App.projectData.meta) {
+                        App.projectData.meta.name = nameInput.value || '新規プロジェクト';
+                    }
+                }
+
+                // サイズ変更
                 const newWidth = this.pendingAreaW * 16;
                 const newHeight = this.pendingAreaH * 16;
                 if (newWidth !== App.projectData.stage.width || newHeight !== App.projectData.stage.height) {
@@ -1482,53 +1484,215 @@ const StageEditor = {
     },
 
     openBgColorPicker() {
-        // カラーピッカーをスプライトエディタから流用（簡易版）
+        // SpriteEditorと同じフルカラーピッカーを実装
         const currentColor = App.projectData.stage.bgColor || '#3CBCFC';
 
+        // よく使う色プリセット
+        const recentColors = [
+            '#3CBCFC', '#000000', '#ffffff', '#ff0000',
+            '#00ff00', '#0000ff', '#ffff00', '#ff00ff',
+            '#00ffff', '#ff6b6b', '#4ecdc4', '#96ceb4'
+        ];
+
+        // 状態
+        let hue = 0, saturation = 100, brightness = 100;
+        let r = 255, g = 0, b = 0;
+
+        // カラー変換関数
+        const hsvToRgb = (h, s, v) => {
+            s /= 100; v /= 100;
+            const c = v * s;
+            const x = c * (1 - Math.abs((h / 60) % 2 - 1));
+            const m = v - c;
+            let r1, g1, b1;
+            if (h < 60) { r1 = c; g1 = x; b1 = 0; }
+            else if (h < 120) { r1 = x; g1 = c; b1 = 0; }
+            else if (h < 180) { r1 = 0; g1 = c; b1 = x; }
+            else if (h < 240) { r1 = 0; g1 = x; b1 = c; }
+            else if (h < 300) { r1 = x; g1 = 0; b1 = c; }
+            else { r1 = c; g1 = 0; b1 = x; }
+            return { r: Math.round((r1 + m) * 255), g: Math.round((g1 + m) * 255), b: Math.round((b1 + m) * 255) };
+        };
+
+        const rgbToHsv = (r, g, b) => {
+            r /= 255; g /= 255; b /= 255;
+            const max = Math.max(r, g, b), min = Math.min(r, g, b);
+            const d = max - min;
+            let h = 0;
+            if (d !== 0) {
+                if (max === r) h = ((g - b) / d) % 6;
+                else if (max === g) h = (b - r) / d + 2;
+                else h = (r - g) / d + 4;
+                h *= 60; if (h < 0) h += 360;
+            }
+            return { h, s: max === 0 ? 0 : (d / max) * 100, v: max * 100 };
+        };
+
+        const rgbToHex = (r, g, b) => `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`.toUpperCase();
+
+        const hexToRgb = (hex) => {
+            hex = hex.replace('#', '');
+            return { r: parseInt(hex.substr(0, 2), 16), g: parseInt(hex.substr(2, 2), 16), b: parseInt(hex.substr(4, 2), 16) };
+        };
+
+        // 初期値をcurrentColorから設定
+        const initRgb = hexToRgb(currentColor);
+        r = initRgb.r; g = initRgb.g; b = initRgb.b;
+        const initHsv = rgbToHsv(r, g, b);
+        hue = initHsv.h; saturation = initHsv.s; brightness = initHsv.v;
+
+        // bodyスクロール無効化
+        const originalOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+
+        // モーダルオーバーレイ
         const overlay = document.createElement('div');
-        overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:9999;';
+        overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:9999;touch-action:none;';
 
         const modal = document.createElement('div');
-        modal.style.cssText = 'background:#2d2d44;padding:20px;border-radius:16px;width:90%;max-width:280px;text-align:center;';
+        modal.style.cssText = 'background:#2d2d44;padding:20px;border-radius:16px;width:90%;max-width:320px;box-shadow:0 10px 40px rgba(0,0,0,0.4);';
 
-        const title = document.createElement('div');
-        title.textContent = '背景色';
-        title.style.cssText = 'color:#fff;font-size:16px;font-weight:600;margin-bottom:16px;';
+        modal.innerHTML = `
+            <div style="color:#fff;font-size:16px;font-weight:600;margin-bottom:16px;">背景色</div>
+            <div style="display:flex;gap:12px;margin-bottom:16px;">
+                <div style="flex:1;text-align:center;">
+                    <div style="color:#8888aa;font-size:11px;margin-bottom:6px;">現在</div>
+                    <div id="cp-current" style="width:100%;height:50px;border-radius:8px;border:2px solid #444466;background:${currentColor};opacity:0.7;"></div>
+                </div>
+                <div style="flex:1;text-align:center;">
+                    <div style="color:#8888aa;font-size:11px;margin-bottom:6px;">編集中</div>
+                    <div id="cp-new" style="width:100%;height:50px;border-radius:8px;border:2px solid #444466;background:${currentColor};"></div>
+                </div>
+            </div>
+            <div id="cp-picker-area" style="height:200px;position:relative;margin-bottom:12px;">
+                <div id="cp-hsv" style="position:absolute;top:0;left:0;right:0;bottom:0;">
+                    <div id="cp-sb-box" class="sb-box" style="position:relative;width:100%;height:160px;border-radius:8px;cursor:crosshair;margin-bottom:12px;overflow:hidden;background:#ff0000;">
+                        <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(to right,#fff,transparent);"></div>
+                        <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(to bottom,transparent,#000);"></div>
+                        <div id="cp-sb-cursor" style="position:absolute;width:16px;height:16px;border:2px solid #fff;border-radius:50%;box-shadow:0 0 4px rgba(0,0,0,0.5);pointer-events:none;z-index:10;transform:translate(-50%,-50%);left:100%;top:0%;"></div>
+                    </div>
+                    <div id="cp-hue-slider" class="hue-slider" style="position:relative;height:24px;border-radius:12px;background:linear-gradient(to right,#ff0000,#ffff00,#00ff00,#00ffff,#0000ff,#ff00ff,#ff0000);cursor:pointer;">
+                        <div id="cp-hue-cursor" style="position:absolute;top:50%;width:8px;height:28px;background:#fff;border-radius:4px;box-shadow:0 0 4px rgba(0,0,0,0.5);pointer-events:none;transform:translate(-50%,-50%);left:0%;"></div>
+                    </div>
+                </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+                <label style="color:#8888aa;font-size:12px;">HEX</label>
+                <input type="text" id="cp-hex" value="${currentColor}" maxlength="7" style="flex:1;padding:10px 12px;border:2px solid #444466;border-radius:8px;background:#1a1a2e;color:#fff;font-family:monospace;font-size:14px;text-transform:uppercase;">
+            </div>
+            <div style="margin-bottom:16px;">
+                <div style="color:#8888aa;font-size:11px;margin-bottom:6px;">よく使う色</div>
+                <div id="cp-recent" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+            </div>
+            <div style="display:flex;gap:10px;">
+                <button id="cp-cancel" style="flex:1;padding:14px 20px;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;background:#444466;color:#fff;">キャンセル</button>
+                <button id="cp-ok" style="flex:1;padding:14px 20px;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;background:#4a7dff;color:#fff;">OK</button>
+            </div>
+        `;
 
-        const input = document.createElement('input');
-        input.type = 'color';
-        input.value = currentColor;
-        input.style.cssText = 'width:100px;height:100px;border:none;cursor:pointer;';
-
-        const btnContainer = document.createElement('div');
-        btnContainer.style.cssText = 'margin-top:16px;display:flex;gap:10px;justify-content:center;';
-
-        const okBtn = document.createElement('button');
-        okBtn.textContent = 'OK';
-        okBtn.style.cssText = 'flex:1;padding:12px;border:none;border-radius:8px;background:#4a7dff;color:#fff;font-weight:600;cursor:pointer;';
-
-        const cancelBtn = document.createElement('button');
-        cancelBtn.textContent = 'キャンセル';
-        cancelBtn.style.cssText = 'flex:1;padding:12px;border:none;border-radius:8px;background:#444466;color:#fff;cursor:pointer;';
-
-        btnContainer.appendChild(cancelBtn);
-        btnContainer.appendChild(okBtn);
-        modal.appendChild(title);
-        modal.appendChild(input);
-        modal.appendChild(btnContainer);
         overlay.appendChild(modal);
         document.body.appendChild(overlay);
 
-        const close = () => document.body.removeChild(overlay);
+        // DOM要素取得
+        const newColorEl = modal.querySelector('#cp-new');
+        const sbBox = modal.querySelector('#cp-sb-box');
+        const sbCursor = modal.querySelector('#cp-sb-cursor');
+        const hueSlider = modal.querySelector('#cp-hue-slider');
+        const hueCursor = modal.querySelector('#cp-hue-cursor');
+        const hexInput = modal.querySelector('#cp-hex');
+        const recentColorsEl = modal.querySelector('#cp-recent');
 
-        okBtn.addEventListener('click', () => {
-            App.projectData.stage.bgColor = input.value;
+        // UI更新
+        const updateUI = () => {
+            const rgb = hsvToRgb(hue, saturation, brightness);
+            r = rgb.r; g = rgb.g; b = rgb.b;
+            const hex = rgbToHex(r, g, b);
+            newColorEl.style.backgroundColor = hex;
+            hexInput.value = hex;
+            sbBox.style.backgroundColor = rgbToHex(...Object.values(hsvToRgb(hue, 100, 100)));
+            sbCursor.style.left = `${saturation}%`;
+            sbCursor.style.top = `${100 - brightness}%`;
+            hueCursor.style.left = `${(hue / 360) * 100}%`;
+        };
+
+        // SBボックス操作
+        let sbDrag = false;
+        const updateSB = (e) => {
+            const rect = sbBox.getBoundingClientRect();
+            const touch = e.touches ? e.touches[0] : e;
+            let x = (touch.clientX - rect.left) / rect.width * 100;
+            let y = (touch.clientY - rect.top) / rect.height * 100;
+            x = Math.max(0, Math.min(100, x));
+            y = Math.max(0, Math.min(100, y));
+            saturation = x;
+            brightness = 100 - y;
+            updateUI();
+        };
+        sbBox.addEventListener('mousedown', (e) => { sbDrag = true; updateSB(e); });
+        sbBox.addEventListener('touchstart', (e) => { sbDrag = true; updateSB(e); e.preventDefault(); }, { passive: false });
+        document.addEventListener('mousemove', (e) => { if (sbDrag) updateSB(e); });
+        document.addEventListener('touchmove', (e) => { if (sbDrag) { updateSB(e); e.preventDefault(); } }, { passive: false });
+        document.addEventListener('mouseup', () => sbDrag = false);
+        document.addEventListener('touchend', () => sbDrag = false);
+
+        // Hueスライダー操作
+        let hueDrag = false;
+        const updateHue = (e) => {
+            const rect = hueSlider.getBoundingClientRect();
+            const touch = e.touches ? e.touches[0] : e;
+            let x = (touch.clientX - rect.left) / rect.width;
+            x = Math.max(0, Math.min(1, x));
+            hue = x * 360;
+            updateUI();
+        };
+        hueSlider.addEventListener('mousedown', (e) => { hueDrag = true; updateHue(e); });
+        hueSlider.addEventListener('touchstart', (e) => { hueDrag = true; updateHue(e); e.preventDefault(); }, { passive: false });
+        document.addEventListener('mousemove', (e) => { if (hueDrag) updateHue(e); });
+        document.addEventListener('touchmove', (e) => { if (hueDrag) { updateHue(e); e.preventDefault(); } }, { passive: false });
+        document.addEventListener('mouseup', () => hueDrag = false);
+        document.addEventListener('touchend', () => hueDrag = false);
+
+        // HEX入力
+        hexInput.addEventListener('change', () => {
+            const val = hexInput.value.trim();
+            if (/^#[0-9A-Fa-f]{6}$/.test(val)) {
+                const rgb = hexToRgb(val);
+                r = rgb.r; g = rgb.g; b = rgb.b;
+                const hsv = rgbToHsv(r, g, b);
+                hue = hsv.h; saturation = hsv.s; brightness = hsv.v;
+                updateUI();
+            }
+        });
+
+        // よく使う色
+        recentColors.forEach(c => {
+            const swatch = document.createElement('div');
+            swatch.style.cssText = `width:28px;height:28px;border-radius:6px;cursor:pointer;border:2px solid #444466;background:${c};`;
+            swatch.addEventListener('click', () => {
+                const rgb = hexToRgb(c);
+                r = rgb.r; g = rgb.g; b = rgb.b;
+                const hsv = rgbToHsv(r, g, b);
+                hue = hsv.h; saturation = hsv.s; brightness = hsv.v;
+                updateUI();
+            });
+            recentColorsEl.appendChild(swatch);
+        });
+
+        updateUI();
+
+        const close = () => {
+            document.body.style.overflow = originalOverflow;
+            document.body.removeChild(overlay);
+        };
+
+        modal.querySelector('#cp-ok').addEventListener('click', () => {
+            App.projectData.stage.bgColor = hexInput.value;
             this.updateStageSettingsUI();
             this.render();
             close();
         });
 
-        cancelBtn.addEventListener('click', close);
+        modal.querySelector('#cp-cancel').addEventListener('click', close);
         overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
     }
 };

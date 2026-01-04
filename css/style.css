@@ -1969,6 +1969,7 @@ body {
 #stage-settings-header {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 8px;
     padding: 8px 12px;
     cursor: pointer;
@@ -2038,8 +2039,26 @@ body {
     background: #fff;
 }
 
+/* BGM字下げ */
+.bgm-indented {
+    padding-left: 16px;
+}
+
 /* サイズ制御 */
 .size-control {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.size-control-vertical {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-left: 16px;
+}
+
+.size-row {
     display: flex;
     align-items: center;
     gap: 6px;

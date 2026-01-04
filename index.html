@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/svg+xml" href="assets/icons/icon-192.svg">
     <link rel="apple-touch-icon" href="assets/icons/icon-192.svg">
-    <title>PixelGameKit v1.38.3</title>
+    <title>PixelGameKit v1.40.0</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 
@@ -204,8 +204,8 @@
         <div id="stage-screen" class="screen">
             <div class="screen-title">STAGE</div>
 
-            <!-- ステージ設定パネル（折りたたみ可能） -->
-            <div id="stage-settings-panel">
+            <!-- ステージ設定パネル（折りたたみ可能、デフォルト非表示） -->
+            <div id="stage-settings-panel" class="collapsed">
                 <div id="stage-settings-header">
                     <span id="stage-settings-toggle">▼</span>
                     <span>ステージ設定</span>
@@ -216,48 +216,33 @@
                         <label>ステージタイトル</label>
                         <input type="text" id="stage-name-input" placeholder="新規プロジェクト">
                     </div>
-                    <!-- ステージサイズ -->
-                    <div class="setting-row">
+                    <!-- ステージサイズ（2行表示） -->
+                    <div class="setting-row setting-row-vertical">
                         <label>ステージサイズ</label>
-                        <div class="size-control">
-                            <span class="size-label">縦</span>
-                            <button id="area-h-minus" class="size-btn">－</button>
-                            <span id="area-h-value">1</span>
-                            <button id="area-h-plus" class="size-btn">＋</button>
-                            <span class="size-label" style="margin-left:12px;">横</span>
-                            <button id="area-w-minus" class="size-btn">－</button>
-                            <span id="area-w-value">1</span>
-                            <button id="area-w-plus" class="size-btn">＋</button>
+                        <div class="size-control-vertical">
+                            <div class="size-row">
+                                <span class="size-label">縦</span>
+                                <button id="area-h-minus" class="size-btn">－</button>
+                                <span id="area-h-value">1</span>
+                                <button id="area-h-plus" class="size-btn">＋</button>
+                            </div>
+                            <div class="size-row">
+                                <span class="size-label">横</span>
+                                <button id="area-w-minus" class="size-btn">－</button>
+                                <span id="area-w-value">1</span>
+                                <button id="area-w-plus" class="size-btn">＋</button>
+                            </div>
                         </div>
                     </div>
-                    <!-- 背景色＆透明色（同じ行） -->
+                    <!-- 背景色 -->
                     <div class="setting-row">
                         <label>背景色</label>
                         <div id="stage-bg-color" class="color-swatch"></div>
-                        <label style="margin-left:16px;">透明色</label>
-                        <select id="stage-transparent-index">
-                            <option value="0">0</option>
-                            <option value="1">1</option>
-                            <option value="2">2</option>
-                            <option value="3">3</option>
-                            <option value="4">4</option>
-                            <option value="5">5</option>
-                            <option value="6">6</option>
-                            <option value="7">7</option>
-                            <option value="8">8</option>
-                            <option value="9">9</option>
-                            <option value="10">10</option>
-                            <option value="11">11</option>
-                            <option value="12">12</option>
-                            <option value="13">13</option>
-                            <option value="14">14</option>
-                            <option value="15">15</option>
-                        </select>
                     </div>
                     <!-- BGM設定 -->
                     <div class="setting-row setting-row-vertical">
                         <label>BGM</label>
-                        <div class="bgm-selects">
+                        <div class="bgm-selects bgm-indented">
                             <div class="bgm-select-row">
                                 <span class="bgm-label">ステージ</span>
                                 <select id="bgm-stage" class="bgm-select">
