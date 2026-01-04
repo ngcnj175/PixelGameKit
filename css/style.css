@@ -679,7 +679,7 @@ body {
 
 #tile-config-panel {
     position: relative;
-    background: var(--bg-device);
+    background: #f5f5f5;
     border-top: 2px solid var(--border-color);
     padding: 12px;
     padding-top: 8px;

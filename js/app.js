@@ -90,7 +90,37 @@ const App = {
         // 初期画面表示
         this.switchScreen('play');
 
+        // iOSドラッグスクロール防止（必要な場所以外）
+        this.preventIOSScroll();
+
         console.log('PixelGameKit initialized!');
+    },
+
+    // iOSでのドラッグによる全画面スクロールを防止
+    preventIOSScroll() {
+        document.addEventListener('touchmove', (e) => {
+            // スクロール可能な要素かチェック
+            let target = e.target;
+            while (target && target !== document.body) {
+                const style = window.getComputedStyle(target);
+                const overflowY = style.overflowY;
+                const overflowX = style.overflowX;
+
+                // スクロール可能な要素、または特定のクラスを持つ要素は許可
+                if (overflowY === 'auto' || overflowY === 'scroll' ||
+                    overflowX === 'auto' || overflowX === 'scroll' ||
+                    target.classList.contains('allow-scroll') ||
+                    target.tagName === 'CANVAS' ||
+                    target.tagName === 'INPUT' ||
+                    target.classList.contains('sb-box') ||
+                    target.classList.contains('hue-slider')) {
+                    return; // スクロール許可
+                }
+                target = target.parentElement;
+            }
+            // それ以外はスクロール防止
+            e.preventDefault();
+        }, { passive: false });
     },
 
     registerServiceWorker() {
