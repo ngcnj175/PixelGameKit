@@ -98,27 +98,58 @@ const App = {
 
     // iOSでのドラッグによる全画面スクロールを防止
     preventIOSScroll() {
+        // 全てのtouchmoveをデフォルトで防止し、必要な要素のみ許可（ホワイトリスト方式）
         document.addEventListener('touchmove', (e) => {
-            // スクロール可能な要素かチェック
             let target = e.target;
-            while (target && target !== document.body) {
-                const style = window.getComputedStyle(target);
-                const overflowY = style.overflowY;
-                const overflowX = style.overflowX;
 
-                // スクロール可能な要素、または特定のクラスを持つ要素は許可
-                if (overflowY === 'auto' || overflowY === 'scroll' ||
-                    overflowX === 'auto' || overflowX === 'scroll' ||
-                    target.classList.contains('allow-scroll') ||
-                    target.tagName === 'CANVAS' ||
-                    target.tagName === 'INPUT' ||
-                    target.classList.contains('sb-box') ||
-                    target.classList.contains('hue-slider')) {
-                    return; // スクロール許可
+            // 許可する要素をチェック
+            while (target && target !== document.body) {
+                // 許可するタグ
+                if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+                    return;
                 }
+
+                // 許可するクラス（ドラッグ操作が必要な要素）
+                if (target.classList.contains('allow-scroll') ||
+                    target.classList.contains('sb-box') ||
+                    target.classList.contains('hue-slider') ||
+                    target.classList.contains('game-dpad') ||
+                    target.classList.contains('dpad-area')) {
+                    return;
+                }
+
+                // 許可するID（特定の要素）
+                const allowedIds = [
+                    'sprite-canvas',
+                    'stage-canvas',
+                    'bgm-canvas',
+                    'sprite-list',
+                    'tile-list',
+                    'tile-config-panel',
+                    'stage-settings-content'
+                ];
+                if (target.id && allowedIds.includes(target.id)) {
+                    // スクロール可能な要素のみ許可
+                    const style = window.getComputedStyle(target);
+                    if (style.overflowY === 'auto' || style.overflowY === 'scroll' ||
+                        style.overflowX === 'auto' || style.overflowX === 'scroll') {
+                        return;
+                    }
+                    // canvasは許可
+                    if (target.tagName === 'CANVAS') {
+                        return;
+                    }
+                }
+
+                // canvas要素は許可
+                if (target.tagName === 'CANVAS') {
+                    return;
+                }
+
                 target = target.parentElement;
             }
-            // それ以外はスクロール防止
+
+            // それ以外は全てスクロール防止
             e.preventDefault();
         }, { passive: false });
     },
