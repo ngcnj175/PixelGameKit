@@ -1059,15 +1059,15 @@ const StageEditor = {
         const container = document.getElementById('stage-canvas-area');
         if (!container || !this.canvas) return;
 
-        const stage = App.projectData.stage;
-        const maxSize = 320;
+        // キャンバスは常に16x16タイル（320px）固定
+        // ステージサイズが大きい場合は2本指パンでスクロール
+        this.tileSize = 20;
+        const canvasSize = 320;
 
-        this.tileSize = Math.floor(maxSize / Math.max(stage.width, stage.height));
-
-        this.canvas.width = this.tileSize * stage.width;
-        this.canvas.height = this.tileSize * stage.height;
-        this.canvas.style.width = this.canvas.width + 'px';
-        this.canvas.style.height = this.canvas.height + 'px';
+        this.canvas.width = canvasSize;
+        this.canvas.height = canvasSize;
+        this.canvas.style.width = canvasSize + 'px';
+        this.canvas.style.height = canvasSize + 'px';
 
         this.render();
     },
