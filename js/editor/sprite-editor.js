@@ -219,9 +219,13 @@ const SpriteEditor = {
         const initHsv = rgbToHsv(r, g, b);
         hue = initHsv.h; saturation = initHsv.s; brightness = initHsv.v;
 
+        // bodyスクロール無効化
+        const originalOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+
         // モーダルオーバーレイを作成
         const overlay = document.createElement('div');
-        overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:9999;';
+        overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:9999;touch-action:none;';
 
         // モーダルコンテンツ
         const modal = document.createElement('div');
@@ -350,9 +354,9 @@ const SpriteEditor = {
             updateUI();
         };
         sbBox.addEventListener('mousedown', e => { sbDrag = true; updateSB(e); });
-        sbBox.addEventListener('touchstart', e => { sbDrag = true; updateSB(e.touches[0]); }, { passive: true });
+        sbBox.addEventListener('touchstart', e => { e.preventDefault(); sbDrag = true; updateSB(e.touches[0]); }, { passive: false });
         document.addEventListener('mousemove', e => { if (sbDrag) updateSB(e); });
-        document.addEventListener('touchmove', e => { if (sbDrag) updateSB(e.touches[0]); }, { passive: true });
+        document.addEventListener('touchmove', e => { if (sbDrag) { e.preventDefault(); updateSB(e.touches[0]); } }, { passive: false });
         document.addEventListener('mouseup', () => sbDrag = false);
         document.addEventListener('touchend', () => sbDrag = false);
 
@@ -364,9 +368,9 @@ const SpriteEditor = {
             updateUI();
         };
         hueSlider.addEventListener('mousedown', e => { hueDrag = true; updateHue(e); });
-        hueSlider.addEventListener('touchstart', e => { hueDrag = true; updateHue(e.touches[0]); }, { passive: true });
+        hueSlider.addEventListener('touchstart', e => { e.preventDefault(); hueDrag = true; updateHue(e.touches[0]); }, { passive: false });
         document.addEventListener('mousemove', e => { if (hueDrag) updateHue(e); });
-        document.addEventListener('touchmove', e => { if (hueDrag) updateHue(e.touches[0]); }, { passive: true });
+        document.addEventListener('touchmove', e => { if (hueDrag) { e.preventDefault(); updateHue(e.touches[0]); } }, { passive: false });
         document.addEventListener('mouseup', () => hueDrag = false);
         document.addEventListener('touchend', () => hueDrag = false);
 
@@ -406,6 +410,7 @@ const SpriteEditor = {
 
         // ボタン
         const closeModal = () => {
+            document.body.style.overflow = originalOverflow;
             if (document.body.contains(overlay)) {
                 document.body.removeChild(overlay);
             }
