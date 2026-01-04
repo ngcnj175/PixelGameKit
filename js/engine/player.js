@@ -61,8 +61,9 @@ class Player {
             // 敵と同じ落下演出
             if (this.isDying) {
                 this.deathTimer++;
-                this.vy += engine.GRAVITY * 0.5;
+                this.vy += 0.02; // 敵と同じ重力
                 this.y += this.vy;
+                this.x += this.vx; // 横方向の動きも
             }
             return;
         }
@@ -166,7 +167,10 @@ class Player {
     }
 
     handleInput(engine) {
-        this.vx = 0;
+        // 無敵中（ダメージのノックバック中）はvxをリセットしない
+        if (!this.invincible || this.starPower) {
+            this.vx = 0;
+        }
 
         if (GameController.isPressed('left')) {
             this.vx = -this.moveSpeed;
@@ -263,8 +267,8 @@ class Player {
         this.isDying = true;
         this.deathTimer = 0;
         // 敵と同じ落下死亡演出
-        this.vy = -0.4; // 上に跳ねる
-        this.vx = 0;
+        this.vy = -0.3; // 敵と同じ
+        this.vx = this.facingRight ? -0.1 : 0.1; // 向きの逆方向
         this.deathParticles = []; // パーティクルは使わない
     }
 
