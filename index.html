@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/svg+xml" href="assets/icons/icon-192.svg">
     <link rel="apple-touch-icon" href="assets/icons/icon-192.svg">
-    <title>PixelGameKit v1.33.0</title>
+    <title>PixelGameKit v1.35.0</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 
@@ -203,6 +203,108 @@
         <!-- ========== ステージ画面 ========== -->
         <div id="stage-screen" class="screen">
             <div class="screen-title">STAGE</div>
+
+            <!-- ステージ設定パネル（折りたたみ可能） -->
+            <div id="stage-settings-panel">
+                <div id="stage-settings-header">
+                    <span id="stage-settings-toggle">▼</span>
+                    <span>ステージ設定</span>
+                </div>
+                <div id="stage-settings-content">
+                    <!-- ステージタイトル -->
+                    <div class="setting-row">
+                        <label>ステージタイトル</label>
+                        <input type="text" id="stage-name-input" placeholder="新規プロジェクト">
+                    </div>
+                    <!-- ステージサイズ -->
+                    <div class="setting-row">
+                        <label>ステージサイズ</label>
+                        <div class="size-control">
+                            <span class="size-label">縦</span>
+                            <button id="area-h-minus" class="size-btn">－</button>
+                            <span id="area-h-value">1</span>
+                            <button id="area-h-plus" class="size-btn">＋</button>
+                            <span class="size-label" style="margin-left:12px;">横</span>
+                            <button id="area-w-minus" class="size-btn">－</button>
+                            <span id="area-w-value">1</span>
+                            <button id="area-w-plus" class="size-btn">＋</button>
+                        </div>
+                    </div>
+                    <!-- 背景色＆透明色（同じ行） -->
+                    <div class="setting-row">
+                        <label>背景色</label>
+                        <div id="stage-bg-color" class="color-swatch"></div>
+                        <label style="margin-left:16px;">透明色</label>
+                        <select id="stage-transparent-index">
+                            <option value="0">0</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6">6</option>
+                            <option value="7">7</option>
+                            <option value="8">8</option>
+                            <option value="9">9</option>
+                            <option value="10">10</option>
+                            <option value="11">11</option>
+                            <option value="12">12</option>
+                            <option value="13">13</option>
+                            <option value="14">14</option>
+                            <option value="15">15</option>
+                        </select>
+                    </div>
+                    <!-- BGM設定 -->
+                    <div class="setting-row">
+                        <label>BGM</label>
+                        <div class="bgm-selects">
+                            <div class="bgm-select-row">
+                                <span class="bgm-label">ステージ</span>
+                                <select id="bgm-stage" class="bgm-select">
+                                    <option value="">なし</option>
+                                    <option value="bgm1">BGM 1</option>
+                                </select>
+                            </div>
+                            <div class="bgm-select-row">
+                                <span class="bgm-label">無敵</span>
+                                <select id="bgm-invincible" class="bgm-select">
+                                    <option value="">なし</option>
+                                    <option value="bgm1">BGM 1</option>
+                                </select>
+                            </div>
+                            <div class="bgm-select-row">
+                                <span class="bgm-label">クリア</span>
+                                <select id="bgm-clear" class="bgm-select">
+                                    <option value="">なし</option>
+                                    <option value="bgm1">BGM 1</option>
+                                </select>
+                            </div>
+                            <div class="bgm-select-row">
+                                <span class="bgm-label">ゲームオーバー</span>
+                                <select id="bgm-gameover" class="bgm-select">
+                                    <option value="">なし</option>
+                                    <option value="bgm1">BGM 1</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- 制限時間 -->
+                    <div class="setting-row">
+                        <label>制限時間</label>
+                        <div class="time-control">
+                            <input type="number" id="stage-time-min" min="0" max="99" value="0">
+                            <span>分</span>
+                            <input type="number" id="stage-time-sec" min="0" max="59" value="0">
+                            <span>秒</span>
+                        </div>
+                    </div>
+                    <!-- 保存ボタン -->
+                    <div class="setting-row setting-row-center">
+                        <button id="stage-settings-save" class="setting-save-btn">設定を保存</button>
+                    </div>
+                </div>
+            </div>
+
             <div id="paint-content-wrapper">
                 <!-- メインエリア（ツール左 + キャンバス中央） -->
                 <div id="paint-main-area">

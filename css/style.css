@@ -1953,3 +1953,241 @@ body {
     font-size: 13px;
     cursor: pointer;
 }
+
+/* ========================================
+   ステージ設定パネル
+   ======================================== */
+
+#stage-settings-panel {
+    background: var(--bg-device);
+    border-bottom: 1px solid var(--border-color);
+    overflow: hidden;
+}
+
+#stage-settings-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-dark);
+    background: rgba(0, 0, 0, 0.02);
+}
+
+#stage-settings-toggle {
+    font-size: 10px;
+    transition: transform 0.2s;
+}
+
+#stage-settings-panel.collapsed #stage-settings-toggle {
+    transform: rotate(-90deg);
+}
+
+#stage-settings-panel.collapsed #stage-settings-content {
+    display: none;
+}
+
+#stage-settings-content {
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 8px 12px 12px;
+}
+
+.setting-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.setting-row:last-child {
+    margin-bottom: 0;
+}
+
+.setting-row label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-medium);
+    min-width: 60px;
+    flex-shrink: 0;
+}
+
+.setting-row input[type="text"] {
+    flex: 1;
+    padding: 6px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 13px;
+    background: #fff;
+}
+
+.setting-row input[type="text"]:focus {
+    outline: none;
+    border-color: var(--color-dark);
+}
+
+.setting-row select {
+    flex: 1;
+    padding: 6px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 13px;
+    background: #fff;
+}
+
+/* サイズ制御 */
+.size-control {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.size-btn {
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background: #fff;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.size-btn:active {
+    background: var(--color-light);
+}
+
+#area-w-value,
+#area-h-value {
+    font-size: 14px;
+    font-weight: 600;
+    min-width: 20px;
+    text-align: center;
+}
+
+.size-separator {
+    font-size: 12px;
+    color: var(--color-medium);
+    margin: 0 2px;
+}
+
+.size-unit {
+    font-size: 11px;
+    color: var(--color-medium);
+    margin-left: 4px;
+}
+
+/* カラースウォッチ */
+.color-swatch {
+    width: 32px;
+    height: 32px;
+    border: 2px solid var(--border-color);
+    border-radius: 4px;
+    cursor: pointer;
+    background: #3CBCFC;
+}
+
+.color-swatch:active {
+    opacity: 0.8;
+}
+
+/* 設定ボタン */
+.setting-btn {
+    padding: 6px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background: #fff;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.setting-btn:active {
+    background: var(--color-light);
+}
+
+/* 制限時間入力 */
+.time-control {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.time-control input[type="number"] {
+    width: 60px;
+    padding: 6px 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 13px;
+    text-align: center;
+}
+
+.time-control span {
+    font-size: 11px;
+    color: var(--color-medium);
+}
+
+/* サイズラベル */
+.size-label {
+    font-size: 12px;
+    color: var(--color-medium);
+    margin-right: 4px;
+}
+
+/* BGM選択 */
+.bgm-selects {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.bgm-select-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.bgm-label {
+    font-size: 11px;
+    color: var(--color-medium);
+    min-width: 80px;
+}
+
+.bgm-select {
+    flex: 1;
+    padding: 4px 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 12px;
+    background: #fff;
+}
+
+/* 保存ボタン */
+.setting-row-center {
+    justify-content: center;
+    margin-top: 8px;
+}
+
+.setting-save-btn {
+    padding: 10px 24px;
+    border: none;
+    border-radius: 6px;
+    background: var(--color-dark);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.setting-save-btn:active {
+    opacity: 0.8;
+}
+
+/* ステージタイトルラベル幅調整 */
+.setting-row label {
+    min-width: auto;
+}

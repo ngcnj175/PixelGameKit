@@ -25,8 +25,18 @@ const App = {
             palette: this.nesPalette.slice(0, 16),
             sprites: [this.createEmptySprite()],
             stage: {
+                name: '',
                 width: 16,
                 height: 16,
+                bgColor: '#3CBCFC',
+                transparentIndex: 0,
+                bgm: {
+                    stage: '',
+                    invincible: '',
+                    clear: '',
+                    gameover: ''
+                },
+                timeLimit: 0,
                 layers: {
                     bg: this.create2DArray(16, 16, -1),
                     fg: this.create2DArray(16, 16, -1),

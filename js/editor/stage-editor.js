@@ -38,6 +38,7 @@ const StageEditor = {
         this.initSpriteSelectPopup();
         this.initTemplateList();
         this.initCanvasEvents();
+        this.initStageSettings();
         this.resize();
     },
 
@@ -50,6 +51,7 @@ const StageEditor = {
 
         this.initTemplateList();
         this.initCanvasEvents(); // イベントリスナー再設定
+        this.updateStageSettingsUI();
         this.resize();
         this.render();
     },
@@ -1166,5 +1168,286 @@ const StageEditor = {
 
         this.render();
         console.log('All tiles cleared');
+    },
+
+    // ========== ステージ設定パネル ==========
+    initStageSettings() {
+        const panel = document.getElementById('stage-settings-panel');
+        const header = document.getElementById('stage-settings-header');
+        if (!panel || !header) return;
+
+        // 折りたたみ（初期状態は開いている）
+        header.addEventListener('click', () => {
+            panel.classList.toggle('collapsed');
+        });
+
+        // 一時的なサイズ値（保存ボタン押下まで反映しない）
+        this.pendingAreaW = Math.floor(App.projectData.stage.width / 16);
+        this.pendingAreaH = Math.floor(App.projectData.stage.height / 16);
+
+        // UI要素取得
+        const areaWValue = document.getElementById('area-w-value');
+        const areaHValue = document.getElementById('area-h-value');
+        const areaWMinus = document.getElementById('area-w-minus');
+        const areaWPlus = document.getElementById('area-w-plus');
+        const areaHMinus = document.getElementById('area-h-minus');
+        const areaHPlus = document.getElementById('area-h-plus');
+        const bgColorSwatch = document.getElementById('stage-bg-color');
+        const saveBtn = document.getElementById('stage-settings-save');
+
+        // 現在の値を反映
+        this.updateStageSettingsUI();
+
+        // 名前（リアルタイム保存）
+        const nameInput = document.getElementById('stage-name-input');
+        if (nameInput) {
+            nameInput.addEventListener('change', () => {
+                App.projectData.stage.name = nameInput.value;
+                // ゲーム画面タイトルと連動
+                if (App.projectData.meta) {
+                    App.projectData.meta.name = nameInput.value || '新規プロジェクト';
+                }
+            });
+        }
+
+        // エリアサイズ変更（UI表示のみ、保存ボタンで反映）
+        if (areaWMinus) {
+            areaWMinus.addEventListener('click', () => {
+                if (this.pendingAreaW > 1) {
+                    this.pendingAreaW--;
+                    if (areaWValue) areaWValue.textContent = this.pendingAreaW;
+                }
+            });
+        }
+        if (areaWPlus) {
+            areaWPlus.addEventListener('click', () => {
+                if (this.pendingAreaW < 10) {
+                    this.pendingAreaW++;
+                    if (areaWValue) areaWValue.textContent = this.pendingAreaW;
+                }
+            });
+        }
+        if (areaHMinus) {
+            areaHMinus.addEventListener('click', () => {
+                if (this.pendingAreaH > 1) {
+                    this.pendingAreaH--;
+                    if (areaHValue) areaHValue.textContent = this.pendingAreaH;
+                }
+            });
+        }
+        if (areaHPlus) {
+            areaHPlus.addEventListener('click', () => {
+                if (this.pendingAreaH < 10) {
+                    this.pendingAreaH++;
+                    if (areaHValue) areaHValue.textContent = this.pendingAreaH;
+                }
+            });
+        }
+
+        // 背景色（スプライトエディタのカラーピッカーを使用）
+        if (bgColorSwatch) {
+            bgColorSwatch.addEventListener('click', () => {
+                this.openBgColorPicker();
+            });
+        }
+
+        // 透明色
+        const transparentSelect = document.getElementById('stage-transparent-index');
+        if (transparentSelect) {
+            transparentSelect.addEventListener('change', () => {
+                App.projectData.stage.transparentIndex = parseInt(transparentSelect.value);
+            });
+        }
+
+        // BGMサブ項目
+        const bgmStage = document.getElementById('bgm-stage');
+        const bgmInvincible = document.getElementById('bgm-invincible');
+        const bgmClear = document.getElementById('bgm-clear');
+        const bgmGameover = document.getElementById('bgm-gameover');
+
+        if (bgmStage) {
+            bgmStage.addEventListener('change', () => {
+                if (!App.projectData.stage.bgm) App.projectData.stage.bgm = {};
+                App.projectData.stage.bgm.stage = bgmStage.value;
+            });
+        }
+        if (bgmInvincible) {
+            bgmInvincible.addEventListener('change', () => {
+                if (!App.projectData.stage.bgm) App.projectData.stage.bgm = {};
+                App.projectData.stage.bgm.invincible = bgmInvincible.value;
+            });
+        }
+        if (bgmClear) {
+            bgmClear.addEventListener('change', () => {
+                if (!App.projectData.stage.bgm) App.projectData.stage.bgm = {};
+                App.projectData.stage.bgm.clear = bgmClear.value;
+            });
+        }
+        if (bgmGameover) {
+            bgmGameover.addEventListener('change', () => {
+                if (!App.projectData.stage.bgm) App.projectData.stage.bgm = {};
+                App.projectData.stage.bgm.gameover = bgmGameover.value;
+            });
+        }
+
+        // 制限時間（分秒形式）
+        const timeMin = document.getElementById('stage-time-min');
+        const timeSec = document.getElementById('stage-time-sec');
+        if (timeMin) {
+            timeMin.addEventListener('change', () => {
+                const min = parseInt(timeMin.value) || 0;
+                const sec = parseInt(timeSec?.value) || 0;
+                App.projectData.stage.timeLimit = min * 60 + sec;
+            });
+        }
+        if (timeSec) {
+            timeSec.addEventListener('change', () => {
+                const min = parseInt(timeMin?.value) || 0;
+                const sec = parseInt(timeSec.value) || 0;
+                App.projectData.stage.timeLimit = min * 60 + sec;
+            });
+        }
+
+        // 保存ボタン
+        if (saveBtn) {
+            saveBtn.addEventListener('click', () => {
+                const newWidth = this.pendingAreaW * 16;
+                const newHeight = this.pendingAreaH * 16;
+                if (newWidth !== App.projectData.stage.width || newHeight !== App.projectData.stage.height) {
+                    this.resizeStage(newWidth, newHeight);
+                }
+                // 設定パネルを閉じる
+                panel.classList.add('collapsed');
+            });
+        }
+    },
+
+    updateStageSettingsUI() {
+        const stage = App.projectData.stage;
+
+        const nameInput = document.getElementById('stage-name-input');
+        const areaWValue = document.getElementById('area-w-value');
+        const areaHValue = document.getElementById('area-h-value');
+        const bgColorSwatch = document.getElementById('stage-bg-color');
+        const transparentSelect = document.getElementById('stage-transparent-index');
+        const timeMin = document.getElementById('stage-time-min');
+        const timeSec = document.getElementById('stage-time-sec');
+        const bgmStage = document.getElementById('bgm-stage');
+        const bgmInvincible = document.getElementById('bgm-invincible');
+        const bgmClear = document.getElementById('bgm-clear');
+        const bgmGameover = document.getElementById('bgm-gameover');
+
+        // 名前（ステージ名またはプロジェクト名）
+        if (nameInput) nameInput.value = stage.name || App.projectData.meta?.name || '新規プロジェクト';
+
+        // サイズ
+        this.pendingAreaW = Math.floor(stage.width / 16);
+        this.pendingAreaH = Math.floor(stage.height / 16);
+        if (areaWValue) areaWValue.textContent = this.pendingAreaW;
+        if (areaHValue) areaHValue.textContent = this.pendingAreaH;
+
+        // 背景色
+        if (bgColorSwatch) bgColorSwatch.style.backgroundColor = stage.bgColor || '#3CBCFC';
+
+        // 透明色
+        if (transparentSelect) transparentSelect.value = stage.transparentIndex || 0;
+
+        // 制限時間（分秒）
+        const totalSec = stage.timeLimit || 0;
+        if (timeMin) timeMin.value = Math.floor(totalSec / 60);
+        if (timeSec) timeSec.value = totalSec % 60;
+
+        // BGM
+        const bgm = stage.bgm || {};
+        if (bgmStage) bgmStage.value = bgm.stage || '';
+        if (bgmInvincible) bgmInvincible.value = bgm.invincible || '';
+        if (bgmClear) bgmClear.value = bgm.clear || '';
+        if (bgmGameover) bgmGameover.value = bgm.gameover || '';
+    },
+
+    resizeStage(newWidth, newHeight) {
+        const stage = App.projectData.stage;
+        const oldWidth = stage.width;
+        const oldHeight = stage.height;
+
+        // 新しいレイヤー配列を作成
+        const newFg = App.create2DArray(newWidth, newHeight, -1);
+        const newBg = App.create2DArray(newWidth, newHeight, -1);
+        const newCollision = App.create2DArray(newWidth, newHeight, 0);
+
+        // 既存データをコピー
+        for (let y = 0; y < Math.min(oldHeight, newHeight); y++) {
+            for (let x = 0; x < Math.min(oldWidth, newWidth); x++) {
+                if (stage.layers.fg[y] && stage.layers.fg[y][x] !== undefined) {
+                    newFg[y][x] = stage.layers.fg[y][x];
+                }
+                if (stage.layers.bg[y] && stage.layers.bg[y][x] !== undefined) {
+                    newBg[y][x] = stage.layers.bg[y][x];
+                }
+                if (stage.layers.collision[y] && stage.layers.collision[y][x] !== undefined) {
+                    newCollision[y][x] = stage.layers.collision[y][x];
+                }
+            }
+        }
+
+        stage.width = newWidth;
+        stage.height = newHeight;
+        stage.layers.fg = newFg;
+        stage.layers.bg = newBg;
+        stage.layers.collision = newCollision;
+
+        this.resize();
+        this.render();
+    },
+
+    openBgColorPicker() {
+        // カラーピッカーをスプライトエディタから流用（簡易版）
+        const currentColor = App.projectData.stage.bgColor || '#3CBCFC';
+
+        const overlay = document.createElement('div');
+        overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:9999;';
+
+        const modal = document.createElement('div');
+        modal.style.cssText = 'background:#2d2d44;padding:20px;border-radius:16px;width:90%;max-width:280px;text-align:center;';
+
+        const title = document.createElement('div');
+        title.textContent = '背景色';
+        title.style.cssText = 'color:#fff;font-size:16px;font-weight:600;margin-bottom:16px;';
+
+        const input = document.createElement('input');
+        input.type = 'color';
+        input.value = currentColor;
+        input.style.cssText = 'width:100px;height:100px;border:none;cursor:pointer;';
+
+        const btnContainer = document.createElement('div');
+        btnContainer.style.cssText = 'margin-top:16px;display:flex;gap:10px;justify-content:center;';
+
+        const okBtn = document.createElement('button');
+        okBtn.textContent = 'OK';
+        okBtn.style.cssText = 'flex:1;padding:12px;border:none;border-radius:8px;background:#4a7dff;color:#fff;font-weight:600;cursor:pointer;';
+
+        const cancelBtn = document.createElement('button');
+        cancelBtn.textContent = 'キャンセル';
+        cancelBtn.style.cssText = 'flex:1;padding:12px;border:none;border-radius:8px;background:#444466;color:#fff;cursor:pointer;';
+
+        btnContainer.appendChild(cancelBtn);
+        btnContainer.appendChild(okBtn);
+        modal.appendChild(title);
+        modal.appendChild(input);
+        modal.appendChild(btnContainer);
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+
+        const close = () => document.body.removeChild(overlay);
+
+        okBtn.addEventListener('click', () => {
+            App.projectData.stage.bgColor = input.value;
+            this.updateStageSettingsUI();
+            this.render();
+            close();
+        });
+
+        cancelBtn.addEventListener('click', close);
+        overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
     }
 };
