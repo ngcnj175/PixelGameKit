@@ -118,8 +118,8 @@ const StageEditor = {
 
     // ========== 背景色取得 ==========
     getBackgroundColor() {
-        // Pixel画面の背景色を使用（デフォルト）
-        return App.projectData.stage?.backgroundColor || App.projectData.backgroundColor || '#3CBCFC';
+        // ステージ設定の背景色を使用
+        return App.projectData.stage?.bgColor || App.projectData.stage?.backgroundColor || '#3CBCFC';
     },
 
     // ========== スプライトギャラリー（ドラッグ元） ==========
@@ -137,7 +137,7 @@ const StageEditor = {
             const miniCanvas = document.createElement('canvas');
             miniCanvas.width = 16;
             miniCanvas.height = 16;
-            this.renderSpriteToMiniCanvas(sprite, miniCanvas);
+            this.renderSpriteToMiniCanvas(sprite, miniCanvas, this.getBackgroundColor());
             div.style.backgroundImage = `url(${miniCanvas.toDataURL()})`;
             div.style.backgroundSize = 'cover';
 
@@ -528,7 +528,7 @@ const StageEditor = {
             // 初期フレーム描画
             const firstSprite = App.projectData.sprites[frames[0]];
             if (firstSprite) {
-                this.renderSpriteToMiniCanvas(firstSprite, canvas);
+                this.renderSpriteToMiniCanvas(firstSprite, canvas, this.getBackgroundColor());
             }
 
             // 複数フレームの場合はアニメーション
@@ -543,7 +543,7 @@ const StageEditor = {
                     frameIndex = (frameIndex + 1) % frames.length;
                     const sprite = App.projectData.sprites[frames[frameIndex]];
                     if (sprite) {
-                        this.renderSpriteToMiniCanvas(sprite, canvas);
+                        this.renderSpriteToMiniCanvas(sprite, canvas, this.getBackgroundColor());
                     }
                 }, 1000 / speed);
                 this.configAnimationIntervals.push(animInterval);
@@ -751,7 +751,7 @@ const StageEditor = {
                 // 初期フレーム描画
                 const firstSprite = App.projectData.sprites[frames[0]];
                 if (firstSprite) {
-                    this.renderSpriteToMiniCanvas(firstSprite, miniCanvas);
+                    this.renderSpriteToMiniCanvas(firstSprite, miniCanvas, this.getBackgroundColor());
                 }
 
                 // 複数フレームの場合はアニメーション
@@ -766,7 +766,7 @@ const StageEditor = {
                         frameIndex = (frameIndex + 1) % frames.length;
                         const sprite = App.projectData.sprites[frames[frameIndex]];
                         if (sprite) {
-                            this.renderSpriteToMiniCanvas(sprite, miniCanvas);
+                            this.renderSpriteToMiniCanvas(sprite, miniCanvas, this.getBackgroundColor());
                         }
                     }, 1000 / speed);
                 }

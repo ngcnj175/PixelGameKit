@@ -649,8 +649,9 @@ const SpriteEditor = {
         const ctx = canvas.getContext('2d');
         const palette = App.nesPalette;
 
-        // 背景色: 薄グレー
-        canvas.style.backgroundColor = '#3CBCFC';
+        // 背景色を動的に取得
+        const bgColor = App.projectData.stage?.bgColor || App.projectData.stage?.backgroundColor || '#3CBCFC';
+        canvas.style.backgroundColor = bgColor;
         ctx.clearRect(0, 0, 16, 16);
 
         for (let y = 0; y < 16; y++) {
