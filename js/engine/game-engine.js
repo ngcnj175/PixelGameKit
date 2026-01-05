@@ -27,6 +27,9 @@ const GameEngine = {
     titleBlinkTimer: 0,
     gameOverTimer: 0,
 
+    // タイルアニメーション用フレームカウンター
+    tileAnimationFrame: 0,
+
     init() {
         this.canvas = document.getElementById('game-canvas');
         if (!this.canvas) return;
@@ -303,6 +306,8 @@ const GameEngine = {
         // 一時停止中はupdateをスキップ（描画は続行）
         if (!this.isPaused) {
             this.update();
+            // タイルアニメーションフレームカウンターを更新
+            this.tileAnimationFrame++;
         }
         this.render();
 
@@ -719,16 +724,23 @@ const GameEngine = {
         const stage = App.projectData.stage;
         const templates = App.projectData.templates || [];
 
-        // ヘルパー: tileIdからスプライトとテンプレートを取得
+        // ヘルパー: tileIdからスプライトとテンプレートを取得（アニメーション対応）
         const getTileInfo = (tileId) => {
             if (tileId >= 100) {
                 // テンプレートIDベース（新形式）
                 const templateIdx = tileId - 100;
                 const template = templates[templateIdx];
                 if (template) {
-                    const spriteIdx = template.sprites?.idle?.frames?.[0] ?? template.sprites?.main?.frames?.[0];
-                    const sprite = spriteIdx !== undefined ? sprites[spriteIdx] : null;
-                    return { template, sprite, spriteIdx };
+                    // idleまたはmainのframesを取得
+                    const frames = template.sprites?.idle?.frames || template.sprites?.main?.frames || [];
+                    if (frames.length > 0) {
+                        // アニメーション速度: 10フレームごとにスプライトを切り替え
+                        const frameSpeed = 10;
+                        const frameIndex = Math.floor(this.tileAnimationFrame / frameSpeed) % frames.length;
+                        const spriteIdx = frames[frameIndex];
+                        const sprite = spriteIdx !== undefined ? sprites[spriteIdx] : null;
+                        return { template, sprite, spriteIdx };
+                    }
                 }
             } else if (tileId >= 0) {
                 // スプライトIDベース（旧形式）- 互換性

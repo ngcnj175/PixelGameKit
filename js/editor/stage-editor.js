@@ -1250,7 +1250,15 @@ const StageEditor = {
 
         // 折りたたみ（初期状態は開いている）
         header.addEventListener('click', () => {
+            const wasCollapsed = panel.classList.contains('collapsed');
             panel.classList.toggle('collapsed');
+
+            // パネルを開く時にpendingArea値を現在のステージサイズから再初期化
+            if (wasCollapsed) {
+                this.pendingAreaW = Math.floor(App.projectData.stage.width / 16);
+                this.pendingAreaH = Math.floor(App.projectData.stage.height / 16);
+                this.updateStageSettingsUI();
+            }
         });
 
         // 一時的なサイズ値（保存ボタン押下まで反映しない）
