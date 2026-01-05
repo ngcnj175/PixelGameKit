@@ -312,9 +312,18 @@ const GameEngine = {
         this.render();
 
         // プレイヤー落下チェック（画面外に出たらゲームオーバーへ）
-        if (this.player && this.player.y > App.projectData.stage.height + 2) {
-            this.titleState = 'gameover';
-            this.gameOverTimer = 0;
+        // titleStateがplayingの時のみ判定
+        // デバッグ: 毎フレームログ出力
+        if (this.titleState === 'playing' && this.player) {
+            // 5フレームごとにログ出力（多すぎるのを防ぐ）
+            if (this.tileAnimationFrame % 30 === 0) {
+                console.log('Player y:', this.player.y, 'Stage height:', App.projectData.stage.height);
+            }
+            if (this.player.y > App.projectData.stage.height + 2) {
+                console.log('GAME OVER triggered! Player y:', this.player.y, 'Stage height:', App.projectData.stage.height);
+                this.titleState = 'gameover';
+                this.gameOverTimer = 0;
+            }
         }
 
         this.animationId = requestAnimationFrame(() => this.gameLoop());
@@ -731,8 +740,16 @@ const GameEngine = {
                 const templateIdx = tileId - 100;
                 const template = templates[templateIdx];
                 if (template) {
-                    // idleまたはmainのframesを取得
-                    const frames = template.sprites?.idle?.frames || template.sprites?.main?.frames || [];
+                    // 全アニメーションスロットからframesを取得
+                    const spriteSlots = template.sprites || {};
+                    const slotNames = ['idle', 'main', 'walk', 'jump', 'attack', 'shot', 'life'];
+                    let frames = [];
+                    for (const slotName of slotNames) {
+                        if (spriteSlots[slotName]?.frames?.length > 0) {
+                            frames = spriteSlots[slotName].frames;
+                            break; // 最初に見つかったスロットを使用
+                        }
+                    }
                     if (frames.length > 0) {
                         // アニメーション速度: 10フレームごとにスプライトを切り替え
                         const frameSpeed = 10;

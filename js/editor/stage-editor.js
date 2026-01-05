@@ -1487,9 +1487,12 @@ const StageEditor = {
         stage.layers.bg = newBg;
         stage.layers.collision = newCollision;
 
-        // スクロール位置をリセットして左上から表示
+        // スクロール位置を左下から表示するように設定
+        // 縦（Y）：ステージの下端がキャンバス下端に来るように
         this.canvasScrollX = 0;
-        this.canvasScrollY = 0;
+        const canvasHeight = 320; // キャンバスの高さ（固定）
+        const stagePixelHeight = newHeight * this.tileSize;
+        this.canvasScrollY = stagePixelHeight > canvasHeight ? -(stagePixelHeight - canvasHeight) : 0;
 
         this.resize();
         this.render();
