@@ -229,6 +229,8 @@ class Player {
                 width: 0.5,
                 height: 0.5,
                 spriteIdx: shotSprite,
+                templateIdx: this.templateIdx, // アニメーション用
+                animationSlot: 'shot', // 使用するスロットを指定
                 owner: 'player',
                 maxRange: this.shotMaxRange,
                 startX: this.x,
@@ -280,13 +282,11 @@ class Player {
         this.vx = this.facingRight ? -0.1 : 0.1; // 向きの逆方向
         this.deathParticles = []; // パーティクルは使わない
 
-        // 死亡時にゲームオーバーを発火（少し遅延を入れる）
-        setTimeout(() => {
-            if (typeof GameEngine !== 'undefined') {
-                GameEngine.titleState = 'gameover';
-                GameEngine.gameOverTimer = 0;
-            }
-        }, 1000); // 1秒後にゲームオーバー表示
+        // ゲームオーバー待機開始（gameLoopで処理される）
+        if (typeof GameEngine !== 'undefined' && !GameEngine.gameOverPending) {
+            GameEngine.gameOverPending = true;
+            GameEngine.gameOverWaitTimer = 60; // 約1秒待機
+        }
     }
 
     createDeathParticles() {

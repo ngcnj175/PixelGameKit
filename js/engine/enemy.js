@@ -154,6 +154,8 @@ class Enemy {
             width: 0.5,
             height: 0.5,
             spriteIdx: shotSprite,
+            templateIdx: this.templateIdx, // アニメーション用
+            animationSlot: 'shot', // 使用するスロットを指定
             owner: 'enemy',
             maxRange: this.shotMaxRange,
             startX: this.x,

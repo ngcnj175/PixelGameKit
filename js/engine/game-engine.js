@@ -244,6 +244,10 @@ const GameEngine = {
         this.projectiles = [];
         this.items = [];
 
+        // ゲームオーバー待機状態をリセット
+        this.gameOverPending = false;
+        this.gameOverWaitTimer = 0;
+
         // ステージ上のアイテムを検索
         if (stage && stage.layers && stage.layers.fg) {
             for (let y = 0; y < stage.height; y++) {
@@ -325,9 +329,23 @@ const GameEngine = {
             }
             // +0.5に変更: ステージ下端を少し超えたらゲームオーバー
             if (this.player.y > App.projectData.stage.height + 0.5) {
-                console.log('GAME OVER triggered! Player y:', this.player.y, 'Stage height:', App.projectData.stage.height);
+                // 落下演出のため少し待機してからゲームオーバー
+                if (!this.gameOverPending) {
+                    console.log('GAME OVER pending! Player y:', this.player.y, 'Stage height:', App.projectData.stage.height);
+                    this.gameOverPending = true;
+                    this.gameOverWaitTimer = 60; // 約1秒待機
+                }
+            }
+        }
+
+        // ゲームオーバー待機タイマー処理
+        if (this.gameOverPending && this.titleState === 'playing') {
+            this.gameOverWaitTimer--;
+            if (this.gameOverWaitTimer <= 0) {
+                console.log('GAME OVER triggered!');
                 this.titleState = 'gameover';
                 this.gameOverTimer = 0;
+                this.gameOverPending = false;
             }
         }
 
@@ -343,16 +361,17 @@ const GameEngine = {
 
         // 外側から中央に閉じる正方形
         const maxSize = Math.max(this.canvas.width, this.canvas.height);
-        const size = maxSize * (1 - progress);
-        const x = (this.canvas.width - size) / 2;
-        const y = (this.canvas.height - size) / 2;
+        // Math.floorで整数化して白線のギャップを防ぐ
+        const size = Math.floor(maxSize * (1 - progress));
+        const x = Math.floor((this.canvas.width - size) / 2);
+        const y = Math.floor((this.canvas.height - size) / 2);
 
-        // 外側をダークグレーで塗りつぶし
+        // 外側をダークグレーで塗りつぶし（少し余分に塗ってギャップを防ぐ）
         ctx.fillStyle = '#333333';
-        ctx.fillRect(0, 0, this.canvas.width, y); // 上
-        ctx.fillRect(0, y + size, this.canvas.width, this.canvas.height - y - size); // 下
-        ctx.fillRect(0, y, x, size); // 左
-        ctx.fillRect(x + size, y, this.canvas.width - x - size, size); // 右
+        ctx.fillRect(0, 0, this.canvas.width, y + 1); // 上（+1で隙間を埋める）
+        ctx.fillRect(0, y + size - 1, this.canvas.width, this.canvas.height - y - size + 2); // 下
+        ctx.fillRect(0, y, x + 1, size); // 左
+        ctx.fillRect(x + size - 1, y, this.canvas.width - x - size + 2, size); // 右
     },
 
     renderGameOverText() {
@@ -452,14 +471,20 @@ const GameEngine = {
         if (obj.templateIdx !== undefined) {
             const template = App.projectData.templates[obj.templateIdx];
             if (template) {
-                // 全アニメーションスロットからframesを取得
+                // animationSlotが指定されている場合はそのスロットを優先
                 const spriteSlots = template.sprites || {};
-                const slotNames = ['idle', 'main', 'walk', 'jump', 'attack', 'shot', 'life'];
                 let frames = [];
-                for (const slotName of slotNames) {
-                    if (spriteSlots[slotName]?.frames?.length > 0) {
-                        frames = spriteSlots[slotName].frames;
-                        break;
+
+                if (obj.animationSlot && spriteSlots[obj.animationSlot]?.frames?.length > 0) {
+                    frames = spriteSlots[obj.animationSlot].frames;
+                } else {
+                    // 指定がない場合は全スロットから検索
+                    const slotNames = ['idle', 'main', 'walk', 'jump', 'attack', 'shot', 'life'];
+                    for (const slotName of slotNames) {
+                        if (spriteSlots[slotName]?.frames?.length > 0) {
+                            frames = spriteSlots[slotName].frames;
+                            break;
+                        }
                     }
                 }
                 if (frames.length > 1) {
