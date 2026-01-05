@@ -311,8 +311,8 @@ const GameEngine = {
         }
         this.render();
 
-        // プレイヤー死亡チェック（落下で画面外に出たらゲームオーバーへ）
-        if (this.player && this.player.isDead && this.player.y > App.projectData.stage.height + 2) {
+        // プレイヤー落下チェック（画面外に出たらゲームオーバーへ）
+        if (this.player && this.player.y > App.projectData.stage.height + 2) {
             this.titleState = 'gameover';
             this.gameOverTimer = 0;
         }
@@ -405,7 +405,7 @@ const GameEngine = {
     },
 
     renderGameScreen() {
-        const bgColor = App.projectData.stage?.backgroundColor || App.projectData.backgroundColor || '#3CBCFC';
+        const bgColor = App.projectData.stage?.bgColor || App.projectData.stage?.backgroundColor || '#3CBCFC';
         this.ctx.fillStyle = bgColor;
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 

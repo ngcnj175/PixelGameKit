@@ -610,8 +610,8 @@ const SpriteEditor = {
         if (!sprite) return;
 
         const palette = App.nesPalette;
-        // 背景色: 薄グレー
-        const bgColor = '#3CBCFC';
+        // 背景色を動的に取得
+        const bgColor = App.projectData.stage?.bgColor || App.projectData.stage?.backgroundColor || '#3CBCFC';
 
         this.ctx.fillStyle = bgColor;
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);

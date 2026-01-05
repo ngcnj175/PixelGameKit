@@ -577,7 +577,7 @@ const StageEditor = {
         this.selectedSpriteOrder = [...(this.editingTemplate?.sprites?.[slot]?.frames || [])];
 
         // 背景色を動的に取得
-        const bgColor = App.projectData.stage?.backgroundColor || App.projectData.backgroundColor || '#3CBCFC';
+        const bgColor = App.projectData.stage?.bgColor || App.projectData.stage?.backgroundColor || '#3CBCFC';
 
         // スプライト一覧を横スクロール形式で表示
         list.innerHTML = '';
@@ -1486,6 +1486,10 @@ const StageEditor = {
         stage.layers.fg = newFg;
         stage.layers.bg = newBg;
         stage.layers.collision = newCollision;
+
+        // スクロール位置をリセットして左上から表示
+        this.canvasScrollX = 0;
+        this.canvasScrollY = 0;
 
         this.resize();
         this.render();
