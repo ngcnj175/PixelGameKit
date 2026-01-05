@@ -1700,6 +1700,8 @@ const StageEditor = {
         modal.querySelector('#cp-ok').addEventListener('click', () => {
             App.projectData.stage.bgColor = hexInput.value;
             this.updateStageSettingsUI();
+            this.initTemplateList(); // タイルパレットサムネイル更新
+            this.initSpriteGallery(); // スプライトギャラリー更新
             this.render();
             close();
         });

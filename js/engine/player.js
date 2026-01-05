@@ -279,6 +279,14 @@ class Player {
         this.vy = -0.3; // 敵と同じ
         this.vx = this.facingRight ? -0.1 : 0.1; // 向きの逆方向
         this.deathParticles = []; // パーティクルは使わない
+
+        // 死亡時にゲームオーバーを発火（少し遅延を入れる）
+        setTimeout(() => {
+            if (typeof GameEngine !== 'undefined') {
+                GameEngine.titleState = 'gameover';
+                GameEngine.gameOverTimer = 0;
+            }
+        }, 1000); // 1秒後にゲームオーバー表示
     }
 
     createDeathParticles() {
