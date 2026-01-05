@@ -195,12 +195,15 @@ const GameEngine = {
         const getTemplateFromTileId = (tileId) => {
             if (tileId >= 100) {
                 // テンプレートIDベース（新形式）
-                return templates[tileId - 100];
+                const idx = tileId - 100;
+                return { template: templates[idx], templateIdx: idx };
             } else if (tileId >= 0) {
                 // スプライトIDベース（旧形式）
-                return spriteToTemplate[tileId];
+                const template = spriteToTemplate[tileId];
+                const idx = templates.indexOf(template);
+                return { template, templateIdx: idx >= 0 ? idx : undefined };
             }
-            return null;
+            return { template: null, templateIdx: undefined };
         };
 
         // ステージ上のタイルからプレイヤー・エネミーを検索
@@ -209,7 +212,7 @@ const GameEngine = {
                 for (let x = 0; x < stage.width; x++) {
                     const tileId = stage.layers.fg[y][x];
                     if (tileId >= 0) {
-                        const template = getTemplateFromTileId(tileId);
+                        const { template } = getTemplateFromTileId(tileId);
                         if (template) {
                             if (template.type === 'player' && !playerPos) {
                                 playerPos = { x, y, template };
@@ -247,7 +250,7 @@ const GameEngine = {
                 for (let x = 0; x < stage.width; x++) {
                     const tileId = stage.layers.fg[y][x];
                     if (tileId >= 0) {
-                        const template = getTemplateFromTileId(tileId);
+                        const { template, templateIdx } = getTemplateFromTileId(tileId);
                         if (template && template.type === 'item') {
                             const spriteIdx = template.sprites?.idle?.frames?.[0] ?? template.sprites?.main?.frames?.[0];
                             this.items.push({
@@ -256,6 +259,7 @@ const GameEngine = {
                                 width: 0.8,
                                 height: 0.8,
                                 template: template,
+                                templateIdx: templateIdx, // アニメーション用にtemplateIdxを追加
                                 spriteIdx: spriteIdx,
                                 itemType: template.config?.itemType || 'star',
                                 collected: false
@@ -315,11 +319,12 @@ const GameEngine = {
         // titleStateがplayingの時のみ判定
         // デバッグ: 毎フレームログ出力
         if (this.titleState === 'playing' && this.player) {
-            // 5フレームごとにログ出力（多すぎるのを防ぐ）
+            // 30フレームごとにログ出力（多すぎるのを防ぐ）
             if (this.tileAnimationFrame % 30 === 0) {
                 console.log('Player y:', this.player.y, 'Stage height:', App.projectData.stage.height);
             }
-            if (this.player.y > App.projectData.stage.height + 2) {
+            // +0.5に変更: ステージ下端を少し超えたらゲームオーバー
+            if (this.player.y > App.projectData.stage.height + 0.5) {
                 console.log('GAME OVER triggered! Player y:', this.player.y, 'Stage height:', App.projectData.stage.height);
                 this.titleState = 'gameover';
                 this.gameOverTimer = 0;
@@ -442,7 +447,33 @@ const GameEngine = {
     },
 
     renderProjectileOrItem(obj) {
-        const sprite = App.projectData.sprites[obj.spriteIdx];
+        // アニメーション対応: templateからフレームを取得
+        let spriteIdx = obj.spriteIdx;
+        if (obj.templateIdx !== undefined) {
+            const template = App.projectData.templates[obj.templateIdx];
+            if (template) {
+                // 全アニメーションスロットからframesを取得
+                const spriteSlots = template.sprites || {};
+                const slotNames = ['idle', 'main', 'walk', 'jump', 'attack', 'shot', 'life'];
+                let frames = [];
+                for (const slotName of slotNames) {
+                    if (spriteSlots[slotName]?.frames?.length > 0) {
+                        frames = spriteSlots[slotName].frames;
+                        break;
+                    }
+                }
+                if (frames.length > 1) {
+                    // アニメーション速度: 10フレームごとにスプライトを切り替え
+                    const frameSpeed = 10;
+                    const frameIndex = Math.floor(this.tileAnimationFrame / frameSpeed) % frames.length;
+                    spriteIdx = frames[frameIndex];
+                } else if (frames.length === 1) {
+                    spriteIdx = frames[0];
+                }
+            }
+        }
+
+        const sprite = App.projectData.sprites[spriteIdx];
         if (!sprite) return;
 
         const screenX = (obj.x - this.camera.x) * this.TILE_SIZE;
