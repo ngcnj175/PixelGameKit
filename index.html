@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/svg+xml" href="assets/icons/icon-192.svg">
     <link rel="apple-touch-icon" href="assets/icons/icon-192.svg">
-    <title>PixelGameKit v1.43.2</title>
+    <title>PixelGameKit v1.44.0</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 
@@ -432,28 +432,28 @@
         <div id="sound-screen" class="screen">
             <div class="screen-title">SOUND</div>
 
-            <!-- ソングパレット -->
-            <div id="song-palette">
-                <button id="add-song-btn" class="song-btn add-btn">+</button>
-                <!-- ソングボタンはJSで生成 -->
+            <!-- ソングパレット（スプライトパレット模倣） -->
+            <div id="song-palette-area">
+                <button id="add-song-btn" class="gallery-add-btn">+</button>
+                <div id="song-gallery">
+                    <!-- ソングボタンはJSで生成 -->
+                </div>
             </div>
 
-            <!-- トラックタブ + BPM/BAR -->
-            <div id="track-bar">
+            <!-- トラックパネル（トラック + BPM + BAR 同一行） -->
+            <div id="track-panel">
                 <div id="track-tabs">
                     <button class="track-tab active" data-track="0">Tr1</button>
                     <button class="track-tab" data-track="1">Tr2</button>
                     <button class="track-tab" data-track="2">Tr3</button>
                     <button class="track-tab" data-track="3">Tr4</button>
                 </div>
-                <div id="bpm-control">
-                    <span>BPM</span>
+                <div id="bpm-bar-controls">
+                    <span class="ctrl-label">BPM</span>
                     <button id="bpm-dec" class="ctrl-btn">◁</button>
                     <span id="bpm-value">120</span>
                     <button id="bpm-inc" class="ctrl-btn">▷</button>
-                </div>
-                <div id="bar-control">
-                    <span>BAR</span>
+                    <span class="ctrl-label">BAR</span>
                     <button id="bar-dec" class="ctrl-btn">◁</button>
                     <span id="bar-value">1</span>
                     <button id="bar-inc" class="ctrl-btn">▷</button>
@@ -462,11 +462,39 @@
 
             <!-- メインエリア（編集ツール + ピアノロール） -->
             <div id="sound-main-area">
-                <!-- 編集ツール（左縦配置） -->
+                <!-- 編集ツール（ピクセル画面模倣） -->
                 <div id="sound-tools">
-                    <button id="tool-pencil" class="sound-tool active" title="鉛筆">✏️</button>
-                    <button id="tool-eraser" class="sound-tool" title="消しゴム">🗑️</button>
-                    <button id="tool-copy" class="sound-tool" title="コピー">📋</button>
+                    <button class="sound-tool-btn active" data-tool="pencil" title="鉛筆">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path
+                                d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
+                        </svg>
+                    </button>
+                    <button class="sound-tool-btn" data-tool="eraser" title="消しゴム">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path
+                                d="M15.14 3c-.51 0-1.02.2-1.41.59L2.59 14.73c-.78.78-.78 2.05 0 2.83l2.83 2.83c.39.39.9.59 1.41.59h8.34l8.24-8.24c.78-.78.78-2.05 0-2.83l-6.83-6.83c-.39-.39-.9-.58-1.44-.58zM5.41 17.56L4 16.15l8.48-8.49 1.42 1.42L5.41 17.56z" />
+                        </svg>
+                    </button>
+                    <button class="sound-tool-btn" data-tool="undo" title="取り消し">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path
+                                d="M12.5 8c-2.65 0-5.05 1.04-6.82 2.75L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z" />
+                        </svg>
+                    </button>
+                    <hr class="tool-divider">
+                    <button class="sound-tool-btn" data-tool="copy" title="コピー">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path
+                                d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z" />
+                        </svg>
+                    </button>
+                    <button class="sound-tool-btn" data-tool="paste" title="ペースト">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path
+                                d="M19 2h-4.18C14.4.84 13.3 0 12 0c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm7 18H5V4h2v3h10V4h2v16z" />
+                        </svg>
+                    </button>
                 </div>
 
                 <!-- ピアノロール -->
@@ -475,13 +503,39 @@
                 </div>
             </div>
 
-            <!-- プレイヤーパネル（鍵盤の上） -->
+            <!-- プレイヤーパネル（アイコン付き） -->
             <div id="sound-player-panel">
-                <button id="sound-del-btn" class="player-btn">DEL</button>
-                <button id="sound-rest-btn" class="player-btn">REST</button>
-                <button id="sound-tie-btn" class="player-btn">TIE</button>
-                <button id="sound-play-btn" class="player-btn play-stop">▶</button>
-                <button id="sound-rec-btn" class="player-btn rec">REC</button>
+                <button id="sound-del-btn" class="player-btn" title="DEL">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
+                    </svg>
+                    <span>DEL</span>
+                </button>
+                <button id="sound-rest-btn" class="player-btn" title="REST">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path
+                            d="M9 16h2V8H9v8zm3-14C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm1-4h2V8h-2v8z" />
+                    </svg>
+                    <span>REST</span>
+                </button>
+                <button id="sound-tie-btn" class="player-btn" title="TIE">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 4c-4.42 0-8 1.79-8 4v8c0 2.21 3.58 4 8 4s8-1.79 8-4V8c0-2.21-3.58-4-8-4z" />
+                    </svg>
+                    <span>TIE</span>
+                </button>
+                <button id="sound-play-btn" class="player-btn play-stop" title="PLAY">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M8 5v14l11-7z" />
+                    </svg>
+                    <span>PLAY</span>
+                </button>
+                <button id="sound-rec-btn" class="player-btn rec" title="REC">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <circle cx="12" cy="12" r="8" />
+                    </svg>
+                    <span>REC</span>
+                </button>
             </div>
 
             <!-- 鍵盤（5オクターブ、横スクロール） -->

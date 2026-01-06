@@ -89,19 +89,19 @@ const SoundEditor = {
 
     // ========== ソングパレット ==========
     initSongPalette() {
-        const container = document.getElementById('song-palette');
+        const container = document.getElementById('song-gallery');
         if (!container) return;
 
-        // 既存ボタン削除（追加ボタン以外）
-        container.querySelectorAll('.song-btn:not(.add-btn)').forEach(btn => btn.remove());
+        // 既存アイテム削除
+        container.innerHTML = '';
 
-        // ソングボタン作成
+        // ソングアイテム作成
         this.songs.forEach((song, idx) => {
-            const btn = document.createElement('button');
-            btn.className = 'song-btn' + (idx === this.currentSongIdx ? ' active' : '');
-            btn.textContent = song.name || `Song${idx + 1}`;
-            btn.addEventListener('click', () => this.selectSong(idx));
-            container.appendChild(btn);
+            const item = document.createElement('div');
+            item.className = 'song-item' + (idx === this.currentSongIdx ? ' active' : '');
+            item.textContent = idx + 1;
+            item.addEventListener('click', () => this.selectSong(idx));
+            container.appendChild(item);
         });
 
         // 追加ボタン
@@ -199,14 +199,12 @@ const SoundEditor = {
 
     // ========== 編集ツール ==========
     initTools() {
-        const tools = document.querySelectorAll('.sound-tool');
+        const tools = document.querySelectorAll('.sound-tool-btn');
         tools.forEach(tool => {
             tool.addEventListener('click', () => {
                 tools.forEach(t => t.classList.remove('active'));
                 tool.classList.add('active');
-                if (tool.id === 'tool-pencil') this.currentTool = 'pencil';
-                else if (tool.id === 'tool-eraser') this.currentTool = 'eraser';
-                else if (tool.id === 'tool-copy') this.currentTool = 'copy';
+                this.currentTool = tool.dataset.tool || 'pencil';
             });
         });
     },
@@ -256,6 +254,7 @@ const SoundEditor = {
         // 5オクターブ (C1-B5)
         const octaves = [1, 2, 3, 4, 5];
         let whiteKeyIndex = 0;
+        const whiteKeyWidth = 40; // CSS拡大版に合わせる
 
         octaves.forEach(oct => {
             this.noteNames.forEach((note, idx) => {
@@ -266,9 +265,9 @@ const SoundEditor = {
                 key.dataset.octave = oct;
 
                 if (isBlack) {
-                    // 黒鍵の位置を計算
+                    // 黒鍵の位置を計算 (白鍵幅40pxに対応)
                     const prevWhiteKeys = whiteKeyIndex;
-                    key.style.left = (prevWhiteKeys * 28 - 9) + 'px';
+                    key.style.left = (prevWhiteKeys * whiteKeyWidth - 12) + 'px';
                 } else {
                     whiteKeyIndex++;
                 }
@@ -522,7 +521,10 @@ const SoundEditor = {
         this.isPlaying = true;
 
         const playBtn = document.getElementById('sound-play-btn');
-        if (playBtn) playBtn.textContent = '⏹';
+        if (playBtn) {
+            const span = playBtn.querySelector('span');
+            if (span) span.textContent = 'STOP';
+        }
 
         const song = this.getCurrentSong();
         const stepDuration = 60 / song.bpm / 4; // 16分音符
@@ -560,7 +562,10 @@ const SoundEditor = {
             this.playInterval = null;
         }
         const playBtn = document.getElementById('sound-play-btn');
-        if (playBtn) playBtn.textContent = '▶';
+        if (playBtn) {
+            const span = playBtn.querySelector('span');
+            if (span) span.textContent = 'PLAY';
+        }
     },
 
     // ========== レンダリング ==========
