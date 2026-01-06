@@ -212,12 +212,12 @@ const GameEngine = {
                 for (let x = 0; x < stage.width; x++) {
                     const tileId = stage.layers.fg[y][x];
                     if (tileId >= 0) {
-                        const { template } = getTemplateFromTileId(tileId);
+                        const { template, templateIdx } = getTemplateFromTileId(tileId);
                         if (template) {
                             if (template.type === 'player' && !playerPos) {
-                                playerPos = { x, y, template };
+                                playerPos = { x, y, template, templateIdx };
                             } else if (template.type === 'enemy') {
-                                enemyPositions.push({ x, y, template, behavior: template.config?.move || 'idle' });
+                                enemyPositions.push({ x, y, template, templateIdx, behavior: template.config?.move || 'idle' });
                             }
                         }
                     }
@@ -227,17 +227,17 @@ const GameEngine = {
 
         // プレイヤー初期化（ステージ上に配置されている場合のみ）
         if (playerPos) {
-            this.player = new Player(playerPos.x, playerPos.y, playerPos.template);
-            console.log('Player created at', playerPos.x, playerPos.y);
+            this.player = new Player(playerPos.x, playerPos.y, playerPos.template, playerPos.templateIdx);
+            console.log('Player created at', playerPos.x, playerPos.y, 'templateIdx:', playerPos.templateIdx);
         } else {
             // プレイヤーがステージ上にいない場合は生成しない
             this.player = null;
             console.log('No player found on stage');
         }
 
-        // エネミー初期化
+        // エネミー初期化（templateIdxを渡す）
         this.enemies = enemyPositions.map(pos =>
-            new Enemy(pos.x, pos.y, pos.template, pos.behavior)
+            new Enemy(pos.x, pos.y, pos.template, pos.behavior, pos.templateIdx)
         );
 
         // プロジェクタイルとアイテムをリセット
@@ -731,7 +731,18 @@ const GameEngine = {
         // ライフ表示
         if (this.player && !this.player.isDead) {
             const lifeSprites = this.player.template?.sprites?.life;
-            const spriteIdx = lifeSprites?.frames?.[0];
+            const frames = lifeSprites?.frames || [];
+
+            // アニメーション対応: 複数フレームがある場合は切り替え
+            let spriteIdx;
+            if (frames.length > 1) {
+                const frameSpeed = 10;
+                const frameIndex = Math.floor(this.tileAnimationFrame / frameSpeed) % frames.length;
+                spriteIdx = frames[frameIndex];
+            } else if (frames.length === 1) {
+                spriteIdx = frames[0];
+            }
+
             const sprite = spriteIdx !== undefined ? App.projectData.sprites[spriteIdx] : null;
 
             const heartSize = 20;

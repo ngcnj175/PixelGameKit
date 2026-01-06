@@ -83,7 +83,7 @@ const App = {
         // 各エディタ初期化
         if (typeof SpriteEditor !== 'undefined') SpriteEditor.init();
         if (typeof StageEditor !== 'undefined') StageEditor.init();
-        if (typeof BgmEditor !== 'undefined') BgmEditor.init();
+        if (typeof SoundEditor !== 'undefined') SoundEditor.init();
         if (typeof GameEngine !== 'undefined') GameEngine.init();
         if (typeof GameController !== 'undefined') GameController.init();
 
@@ -363,8 +363,8 @@ const App = {
                 }
                 break;
             case 'sound':
-                if (typeof BgmEditor !== 'undefined') {
-                    BgmEditor.refresh();
+                if (typeof SoundEditor !== 'undefined') {
+                    SoundEditor.refresh();
                 }
                 break;
         }

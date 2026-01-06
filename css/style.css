@@ -1288,33 +1288,199 @@ body {
     background: var(--bg-device);
 }
 
-#sequencer-area {
-    flex: 1;
+#sound-screen.active {
+    flex-direction: column;
+}
+
+/* ソングパレット */
+#song-palette {
+    display: flex;
+    gap: 4px;
+    padding: 8px;
+    overflow-x: auto;
+    border-bottom: 2px solid var(--border-dark);
+}
+
+.song-btn {
+    min-width: 48px;
+    height: 32px;
+    padding: 4px 8px;
+    border: 2px solid var(--border-dark);
+    border-radius: 4px;
+    background: var(--bg-screen);
+    font-family: inherit;
+    font-size: 11px;
+    cursor: pointer;
+}
+
+.song-btn.add-btn {
+    background: var(--accent-green);
+    color: #fff;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.song-btn.active {
+    background: var(--accent-blue);
+    color: #fff;
+    border-color: #fff;
+}
+
+/* トラックバー（タブ + BPM + BAR） */
+#track-bar {
     display: flex;
     align-items: center;
-    justify-content: center;
+    gap: 8px;
+    padding: 8px;
+    border-bottom: 2px solid var(--border-dark);
+    flex-wrap: wrap;
+}
+
+#track-tabs {
+    display: flex;
+    gap: 4px;
+}
+
+.track-tab {
+    padding: 6px 12px;
+    border: 2px solid var(--border-dark);
+    border-radius: 4px;
+    background: var(--bg-device);
+    color: var(--text-dark);
+    font-family: inherit;
+    font-size: 11px;
+    cursor: pointer;
+}
+
+.track-tab.active {
+    background: #4a7c59;
+    color: #fff;
+    border-color: #fff;
+}
+
+#bpm-control,
+#bar-control {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+}
+
+.ctrl-btn {
+    width: 24px;
+    height: 24px;
+    border: 1px solid var(--border-dark);
+    border-radius: 4px;
+    background: var(--bg-device);
+    font-size: 10px;
+    cursor: pointer;
+}
+
+/* メインエリア（編集ツール + ピアノロール） */
+#sound-main-area {
+    flex: 1;
+    display: flex;
+    gap: 8px;
     padding: 8px;
     min-height: 0;
 }
 
-#sequencer-canvas {
-    max-width: 100%;
-    max-height: 100%;
+/* 編集ツール（左縦配置） */
+#sound-tools {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.sound-tool {
+    width: 40px;
+    height: 40px;
+    border: 2px solid var(--border-dark);
+    border-radius: 6px;
+    background: var(--bg-screen);
+    font-size: 18px;
+    cursor: pointer;
+}
+
+.sound-tool.active {
+    background: var(--accent-blue);
+    border-color: #fff;
+}
+
+/* ピアノロール */
+#piano-roll-area {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: auto;
+}
+
+#piano-roll-canvas {
     background: var(--bg-screen);
     border: 3px solid var(--border-dark);
     border-radius: 8px;
 }
 
+/* プレイヤーパネル */
+#sound-player-panel {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px;
+    border-top: 2px solid var(--border-dark);
+}
+
+.player-btn {
+    padding: 8px 16px;
+    border: 2px solid var(--border-dark);
+    border-radius: 6px;
+    background: var(--bg-device);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.player-btn.play-stop {
+    background: var(--accent-green);
+    color: #fff;
+}
+
+.player-btn.rec {
+    background: var(--accent-red);
+    color: #fff;
+}
+
+.player-btn.rec.active {
+    animation: rec-blink 0.5s infinite;
+}
+
+@keyframes rec-blink {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+}
+
+/* 鍵盤エリア */
 #keyboard-area {
     padding: 8px;
+    padding-bottom: calc(8px + var(--safe-area-bottom));
     background: rgba(0, 0, 0, 0.1);
+    overflow-x: auto;
 }
 
 #piano-keyboard {
     display: flex;
-    justify-content: center;
     height: 80px;
     position: relative;
+    min-width: max-content;
 }
 
 .piano-key {
@@ -1323,7 +1489,7 @@ body {
 }
 
 .piano-key.white {
-    width: 32px;
+    width: 28px;
     height: 80px;
     background: linear-gradient(180deg, #fff 0%, #e8e8e8 100%);
     border: 1px solid #666;
@@ -1332,7 +1498,7 @@ body {
 }
 
 .piano-key.black {
-    width: 20px;
+    width: 18px;
     height: 50px;
     background: linear-gradient(180deg, #333 0%, #000 100%);
     border: 1px solid #000;
@@ -1346,79 +1512,8 @@ body {
     background: var(--accent-red) !important;
 }
 
-#sound-controls {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 8px;
-    padding: 12px;
-    padding-bottom: calc(12px + var(--safe-area-bottom));
-    border-top: 2px solid var(--border-dark);
-}
-
-#transport-btns {
-    display: flex;
-    gap: 8px;
-}
-
-#transport-btns button {
-    width: 40px;
-    height: 40px;
-    border: 2px solid var(--border-dark);
-    border-radius: 50%;
-    background: var(--bg-device);
-    font-size: 16px;
-    cursor: pointer;
-}
-
-#rec-btn.active {
-    background: var(--accent-red);
-    color: #fff;
-}
-
-#track-btns {
-    display: flex;
-    gap: 4px;
-}
-
-.track-btn {
-    padding: 6px 10px;
-    border: 2px solid var(--border-dark);
-    border-radius: 4px;
-    background: var(--bg-device);
-    color: var(--text-dark);
-    font-family: inherit;
-    font-size: 10px;
-    cursor: pointer;
-}
-
-.track-btn.active {
-    background: #4a7c59;
-    color: #fff;
-    border-color: #fff;
-}
-
-#step-info {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-#step-info button {
-    width: 32px;
-    height: 32px;
-    border: 2px solid var(--border-dark);
-    border-radius: 4px;
-    background: var(--bg-device);
-    font-size: 12px;
-    cursor: pointer;
-}
-
-#step-display {
-    font-size: 12px;
-    font-weight: bold;
-    min-width: 50px;
-    text-align: center;
+.piano-key.highlight {
+    background: var(--accent-blue) !important;
 }
 
 /* ========================================

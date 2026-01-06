@@ -3,7 +3,7 @@
  */
 
 class Player {
-    constructor(tileX, tileY, template = null) {
+    constructor(tileX, tileY, template = null, templateIdx = undefined) {
         this.startX = tileX;
         this.startY = tileY;
         this.x = tileX;
@@ -17,6 +17,7 @@ class Player {
 
         // テンプレート情報
         this.template = template;
+        this.templateIdx = templateIdx; // アニメーション用
         this.animFrame = 0;
         this.animTimer = 0;
 

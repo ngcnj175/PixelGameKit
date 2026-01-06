@@ -3,7 +3,7 @@
  */
 
 class Enemy {
-    constructor(tileX, tileY, template = null, behavior = 'idle') {
+    constructor(tileX, tileY, template = null, behavior = 'idle', templateIdx = undefined) {
         this.x = tileX;
         this.y = tileY;
         this.vx = 0;
@@ -16,6 +16,7 @@ class Enemy {
         this.moveSpeed = 0.05;
 
         this.template = template;
+        this.templateIdx = templateIdx; // アニメーション用
         this.animFrame = 0;
         this.animTimer = 0;
 

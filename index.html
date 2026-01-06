@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/svg+xml" href="assets/icons/icon-192.svg">
     <link rel="apple-touch-icon" href="assets/icons/icon-192.svg">
-    <title>PixelGameKit v1.42.0</title>
+    <title>PixelGameKit v1.43.2</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 
@@ -431,35 +431,63 @@
         <!-- ========== サウンド画面 ========== -->
         <div id="sound-screen" class="screen">
             <div class="screen-title">SOUND</div>
-            <!-- シーケンサー表示 -->
-            <div id="sequencer-area">
-                <canvas id="sequencer-canvas"></canvas>
+
+            <!-- ソングパレット -->
+            <div id="song-palette">
+                <button id="add-song-btn" class="song-btn add-btn">+</button>
+                <!-- ソングボタンはJSで生成 -->
             </div>
 
-            <!-- キーボード -->
+            <!-- トラックタブ + BPM/BAR -->
+            <div id="track-bar">
+                <div id="track-tabs">
+                    <button class="track-tab active" data-track="0">Tr1</button>
+                    <button class="track-tab" data-track="1">Tr2</button>
+                    <button class="track-tab" data-track="2">Tr3</button>
+                    <button class="track-tab" data-track="3">Tr4</button>
+                </div>
+                <div id="bpm-control">
+                    <span>BPM</span>
+                    <button id="bpm-dec" class="ctrl-btn">◁</button>
+                    <span id="bpm-value">120</span>
+                    <button id="bpm-inc" class="ctrl-btn">▷</button>
+                </div>
+                <div id="bar-control">
+                    <span>BAR</span>
+                    <button id="bar-dec" class="ctrl-btn">◁</button>
+                    <span id="bar-value">1</span>
+                    <button id="bar-inc" class="ctrl-btn">▷</button>
+                </div>
+            </div>
+
+            <!-- メインエリア（編集ツール + ピアノロール） -->
+            <div id="sound-main-area">
+                <!-- 編集ツール（左縦配置） -->
+                <div id="sound-tools">
+                    <button id="tool-pencil" class="sound-tool active" title="鉛筆">✏️</button>
+                    <button id="tool-eraser" class="sound-tool" title="消しゴム">🗑️</button>
+                    <button id="tool-copy" class="sound-tool" title="コピー">📋</button>
+                </div>
+
+                <!-- ピアノロール -->
+                <div id="piano-roll-area">
+                    <canvas id="piano-roll-canvas"></canvas>
+                </div>
+            </div>
+
+            <!-- プレイヤーパネル（鍵盤の上） -->
+            <div id="sound-player-panel">
+                <button id="sound-del-btn" class="player-btn">DEL</button>
+                <button id="sound-rest-btn" class="player-btn">REST</button>
+                <button id="sound-tie-btn" class="player-btn">TIE</button>
+                <button id="sound-play-btn" class="player-btn play-stop">▶</button>
+                <button id="sound-rec-btn" class="player-btn rec">REC</button>
+            </div>
+
+            <!-- 鍵盤（5オクターブ、横スクロール） -->
             <div id="keyboard-area">
                 <div id="piano-keyboard">
                     <!-- JSで生成 -->
-                </div>
-            </div>
-
-            <!-- サウンドコントロール -->
-            <div id="sound-controls">
-                <div id="transport-btns">
-                    <button id="rec-btn">●</button>
-                    <button id="play-btn">▶</button>
-                    <button id="stop-btn">■</button>
-                </div>
-                <div id="track-btns">
-                    <button class="track-btn active" data-track="pulse1">P1</button>
-                    <button class="track-btn" data-track="pulse2">P2</button>
-                    <button class="track-btn" data-track="triangle">Tri</button>
-                    <button class="track-btn" data-track="noise">Noi</button>
-                </div>
-                <div id="step-info">
-                    <button id="step-prev">◀</button>
-                    <span id="step-display">1/16</span>
-                    <button id="step-next">▶</button>
                 </div>
             </div>
         </div>
