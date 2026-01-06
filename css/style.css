@@ -1504,33 +1504,31 @@ body {
     }
 }
 
-/* 鍵盤エリア（スクロールバー上部） */
+/* 鍵盤エリア */
 #keyboard-area {
-    padding: 0 8px 8px 8px;
+    padding: 8px;
     background: rgba(0, 0, 0, 0.2);
-    overflow-x: auto;
+    overflow-x: scroll;
     overflow-y: hidden;
-    display: flex;
-    flex-direction: column-reverse;
 }
 
 /* 細いスクロールバー（WebKit系） */
 #keyboard-area::-webkit-scrollbar {
-    height: 6px;
+    height: 8px;
 }
 
 #keyboard-area::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.1);
-    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
 }
 
 #keyboard-area::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.3);
-    border-radius: 3px;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 4px;
 }
 
 #keyboard-area::-webkit-scrollbar-thumb:hover {
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.6);
 }
 
 #piano-keyboard {
@@ -1564,9 +1562,16 @@ body {
     z-index: 2;
 }
 
-.piano-key:active,
-.piano-key.active {
-    background: var(--accent-red) !important;
+/* 白鍵押下時 */
+.piano-key.white:active,
+.piano-key.white.active {
+    background: #ccc !important;
+}
+
+/* 黒鍵押下時（黒のまま、少し明るく） */
+.piano-key.black:active,
+.piano-key.black.active {
+    background: #444 !important;
 }
 
 .piano-key.highlight {
