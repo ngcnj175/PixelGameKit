@@ -1292,14 +1292,15 @@ body {
     flex-direction: column;
 }
 
-/* ソングパレット（スプライトパレット模倣） */
+/* ソングパレット（タイルパレット模倣） */
 #song-palette-area {
     display: flex;
     align-items: center;
     gap: 8px;
     padding: 8px;
+    padding-bottom: calc(8px + var(--safe-area-bottom));
     background: rgba(0, 0, 0, 0.1);
-    border-bottom: 2px solid var(--border-dark);
+    border-top: 2px solid var(--border-dark);
 }
 
 #song-gallery {
@@ -1307,25 +1308,25 @@ body {
     gap: 6px;
     overflow-x: auto;
     flex: 1;
+    touch-action: manipulation;
 }
 
 .song-item {
-    width: 48px;
-    height: 48px;
-    border: 2px solid var(--border-dark);
-    border-radius: 4px;
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
     background: var(--bg-screen);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
+    border: 2px solid var(--border-color);
+    border-radius: 0;
     cursor: pointer;
+    position: relative;
+    transition: transform 0.15s ease, border-color 0.15s ease;
 }
 
 .song-item.active {
-    border-color: #fff;
-    background: var(--accent-blue);
-    color: #fff;
+    border-color: var(--color-dark);
+    transform: scale(1.15);
+    z-index: 1;
 }
 
 /* トラックパネル（全て同一行） */
@@ -1502,6 +1503,41 @@ body {
     50% {
         opacity: 0.5;
     }
+}
+
+/* 鍵盤スクロールバー（iOS対応） */
+#keyboard-scroll-container {
+    padding: 4px 8px;
+    background: rgba(0, 0, 0, 0.15);
+}
+
+#keyboard-scrollbar {
+    width: 100%;
+    height: 8px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+    outline: none;
+}
+
+#keyboard-scrollbar::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 60px;
+    height: 8px;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+#keyboard-scrollbar::-moz-range-thumb {
+    width: 60px;
+    height: 8px;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 4px;
+    cursor: pointer;
+    border: none;
 }
 
 /* 鍵盤エリア */

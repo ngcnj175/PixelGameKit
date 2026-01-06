@@ -95,11 +95,11 @@ const SoundEditor = {
         // 既存アイテム削除
         container.innerHTML = '';
 
-        // ソングアイテム作成
+        // ソングアイテム作成（ナンバリングなし）
         this.songs.forEach((song, idx) => {
             const item = document.createElement('div');
             item.className = 'song-item' + (idx === this.currentSongIdx ? ' active' : '');
-            item.textContent = idx + 1;
+            // ナンバリング不要
             item.addEventListener('click', () => this.selectSong(idx));
             container.appendChild(item);
         });
@@ -333,10 +333,42 @@ const SoundEditor = {
             const x = e.touches[0].pageX;
             const walk = (touchStartX - x) * 1.5;
             keyboardArea.scrollLeft = touchScrollLeft + walk;
+            this.updateScrollbar();
         }, { passive: true });
 
         // 初期カーソル
         keyboardArea.style.cursor = 'grab';
+
+        // rangeスライダー連動
+        this.initKeyboardScrollbar();
+    },
+
+    initKeyboardScrollbar() {
+        const scrollbar = document.getElementById('keyboard-scrollbar');
+        const keyboardArea = document.getElementById('keyboard-area');
+        if (!scrollbar || !keyboardArea) return;
+
+        // スライダー操作時
+        scrollbar.addEventListener('input', () => {
+            const maxScroll = keyboardArea.scrollWidth - keyboardArea.clientWidth;
+            keyboardArea.scrollLeft = (scrollbar.value / 100) * maxScroll;
+        });
+
+        // 鍵盤スクロール時
+        keyboardArea.addEventListener('scroll', () => {
+            this.updateScrollbar();
+        });
+    },
+
+    updateScrollbar() {
+        const scrollbar = document.getElementById('keyboard-scrollbar');
+        const keyboardArea = document.getElementById('keyboard-area');
+        if (!scrollbar || !keyboardArea) return;
+
+        const maxScroll = keyboardArea.scrollWidth - keyboardArea.clientWidth;
+        if (maxScroll > 0) {
+            scrollbar.value = (keyboardArea.scrollLeft / maxScroll) * 100;
+        }
     },
 
     onKeyPress(note, octave) {
