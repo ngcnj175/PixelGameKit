@@ -1390,14 +1390,14 @@ body {
     min-height: 0;
 }
 
-/* 編集ツール（ピクセル画面模倣） */
-#sound-tools {
+/* プレイヤーコントロール（左縦配置） */
+#sound-controls {
     display: flex;
     flex-direction: column;
     gap: 4px;
 }
 
-.sound-tool-btn {
+.sound-ctrl-btn {
     flex-shrink: 0;
     width: 40px;
     height: 40px;
@@ -1413,21 +1413,33 @@ body {
     padding: 8px;
 }
 
-.sound-tool-btn svg {
+.sound-ctrl-btn svg {
     width: 100%;
     height: 100%;
 }
 
-.sound-tool-btn:hover {
+.sound-ctrl-btn:hover {
     color: var(--color-medium);
 }
 
-.sound-tool-btn.active {
+.sound-ctrl-btn.active {
     color: var(--color-dark);
     background: transparent;
 }
 
-#sound-tools .tool-divider {
+.sound-ctrl-btn.play-stop {
+    color: #4a7c59;
+}
+
+.sound-ctrl-btn.rec {
+    color: #c44;
+}
+
+.sound-ctrl-btn.rec.active {
+    animation: rec-blink 0.5s infinite;
+}
+
+#sound-controls .ctrl-divider {
     width: 100%;
     border: none;
     border-top: 1px solid var(--border-dark);
@@ -1604,10 +1616,11 @@ body {
     background: #ccc !important;
 }
 
-/* 黒鍵押下時（黒のまま、少し明るく） */
+/* 黒鍵押下時（黒のまま、少し明るく、白鍵線を隠す） */
 .piano-key.black:active,
 .piano-key.black.active {
     background: #444 !important;
+    box-shadow: 0 0 0 2px #444;
 }
 
 .piano-key.highlight {
