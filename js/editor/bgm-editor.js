@@ -95,19 +95,21 @@ const SoundEditor = {
         // 既存アイテム削除
         container.innerHTML = '';
 
-        // ダブルタップ検出用
-        let lastTapTime = 0;
-        let lastTapIdx = -1;
-
         // ソングアイテム作成（ナンバリングなし）
         this.songs.forEach((song, idx) => {
             const item = document.createElement('div');
             item.className = 'song-item' + (idx === this.currentSongIdx ? ' active' : '');
 
-            // タップ/クリック（ダブルタップ検出付き）
-            const handleTap = () => {
+            // ダブルタップ/ダブルクリック検出
+            let lastTapTime = 0;
+            let touchHandled = false;
+
+            // タッチイベント（モバイル）
+            item.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                touchHandled = true;
                 const now = Date.now();
-                if (lastTapIdx === idx && now - lastTapTime < 300) {
+                if (now - lastTapTime < 350) {
                     // ダブルタップ: 設定パネル表示
                     this.openSongConfig(idx);
                 } else {
@@ -115,12 +117,23 @@ const SoundEditor = {
                     this.selectSong(idx);
                 }
                 lastTapTime = now;
-                lastTapIdx = idx;
-            };
-            item.addEventListener('click', handleTap);
-            item.addEventListener('touchend', (e) => {
-                e.preventDefault();
-                handleTap();
+            });
+
+            // クリックイベント（PC）
+            item.addEventListener('click', () => {
+                if (touchHandled) {
+                    touchHandled = false;
+                    return; // タッチ処理済みならスキップ
+                }
+                const now = Date.now();
+                if (now - lastTapTime < 350) {
+                    // ダブルクリック: 設定パネル表示
+                    this.openSongConfig(idx);
+                } else {
+                    // シングルクリック: 選択
+                    this.selectSong(idx);
+                }
+                lastTapTime = now;
             });
 
             container.appendChild(item);
@@ -656,8 +669,12 @@ const SoundEditor = {
                 const deltaX = lastTouchX - currentX;
                 const deltaY = lastTouchY - currentY;
 
+                // 横スクロール
                 this.scrollX = Math.max(0, this.scrollX + deltaX);
-                this.viewOctave = Math.max(1, Math.min(4, this.viewOctave + Math.round(deltaY / 50)));
+
+                // 縦スクロール（ピクセル単位でスムーズに）
+                if (!this.scrollY) this.scrollY = 0;
+                this.scrollY = Math.max(-200, Math.min(200, this.scrollY + deltaY));
 
                 lastTouchX = currentX;
                 lastTouchY = currentY;
@@ -847,9 +864,10 @@ const SoundEditor = {
         }
 
         // ハイライト行
+        const scrollYVal = this.scrollY || 0;
         if (this.highlightPitch >= 0) {
-            const y = (15 - (this.highlightPitch - this.viewOctave * 12)) * this.cellSize;
-            if (y >= 0 && y < this.canvas.height) {
+            const y = (15 - (this.highlightPitch - this.viewOctave * 12)) * this.cellSize - scrollYVal;
+            if (y + this.cellSize >= 0 && y < this.canvas.height) {
                 this.ctx.fillStyle = 'rgba(74, 124, 89, 0.3)';
                 this.ctx.fillRect(0, y, this.canvas.width, this.cellSize);
             }
@@ -858,13 +876,14 @@ const SoundEditor = {
         // ノート描画
         const colors = ['#4ecdc4', '#ff6b6b', '#ffd93d', '#6bcb77'];
         this.ctx.fillStyle = colors[this.currentTrack];
+        const scrollY = this.scrollY || 0;
 
         track.notes.forEach(note => {
             const x = note.step * this.cellSize - this.scrollX;
-            const y = (15 - (note.pitch - this.viewOctave * 12)) * this.cellSize;
+            const y = (15 - (note.pitch - this.viewOctave * 12)) * this.cellSize - scrollY;
             const w = note.length * this.cellSize - 2;
 
-            if (x + w >= 0 && x <= this.canvas.width && y >= 0 && y < this.canvas.height) {
+            if (x + w >= 0 && x <= this.canvas.width && y + this.cellSize >= 0 && y < this.canvas.height) {
                 this.ctx.fillRect(x + 1, y + 1, w, this.cellSize - 2);
             }
         });
