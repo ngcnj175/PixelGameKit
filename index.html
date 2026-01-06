@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/svg+xml" href="assets/icons/icon-192.svg">
     <link rel="apple-touch-icon" href="assets/icons/icon-192.svg">
-    <title>PixelGameKit v1.44.6</title>
+    <title>PixelGameKit v1.45.0</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 
@@ -508,6 +508,40 @@
                 <button id="add-song-btn" class="gallery-add-btn">+</button>
                 <div id="song-gallery">
                     <!-- ソングボタンはJSで生成 -->
+                </div>
+            </div>
+
+            <!-- ソング設定パネル（下から押し上げ） -->
+            <div id="song-config-panel" class="hidden">
+                <div class="config-header">
+                    <span class="config-title">ソング設定</span>
+                    <button id="song-config-close" class="config-close-btn">×</button>
+                </div>
+                <div class="config-body">
+                    <div class="config-row">
+                        <label>ソング名</label>
+                        <input type="text" id="song-name-input" maxlength="16" placeholder="Song1">
+                    </div>
+                    <div class="config-row">
+                        <label>BPM</label>
+                        <div class="config-stepper">
+                            <button id="song-bpm-dec" class="stepper-btn">−</button>
+                            <span id="song-bpm-value">120</span>
+                            <button id="song-bpm-inc" class="stepper-btn">+</button>
+                        </div>
+                    </div>
+                    <div class="config-row">
+                        <label>小節数</label>
+                        <div class="config-stepper">
+                            <button id="song-bars-dec" class="stepper-btn">−</button>
+                            <span id="song-bars-value">1</span>
+                            <button id="song-bars-inc" class="stepper-btn">+</button>
+                        </div>
+                    </div>
+                    <div class="config-row config-actions">
+                        <button id="song-delete-btn" class="config-btn danger">削除</button>
+                        <button id="song-config-save" class="config-btn primary">保存</button>
+                    </div>
                 </div>
             </div>
         </div>

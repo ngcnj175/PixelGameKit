@@ -95,12 +95,34 @@ const SoundEditor = {
         // 既存アイテム削除
         container.innerHTML = '';
 
+        // ダブルタップ検出用
+        let lastTapTime = 0;
+        let lastTapIdx = -1;
+
         // ソングアイテム作成（ナンバリングなし）
         this.songs.forEach((song, idx) => {
             const item = document.createElement('div');
             item.className = 'song-item' + (idx === this.currentSongIdx ? ' active' : '');
-            // ナンバリング不要
-            item.addEventListener('click', () => this.selectSong(idx));
+
+            // タップ/クリック（ダブルタップ検出付き）
+            const handleTap = () => {
+                const now = Date.now();
+                if (lastTapIdx === idx && now - lastTapTime < 300) {
+                    // ダブルタップ: 設定パネル表示
+                    this.openSongConfig(idx);
+                } else {
+                    // シングルタップ: 選択
+                    this.selectSong(idx);
+                }
+                lastTapTime = now;
+                lastTapIdx = idx;
+            };
+            item.addEventListener('click', handleTap);
+            item.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                handleTap();
+            });
+
             container.appendChild(item);
         });
 
@@ -109,6 +131,98 @@ const SoundEditor = {
         if (addBtn) {
             addBtn.onclick = () => this.addSong();
         }
+
+        // 設定パネル初期化（一度だけ）
+        this.initSongConfigPanel();
+    },
+
+    initSongConfigPanel() {
+        const panel = document.getElementById('song-config-panel');
+        if (!panel || this._songConfigInitialized) return;
+        this._songConfigInitialized = true;
+
+        // 閉じるボタン
+        document.getElementById('song-config-close')?.addEventListener('click', () => {
+            this.closeSongConfig();
+        });
+
+        // BPM調整
+        document.getElementById('song-bpm-dec')?.addEventListener('click', () => {
+            const song = this.songs[this._configSongIdx];
+            if (song) {
+                song.bpm = Math.max(60, song.bpm - 5);
+                document.getElementById('song-bpm-value').textContent = song.bpm;
+            }
+        });
+        document.getElementById('song-bpm-inc')?.addEventListener('click', () => {
+            const song = this.songs[this._configSongIdx];
+            if (song) {
+                song.bpm = Math.min(240, song.bpm + 5);
+                document.getElementById('song-bpm-value').textContent = song.bpm;
+            }
+        });
+
+        // 小節数調整
+        document.getElementById('song-bars-dec')?.addEventListener('click', () => {
+            const song = this.songs[this._configSongIdx];
+            if (song) {
+                song.bars = Math.max(1, song.bars - 1);
+                document.getElementById('song-bars-value').textContent = song.bars;
+            }
+        });
+        document.getElementById('song-bars-inc')?.addEventListener('click', () => {
+            const song = this.songs[this._configSongIdx];
+            if (song) {
+                song.bars = Math.min(16, song.bars + 1);
+                document.getElementById('song-bars-value').textContent = song.bars;
+            }
+        });
+
+        // 保存
+        document.getElementById('song-config-save')?.addEventListener('click', () => {
+            const song = this.songs[this._configSongIdx];
+            if (song) {
+                const nameInput = document.getElementById('song-name-input');
+                song.name = nameInput.value || `Song${this._configSongIdx + 1}`;
+            }
+            this.closeSongConfig();
+            this.updateBpmBarDisplay();
+            this.render();
+        });
+
+        // 削除
+        document.getElementById('song-delete-btn')?.addEventListener('click', () => {
+            if (this.songs.length <= 1) {
+                alert('最後のソングは削除できません');
+                return;
+            }
+            this.songs.splice(this._configSongIdx, 1);
+            if (this.currentSongIdx >= this.songs.length) {
+                this.currentSongIdx = this.songs.length - 1;
+            }
+            this.closeSongConfig();
+            this.initSongPalette();
+            this.updateBpmBarDisplay();
+            this.render();
+        });
+    },
+
+    openSongConfig(idx) {
+        this._configSongIdx = idx;
+        const song = this.songs[idx];
+        if (!song) return;
+
+        document.getElementById('song-name-input').value = song.name || `Song${idx + 1}`;
+        document.getElementById('song-bpm-value').textContent = song.bpm;
+        document.getElementById('song-bars-value').textContent = song.bars;
+
+        const panel = document.getElementById('song-config-panel');
+        panel?.classList.remove('hidden');
+    },
+
+    closeSongConfig() {
+        const panel = document.getElementById('song-config-panel');
+        panel?.classList.add('hidden');
     },
 
     addSong() {
@@ -493,6 +607,11 @@ const SoundEditor = {
         let startX = 0, startY = 0;
         let startStep = 0, startPitch = 0;
 
+        // 2本指スクロール用
+        let isTwoFingerPan = false;
+        let lastTouchX = 0;
+        let lastTouchY = 0;
+
         const getPos = (e) => {
             const rect = this.canvas.getBoundingClientRect();
             const touch = e.touches ? e.touches[0] : e;
@@ -502,14 +621,22 @@ const SoundEditor = {
             };
         };
 
-        // タップ/ドラッグ
+        // タッチスタート
         this.canvas.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            const pos = getPos(e);
-            this.handlePianoRollInput(pos, 'start');
-            isDragging = true;
-            startX = pos.x;
-            startY = pos.y;
+            if (e.touches.length === 2) {
+                // 2本指パン開始
+                isTwoFingerPan = true;
+                lastTouchX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+                lastTouchY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+                e.preventDefault();
+            } else if (e.touches.length === 1) {
+                e.preventDefault();
+                const pos = getPos(e);
+                this.handlePianoRollInput(pos, 'start');
+                isDragging = true;
+                startX = pos.x;
+                startY = pos.y;
+            }
         });
 
         this.canvas.addEventListener('mousedown', (e) => {
@@ -520,9 +647,24 @@ const SoundEditor = {
             startY = pos.y;
         });
 
+        // タッチムーブ
         this.canvas.addEventListener('touchmove', (e) => {
-            e.preventDefault();
-            if (isDragging) {
+            if (e.touches.length === 2 && isTwoFingerPan) {
+                // 2本指パンスクロール
+                const currentX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+                const currentY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+                const deltaX = lastTouchX - currentX;
+                const deltaY = lastTouchY - currentY;
+
+                this.scrollX = Math.max(0, this.scrollX + deltaX);
+                this.viewOctave = Math.max(1, Math.min(4, this.viewOctave + Math.round(deltaY / 50)));
+
+                lastTouchX = currentX;
+                lastTouchY = currentY;
+                this.render();
+                e.preventDefault();
+            } else if (isDragging && e.touches.length === 1) {
+                e.preventDefault();
                 const pos = getPos(e);
                 this.handlePianoRollInput(pos, 'move', startX, startY);
             }
@@ -535,13 +677,19 @@ const SoundEditor = {
             }
         });
 
-        this.canvas.addEventListener('touchend', () => { isDragging = false; });
+        this.canvas.addEventListener('touchend', (e) => {
+            if (e.touches.length === 0) {
+                isTwoFingerPan = false;
+                isDragging = false;
+            }
+        });
         this.canvas.addEventListener('mouseup', () => { isDragging = false; });
         this.canvas.addEventListener('mouseleave', () => { isDragging = false; });
 
         // ダブルタップで削除
         let lastTap = 0;
         this.canvas.addEventListener('touchend', (e) => {
+            if (e.touches.length > 0) return; // 2本指の途中は無視
             const now = Date.now();
             if (now - lastTap < 300) {
                 const pos = getPos(e.changedTouches ? { touches: e.changedTouches } : e);
