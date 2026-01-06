@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/svg+xml" href="assets/icons/icon-192.svg">
     <link rel="apple-touch-icon" href="assets/icons/icon-192.svg">
-    <title>PixelGameKit v1.44.1</title>
+    <title>PixelGameKit v1.44.3</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 
@@ -432,14 +432,6 @@
         <div id="sound-screen" class="screen">
             <div class="screen-title">SOUND</div>
 
-            <!-- ソングパレット（スプライトパレット模倣） -->
-            <div id="song-palette-area">
-                <button id="add-song-btn" class="gallery-add-btn">+</button>
-                <div id="song-gallery">
-                    <!-- ソングボタンはJSで生成 -->
-                </div>
-            </div>
-
             <!-- トラックパネル（トラック + BPM + BAR 同一行） -->
             <div id="track-panel">
                 <div id="track-tabs">
@@ -542,6 +534,14 @@
             <div id="keyboard-area">
                 <div id="piano-keyboard">
                     <!-- JSで生成 -->
+                </div>
+            </div>
+
+            <!-- ソングパレット（鍵盤下） -->
+            <div id="song-palette-area">
+                <button id="add-song-btn" class="gallery-add-btn">+</button>
+                <div id="song-gallery">
+                    <!-- ソングボタンはJSで生成 -->
                 </div>
             </div>
         </div>

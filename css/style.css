@@ -1504,12 +1504,33 @@ body {
     }
 }
 
-/* 鍵盤エリア（拡大版） */
+/* 鍵盤エリア（スクロールバー上部） */
 #keyboard-area {
-    padding: 8px;
-    padding-bottom: calc(8px + var(--safe-area-bottom));
+    padding: 0 8px 8px 8px;
     background: rgba(0, 0, 0, 0.2);
     overflow-x: auto;
+    overflow-y: hidden;
+    display: flex;
+    flex-direction: column-reverse;
+}
+
+/* 細いスクロールバー（WebKit系） */
+#keyboard-area::-webkit-scrollbar {
+    height: 6px;
+}
+
+#keyboard-area::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 3px;
+}
+
+#keyboard-area::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 3px;
+}
+
+#keyboard-area::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.5);
 }
 
 #piano-keyboard {
