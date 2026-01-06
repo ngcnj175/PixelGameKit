@@ -248,7 +248,8 @@ const SoundEditor = {
     // ========== 鍵盤 ==========
     initKeyboard() {
         const container = document.getElementById('piano-keyboard');
-        if (!container) return;
+        const keyboardArea = document.getElementById('keyboard-area');
+        if (!container || !keyboardArea) return;
         container.innerHTML = '';
 
         // 5オクターブ (C1-B5)
@@ -275,14 +276,67 @@ const SoundEditor = {
                 // タッチ/クリック
                 const handler = (e) => {
                     e.preventDefault();
+                    e.stopPropagation();
                     this.onKeyPress(note, oct);
                 };
-                key.addEventListener('touchstart', handler);
+                key.addEventListener('touchstart', handler, { passive: false });
                 key.addEventListener('mousedown', handler);
 
                 container.appendChild(key);
             });
         });
+
+        // ドラッグスクロール機能
+        let isDragging = false;
+        let startX = 0;
+        let scrollLeft = 0;
+
+        keyboardArea.addEventListener('mousedown', (e) => {
+            // 鍵盤自体のクリックは除外
+            if (e.target.classList.contains('piano-key')) return;
+            isDragging = true;
+            startX = e.pageX - keyboardArea.offsetLeft;
+            scrollLeft = keyboardArea.scrollLeft;
+            keyboardArea.style.cursor = 'grabbing';
+        });
+
+        keyboardArea.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            e.preventDefault();
+            const x = e.pageX - keyboardArea.offsetLeft;
+            const walk = (x - startX) * 1.5;
+            keyboardArea.scrollLeft = scrollLeft - walk;
+        });
+
+        keyboardArea.addEventListener('mouseup', () => {
+            isDragging = false;
+            keyboardArea.style.cursor = 'grab';
+        });
+
+        keyboardArea.addEventListener('mouseleave', () => {
+            isDragging = false;
+            keyboardArea.style.cursor = 'grab';
+        });
+
+        // タッチスクロール
+        let touchStartX = 0;
+        let touchScrollLeft = 0;
+
+        keyboardArea.addEventListener('touchstart', (e) => {
+            if (e.target.classList.contains('piano-key')) return;
+            touchStartX = e.touches[0].pageX;
+            touchScrollLeft = keyboardArea.scrollLeft;
+        }, { passive: true });
+
+        keyboardArea.addEventListener('touchmove', (e) => {
+            if (e.target.classList.contains('piano-key')) return;
+            const x = e.touches[0].pageX;
+            const walk = (touchStartX - x) * 1.5;
+            keyboardArea.scrollLeft = touchScrollLeft + walk;
+        }, { passive: true });
+
+        // 初期カーソル
+        keyboardArea.style.cursor = 'grab';
     },
 
     onKeyPress(note, octave) {
