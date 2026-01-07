@@ -771,7 +771,8 @@ const SoundEditor = {
 
                 this.scrollX = Math.max(0, this.scrollX + deltaX);
                 if (!this.scrollY) this.scrollY = 0;
-                this.scrollY = Math.max(-200, Math.min(200, this.scrollY + deltaY));
+                // 5オクターブ（60音 × 20px = 1200px）をカバー
+                this.scrollY = Math.max(-600, Math.min(600, this.scrollY + deltaY));
 
                 lastTouchX = currentX;
                 lastTouchY = currentY;
