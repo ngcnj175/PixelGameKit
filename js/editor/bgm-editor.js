@@ -1080,18 +1080,23 @@ const SoundEditor = {
         // グリッド
         this.ctx.strokeStyle = '#333';
         this.ctx.lineWidth = 1;
+        const scrollY = this.scrollY || 0;
 
-        for (let i = 0; i <= 16; i++) {
-            // 縦線
+        // 縦線
+        for (let i = 0; i <= Math.ceil(this.canvas.width / this.cellSize) + 1; i++) {
             this.ctx.beginPath();
-            this.ctx.moveTo(i * this.cellSize - this.scrollX % this.cellSize, 0);
-            this.ctx.lineTo(i * this.cellSize - this.scrollX % this.cellSize, this.canvas.height);
+            const x = i * this.cellSize - this.scrollX % this.cellSize;
+            this.ctx.moveTo(x, 0);
+            this.ctx.lineTo(x, this.canvas.height);
             this.ctx.stroke();
+        }
 
-            // 横線
+        // 横線（scrollYを適用）
+        for (let i = 0; i <= Math.ceil(this.canvas.height / this.cellSize) + 1; i++) {
             this.ctx.beginPath();
-            this.ctx.moveTo(0, i * this.cellSize);
-            this.ctx.lineTo(this.canvas.width, i * this.cellSize);
+            const y = i * this.cellSize - scrollY % this.cellSize;
+            this.ctx.moveTo(0, y);
+            this.ctx.lineTo(this.canvas.width, y);
             this.ctx.stroke();
         }
 
@@ -1110,10 +1115,9 @@ const SoundEditor = {
         }
 
         // ハイライト行
-        const scrollYVal = this.scrollY || 0;
         const maxPitch = 59; // B5（noteToPitchと一致）
         if (this.highlightPitch >= 0 && this.highlightPitch <= 59) {
-            const y = (maxPitch - this.highlightPitch) * this.cellSize - scrollYVal;
+            const y = (maxPitch - this.highlightPitch) * this.cellSize - scrollY;
             if (y + this.cellSize >= 0 && y < this.canvas.height) {
                 this.ctx.fillStyle = 'rgba(74, 124, 89, 0.3)';
                 this.ctx.fillRect(0, y, this.canvas.width, this.cellSize);
@@ -1123,7 +1127,6 @@ const SoundEditor = {
         // ノート描画
         const colors = ['#4ecdc4', '#ff6b6b', '#ffd93d', '#6bcb77'];
         this.ctx.fillStyle = colors[this.currentTrack];
-        const scrollY = this.scrollY || 0;
 
         track.notes.forEach(note => {
             const x = note.step * this.cellSize - this.scrollX;
