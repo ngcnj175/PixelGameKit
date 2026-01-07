@@ -16,8 +16,8 @@ const SoundEditor = {
     trackTypes: ['square', 'square', 'triangle', 'noise'],
 
     // 再生状態
-    isRecording: false,
     isPlaying: false,
+    isPaused: false,
     playInterval: null,
 
     // ピアノロール
@@ -373,15 +373,6 @@ const SoundEditor = {
                 lastClickTime = now;
             });
         }
-
-        // REC
-        document.getElementById('sound-rec-btn')?.addEventListener('click', (e) => {
-            this.isRecording = !this.isRecording;
-            e.target.classList.toggle('active', this.isRecording);
-            if (this.isRecording) {
-                this.currentStep = 0;
-            }
-        });
     },
 
     // ========== 鍵盤 ==========
@@ -523,10 +514,8 @@ const SoundEditor = {
             this.render();
         }, 200);
 
-        // REC中ならノート入力
-        if (this.isRecording) {
-            this.inputNote(note, octave);
-        }
+        // ステップ入力: 鍵盤押下でノート入力
+        this.inputNote(note, octave);
     },
 
     playNote(note, octave, duration = 0.2) {
@@ -630,7 +619,13 @@ const SoundEditor = {
 
         let isDragging = false;
         let startX = 0, startY = 0;
-        let startStep = 0, startPitch = 0;
+
+        // 長押し＆ドラッグ用
+        let longPressTimer = null;
+        let isLongPress = false;
+        let draggingNote = null;
+        let originalStep = 0;
+        let originalPitch = 0;
 
         // 2本指スクロール用
         let isTwoFingerPan = false;
@@ -646,6 +641,24 @@ const SoundEditor = {
             };
         };
 
+        const getPosFromEvent = (e) => {
+            const rect = this.canvas.getBoundingClientRect();
+            if (e.changedTouches) {
+                return {
+                    x: e.changedTouches[0].clientX - rect.left,
+                    y: e.changedTouches[0].clientY - rect.top
+                };
+            }
+            return getPos(e);
+        };
+
+        const getStepPitch = (pos) => {
+            const scrollY = this.scrollY || 0;
+            const step = Math.floor((pos.x + this.scrollX) / this.cellSize);
+            const pitch = 15 - Math.floor((pos.y + scrollY) / this.cellSize) + this.viewOctave * 12;
+            return { step, pitch };
+        };
+
         // タッチスタート
         this.canvas.addEventListener('touchstart', (e) => {
             if (e.touches.length === 2) {
@@ -654,22 +667,53 @@ const SoundEditor = {
                 lastTouchX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
                 lastTouchY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
                 e.preventDefault();
-            } else if (e.touches.length === 1) {
+                return;
+            }
+
+            if (e.touches.length === 1) {
                 e.preventDefault();
                 const pos = getPos(e);
-                this.handlePianoRollInput(pos, 'start');
+                const { step, pitch } = getStepPitch(pos);
+
                 isDragging = true;
                 startX = pos.x;
                 startY = pos.y;
+
+                // ノートがあるかチェック
+                const note = this.findNoteAt(step, pitch);
+
+                if (note) {
+                    // 長押し検出開始
+                    originalStep = note.step;
+                    originalPitch = note.pitch;
+                    longPressTimer = setTimeout(() => {
+                        isLongPress = true;
+                        draggingNote = note;
+                    }, 300);
+                }
             }
         });
 
         this.canvas.addEventListener('mousedown', (e) => {
             const pos = getPos(e);
-            this.handlePianoRollInput(pos, 'start');
+            const { step, pitch } = getStepPitch(pos);
+
             isDragging = true;
             startX = pos.x;
             startY = pos.y;
+
+            // ノートがあるかチェック
+            const note = this.findNoteAt(step, pitch);
+
+            if (note) {
+                // 長押し検出開始
+                originalStep = note.step;
+                originalPitch = note.pitch;
+                longPressTimer = setTimeout(() => {
+                    isLongPress = true;
+                    draggingNote = note;
+                }, 300);
+            }
         });
 
         // タッチムーブ
@@ -681,10 +725,7 @@ const SoundEditor = {
                 const deltaX = lastTouchX - currentX;
                 const deltaY = lastTouchY - currentY;
 
-                // 横スクロール
                 this.scrollX = Math.max(0, this.scrollX + deltaX);
-
-                // 縦スクロール（ピクセル単位でスムーズに）
                 if (!this.scrollY) this.scrollY = 0;
                 this.scrollY = Math.max(-200, Math.min(200, this.scrollY + deltaY));
 
@@ -694,76 +735,115 @@ const SoundEditor = {
                 e.preventDefault();
             } else if (isDragging && e.touches.length === 1) {
                 e.preventDefault();
+
+                // 移動があったら長押しキャンセル
                 const pos = getPos(e);
-                this.handlePianoRollInput(pos, 'move', startX, startY);
+                const moved = Math.abs(pos.x - startX) > 5 || Math.abs(pos.y - startY) > 5;
+
+                if (moved && !isLongPress) {
+                    clearTimeout(longPressTimer);
+                }
+
+                // 長押しドラッグ中ならノート移動
+                if (isLongPress && draggingNote) {
+                    const { step, pitch } = getStepPitch(pos);
+                    draggingNote.step = Math.max(0, step);
+                    draggingNote.pitch = pitch;
+                    this.render();
+                }
             }
         });
 
         this.canvas.addEventListener('mousemove', (e) => {
             if (isDragging) {
                 const pos = getPos(e);
-                this.handlePianoRollInput(pos, 'move', startX, startY);
-            }
-        });
+                const moved = Math.abs(pos.x - startX) > 5 || Math.abs(pos.y - startY) > 5;
 
-        this.canvas.addEventListener('touchend', (e) => {
-            if (e.touches.length === 0) {
-                isTwoFingerPan = false;
-                isDragging = false;
-            }
-        });
-        this.canvas.addEventListener('mouseup', () => { isDragging = false; });
-        this.canvas.addEventListener('mouseleave', () => { isDragging = false; });
+                if (moved && !isLongPress) {
+                    clearTimeout(longPressTimer);
+                }
 
-        // ダブルタップで削除
-        let lastTap = 0;
-        this.canvas.addEventListener('touchend', (e) => {
-            if (e.touches.length > 0) return; // 2本指の途中は無視
-            const now = Date.now();
-            if (now - lastTap < 300) {
-                const pos = getPos(e.changedTouches ? { touches: e.changedTouches } : e);
-                this.handlePianoRollInput(pos, 'dblclick');
-            }
-            lastTap = now;
-        });
-        this.canvas.addEventListener('dblclick', (e) => {
-            const pos = getPos(e);
-            this.handlePianoRollInput(pos, 'dblclick');
-        });
-    },
-
-    handlePianoRollInput(pos, action, startX = 0, startY = 0) {
-        const step = Math.floor((pos.x + this.scrollX) / this.cellSize);
-        // 音階（上が高音）
-        const pitch = 15 - Math.floor(pos.y / this.cellSize) + this.viewOctave * 12;
-
-        const song = this.getCurrentSong();
-        const track = song.tracks[this.currentTrack];
-
-        if (action === 'start') {
-            // ワンタップで入力（鉛筆ツール）
-            if (this.currentTool === 'pencil') {
-                const { note, octave } = this.pitchToNote(pitch);
-                this.playNote(note, octave);
-                track.notes.push({ step, pitch, length: 1 });
-                this.render();
-            } else if (this.currentTool === 'eraser') {
-                this.deleteNoteAt(step, pitch);
-            }
-        } else if (action === 'move' && this.currentTool === 'pencil') {
-            // スワイプで長さ延長
-            const length = Math.max(1, Math.floor((pos.x - startX) / this.cellSize) + 1);
-            if (track.notes.length > 0) {
-                const lastNote = track.notes[track.notes.length - 1];
-                if (lastNote.pitch === pitch) {
-                    lastNote.length = length;
+                // 長押しドラッグ中ならノート移動
+                if (isLongPress && draggingNote) {
+                    const { step, pitch } = getStepPitch(pos);
+                    draggingNote.step = Math.max(0, step);
+                    draggingNote.pitch = pitch;
                     this.render();
                 }
             }
-        } else if (action === 'dblclick') {
-            // ダブルタップで削除
-            this.deleteNoteAt(step, pitch);
+        });
+
+        // タッチエンド
+        this.canvas.addEventListener('touchend', (e) => {
+            if (e.touches.length === 0) {
+                isTwoFingerPan = false;
+
+                if (isDragging && !isLongPress) {
+                    // タップ処理
+                    clearTimeout(longPressTimer);
+                    const pos = getPosFromEvent(e);
+                    const { step, pitch } = getStepPitch(pos);
+                    this.handleTap(step, pitch);
+                }
+
+                isDragging = false;
+                isLongPress = false;
+                draggingNote = null;
+                clearTimeout(longPressTimer);
+            }
+        });
+
+        this.canvas.addEventListener('mouseup', (e) => {
+            if (isDragging && !isLongPress) {
+                // タップ処理
+                clearTimeout(longPressTimer);
+                const pos = getPos(e);
+                const { step, pitch } = getStepPitch(pos);
+                this.handleTap(step, pitch);
+            }
+
+            isDragging = false;
+            isLongPress = false;
+            draggingNote = null;
+            clearTimeout(longPressTimer);
+        });
+
+        this.canvas.addEventListener('mouseleave', () => {
+            isDragging = false;
+            isLongPress = false;
+            draggingNote = null;
+            clearTimeout(longPressTimer);
+        });
+    },
+
+    handleTap(step, pitch) {
+        const song = this.getCurrentSong();
+        const track = song.tracks[this.currentTrack];
+
+        // 既存ノートがあれば削除、なければ追加
+        const existingNote = this.findNoteAt(step, pitch);
+
+        if (existingNote) {
+            // 削除
+            const idx = track.notes.indexOf(existingNote);
+            if (idx >= 0) {
+                track.notes.splice(idx, 1);
+            }
+        } else {
+            // 追加
+            const { note, octave } = this.pitchToNote(pitch);
+            this.playNote(note, octave);
+            track.notes.push({ step, pitch, length: 1 });
         }
+        this.render();
+    },
+
+    findNoteAt(step, pitch) {
+        const song = this.getCurrentSong();
+        const track = song.tracks[this.currentTrack];
+        return track.notes.find(n =>
+            n.step <= step && n.step + n.length > step && n.pitch === pitch
+        );
     },
 
     deleteNoteAt(step, pitch) {
@@ -927,8 +1007,8 @@ const SoundEditor = {
             }
         });
 
-        // 現在位置
-        if (this.isPlaying || this.isRecording) {
+        // 現在位置（再生中のみ表示）
+        if (this.isPlaying) {
             const x = this.currentStep * this.cellSize - this.scrollX;
             this.ctx.strokeStyle = '#fff';
             this.ctx.lineWidth = 2;
