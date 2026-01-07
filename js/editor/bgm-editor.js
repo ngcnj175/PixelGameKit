@@ -868,8 +868,18 @@ const SoundEditor = {
 
         // タッチエンド
         this.canvas.addEventListener('touchend', (e) => {
+            // 2本指パン中に1本離れた場合は何もしない
+            if (e.touches.length === 1 && isTwoFingerPan) {
+                return;
+            }
+
             if (e.touches.length === 0) {
-                isTwoFingerPan = false;
+                // 2本指パン中だった場合はフラグリセットのみ
+                if (isTwoFingerPan) {
+                    isTwoFingerPan = false;
+                    isDragging = false;
+                    return;
+                }
 
                 // ノート作成中でない場合のみタップ処理（既存ノート削除）
                 if (isDragging && !isLongPress && !isCreatingNote) {
