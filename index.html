@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/svg+xml" href="assets/icons/icon-192.svg">
     <link rel="apple-touch-icon" href="assets/icons/icon-192.svg">
-    <title>PixelGameKit v1.47.2</title>
+    <title>PixelGameKit v1.48.6</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 
@@ -469,18 +469,19 @@
                     <hr class="ctrl-divider">
                     <button id="sound-del-btn" class="sound-ctrl-btn" title="DEL">
                         <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
+                            <path
+                                d="M12.5 8c-2.65 0-5.05 1.04-6.82 2.75L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z" />
                         </svg>
                     </button>
                     <button id="sound-rest-btn" class="sound-ctrl-btn" title="REST">
-                        <svg viewBox="0 0 24 24" fill="currentColor">
+                        <svg viewBox="0 0 24 24" fill="currentColor" style="transform: scaleX(-1);">
                             <path
-                                d="M9 16h2V8H9v8zm3-14C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm1-4h2V8h-2v8z" />
+                                d="M12.5 8c-2.65 0-5.05 1.04-6.82 2.75L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z" />
                         </svg>
                     </button>
                     <button id="sound-tie-btn" class="sound-ctrl-btn" title="TIE">
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M12 4c-4.42 0-8 1.79-8 4v8c0 2.21 3.58 4 8 4s8-1.79 8-4V8c0-2.21-3.58-4-8-4z" />
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 16 C4 8, 20 8, 20 16" stroke-linecap="round" />
                         </svg>
                     </button>
                 </div>
@@ -515,7 +516,10 @@
             <div id="song-config-panel" class="hidden">
                 <div class="config-header">
                     <span class="config-title">ソング設定</span>
-                    <button id="song-config-close" class="config-close-btn">×</button>
+                    <div class="config-header-btns">
+                        <button id="song-config-save" class="header-btn">保存</button>
+                        <button id="song-config-close" class="header-btn">閉じる</button>
+                    </div>
                 </div>
                 <div class="config-body">
                     <div class="config-row">
@@ -537,10 +541,6 @@
                             <span id="song-bars-value">1</span>
                             <button id="song-bars-inc" class="stepper-btn">+</button>
                         </div>
-                    </div>
-                    <div class="config-row config-actions">
-                        <button id="song-delete-btn" class="config-btn danger">削除</button>
-                        <button id="song-config-save" class="config-btn primary">保存</button>
                     </div>
                 </div>
             </div>

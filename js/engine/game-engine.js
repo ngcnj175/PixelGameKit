@@ -925,39 +925,66 @@ const GameEngine = {
             return 440 * Math.pow(2, semitone / 12);
         };
 
-        const playNote = (freq, waveType, duration) => {
-            const osc = this.bgmAudioCtx.createOscillator();
-            const gain = this.bgmAudioCtx.createGain();
+        const playNote = (freq, waveType, duration, pitch) => {
+            const ctx = this.bgmAudioCtx;
 
             if (waveType === 'noise') {
-                // ノイズは特殊処理
-                const bufferSize = this.bgmAudioCtx.sampleRate * duration;
-                const buffer = this.bgmAudioCtx.createBuffer(1, bufferSize, this.bgmAudioCtx.sampleRate);
+                // ドラム音（ピッチに応じてバスドラム/スネア/ハイハット）
+                const bufferSize = ctx.sampleRate * Math.max(duration, 0.3);
+                const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
                 const data = buffer.getChannelData(0);
                 for (let i = 0; i < bufferSize; i++) {
                     data[i] = Math.random() * 2 - 1;
                 }
-                const noise = this.bgmAudioCtx.createBufferSource();
+
+                const noise = ctx.createBufferSource();
                 noise.buffer = buffer;
-                noise.connect(gain);
-                gain.connect(this.bgmAudioCtx.destination);
-                gain.gain.setValueAtTime(0.1, this.bgmAudioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, this.bgmAudioCtx.currentTime + duration);
+
+                const gain = ctx.createGain();
+                const filter = ctx.createBiquadFilter();
+
+                if (pitch < 20) {
+                    // バスドラム
+                    filter.type = 'lowpass';
+                    filter.frequency.value = 150;
+                    gain.gain.setValueAtTime(0.5, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+                } else if (pitch < 40) {
+                    // スネア
+                    filter.type = 'bandpass';
+                    filter.frequency.value = 1000 + (pitch - 20) * 50;
+                    filter.Q.value = 1;
+                    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+                } else {
+                    // ハイハット
+                    filter.type = 'highpass';
+                    filter.frequency.value = 5000 + (pitch - 40) * 200;
+                    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+                }
+
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(ctx.destination);
                 noise.start();
-                noise.stop(this.bgmAudioCtx.currentTime + duration);
+                noise.stop(ctx.currentTime + duration);
                 return;
             }
 
-            osc.type = waveType;
-            osc.frequency.setValueAtTime(freq, this.bgmAudioCtx.currentTime);
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
 
-            gain.gain.setValueAtTime(0.15, this.bgmAudioCtx.currentTime);
+            osc.type = waveType;
+            osc.frequency.setValueAtTime(freq, ctx.currentTime);
+
+            gain.gain.setValueAtTime(0.15, ctx.currentTime);
             osc.connect(gain);
-            gain.connect(this.bgmAudioCtx.destination);
+            gain.connect(ctx.destination);
 
             osc.start();
-            gain.gain.exponentialRampToValueAtTime(0.01, this.bgmAudioCtx.currentTime + duration);
-            osc.stop(this.bgmAudioCtx.currentTime + duration);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
+            osc.stop(ctx.currentTime + duration);
         };
 
         // BGM再生ループ
@@ -973,7 +1000,7 @@ const GameEngine = {
                 track.notes.forEach(note => {
                     if (note.step === step) {
                         const freq = getFrequency(note.pitch);
-                        playNote(freq, trackTypes[trackIdx], stepDuration * note.length);
+                        playNote(freq, trackTypes[trackIdx], stepDuration * note.length, note.pitch);
                     }
                 });
             });

@@ -1335,8 +1335,8 @@ body {
     bottom: 0;
     left: 0;
     right: 0;
-    background: #fff;
-    border-top: 2px solid var(--border-dark);
+    background: #f5f5f5;
+    border-top: 2px solid var(--border-color);
     box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.2);
     z-index: 100;
     transform: translateY(0);
@@ -1352,7 +1352,7 @@ body {
     justify-content: space-between;
     align-items: center;
     padding: 8px 12px;
-    background: var(--bg-screen);
+    background: #f5f5f5;
     border-bottom: 1px solid var(--border-color);
 }
 
@@ -1361,14 +1361,23 @@ body {
     font-size: 14px;
 }
 
-#song-config-panel .config-close-btn {
-    width: 28px;
-    height: 28px;
-    border: none;
-    background: transparent;
-    font-size: 18px;
+#song-config-panel .config-header-btns {
+    display: flex;
+    gap: 8px;
+}
+
+#song-config-panel .header-btn {
+    padding: 4px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background: #fff;
+    font-size: 12px;
     cursor: pointer;
-    color: #666;
+    color: #333;
+}
+
+#song-config-panel .header-btn:active {
+    background: #e0e0e0;
 }
 
 #song-config-panel .config-body {
@@ -1725,11 +1734,10 @@ body {
     background: #ccc !important;
 }
 
-/* 黒鍵押下時（黒のまま、少し明るく、白鍵線を隠す） */
+/* 黒鍵押下時（少し明るく） */
 .piano-key.black:active,
 .piano-key.black.active {
-    background: #444 !important;
-    box-shadow: 0 0 0 2px #444;
+    background: linear-gradient(180deg, #555 0%, #222 100%) !important;
 }
 
 .piano-key.highlight {

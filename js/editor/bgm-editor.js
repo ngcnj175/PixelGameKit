@@ -104,8 +104,17 @@ const SoundEditor = {
             const item = document.createElement('div');
             item.className = 'song-item' + (idx === this.currentSongIdx ? ' active' : '');
 
+            // 長押し検出用
+            let longPressTimer = null;
+            let isLongPress = false;
+
             // タップ/クリック処理（タイルパレット方式）
             const handleTap = () => {
+                if (isLongPress) {
+                    isLongPress = false;
+                    return;
+                }
+
                 const state = this.songClickState;
 
                 // 同じソングへの2回目のクリック（ダブルタップ）
@@ -133,7 +142,29 @@ const SoundEditor = {
                 }
             };
 
+            // 長押し開始
+            const startLongPress = () => {
+                longPressTimer = setTimeout(() => {
+                    isLongPress = true;
+                    this.deleteSong(idx);
+                }, 800);
+            };
+
+            // 長押しキャンセル
+            const cancelLongPress = () => {
+                if (longPressTimer) {
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
+                }
+            };
+
             item.addEventListener('click', handleTap);
+            item.addEventListener('mousedown', startLongPress);
+            item.addEventListener('mouseup', cancelLongPress);
+            item.addEventListener('mouseleave', cancelLongPress);
+            item.addEventListener('touchstart', startLongPress, { passive: true });
+            item.addEventListener('touchend', cancelLongPress);
+            item.addEventListener('touchcancel', cancelLongPress);
 
             container.appendChild(item);
         });
@@ -207,22 +238,6 @@ const SoundEditor = {
                 StageEditor.updateBgmSelects();
             }
         });
-
-        // 削除
-        document.getElementById('song-delete-btn')?.addEventListener('click', () => {
-            if (this.songs.length <= 1) {
-                alert('最後のソングは削除できません');
-                return;
-            }
-            this.songs.splice(this._configSongIdx, 1);
-            if (this.currentSongIdx >= this.songs.length) {
-                this.currentSongIdx = this.songs.length - 1;
-            }
-            this.closeSongConfig();
-            this.initSongPalette();
-            this.updateBpmBarDisplay();
-            this.render();
-        });
     },
 
     openSongConfig(idx) {
@@ -241,6 +256,28 @@ const SoundEditor = {
     closeSongConfig() {
         const panel = document.getElementById('song-config-panel');
         panel?.classList.add('hidden');
+    },
+
+    deleteSong(idx) {
+        if (this.songs.length <= 1) {
+            alert('最後のソングは削除できません');
+            return;
+        }
+        if (!confirm('このソングを削除しますか？')) {
+            return;
+        }
+        this.songs.splice(idx, 1);
+        if (this.currentSongIdx >= this.songs.length) {
+            this.currentSongIdx = this.songs.length - 1;
+        }
+        this.initSongPalette();
+        this.updateBpmBarDisplay();
+        this.render();
+
+        // ステージ設定のBGM選択肢も更新
+        if (typeof StageEditor !== 'undefined' && StageEditor.updateBgmSelects) {
+            StageEditor.updateBgmSelects();
+        }
     },
 
     addSong() {
@@ -343,10 +380,40 @@ const SoundEditor = {
 
     // ========== プレイヤーパネル ==========
     initPlayerPanel() {
-        // DEL (UNDO)
-        document.getElementById('sound-del-btn')?.addEventListener('click', () => {
-            this.deleteLastNote();
-        });
+        // DEL (UNDO) - 通常タップ: 直前のノート削除、長押し: トラック全削除
+        const delBtn = document.getElementById('sound-del-btn');
+        if (delBtn) {
+            let longPressTimer = null;
+            let isLongPress = false;
+
+            const startLongPress = () => {
+                isLongPress = false;
+                longPressTimer = setTimeout(() => {
+                    isLongPress = true;
+                    this.clearCurrentTrack();
+                }, 800);
+            };
+
+            const cancelLongPress = () => {
+                if (longPressTimer) {
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
+                }
+            };
+
+            delBtn.addEventListener('mousedown', startLongPress);
+            delBtn.addEventListener('mouseup', cancelLongPress);
+            delBtn.addEventListener('mouseleave', cancelLongPress);
+            delBtn.addEventListener('touchstart', startLongPress, { passive: true });
+            delBtn.addEventListener('touchend', cancelLongPress);
+            delBtn.addEventListener('touchcancel', cancelLongPress);
+
+            delBtn.addEventListener('click', () => {
+                if (!isLongPress) {
+                    this.deleteLastNote();
+                }
+            });
+        }
 
         // REST
         document.getElementById('sound-rest-btn')?.addEventListener('click', () => {
@@ -424,14 +491,24 @@ const SoundEditor = {
                     whiteKeyIndex++;
                 }
 
-                // タッチ/クリック
-                const handler = (e) => {
+                // 鍵盤押下開始
+                const startHandler = (e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    this.onKeyPress(note, oct);
+                    this.startKeySound(note, oct);
                 };
-                key.addEventListener('touchstart', handler, { passive: false });
-                key.addEventListener('mousedown', handler);
+
+                // 鍵盤離す
+                const endHandler = (e) => {
+                    this.stopKeySound();
+                };
+
+                key.addEventListener('touchstart', startHandler, { passive: false });
+                key.addEventListener('mousedown', startHandler);
+                key.addEventListener('touchend', endHandler);
+                key.addEventListener('touchcancel', endHandler);
+                key.addEventListener('mouseup', endHandler);
+                key.addEventListener('mouseleave', endHandler);
 
                 container.appendChild(key);
             });
@@ -541,33 +618,105 @@ const SoundEditor = {
         }
     },
 
+    // 現在再生中のオシレーターとゲイン
+    currentKeyOsc: null,
+    currentKeyGain: null,
+
+    startKeySound(note, octave) {
+        // 既に再生中なら停止
+        this.stopKeySound();
+
+        if (!this.audioCtx) return;
+
+        const trackType = this.trackTypes[this.currentTrack];
+        const pitch = this.noteToPitch(note, octave);
+
+        // ノイズトラックはドラム音を使用
+        if (trackType === 'noise') {
+            const result = this.playDrum(pitch, 0.5);
+            if (result) {
+                this.currentKeyOsc = result.noise;
+                this.currentKeyGain = result.gain;
+            }
+        } else {
+            const freq = this.getFrequency(note, octave);
+            const osc = this.audioCtx.createOscillator();
+            const gain = this.audioCtx.createGain();
+            gain.connect(this.audioCtx.destination);
+
+            // 波形タイプ
+            if (trackType === 'square') {
+                osc.type = 'square';
+            } else if (trackType === 'triangle') {
+                osc.type = 'triangle';
+            }
+
+            osc.frequency.value = freq;
+            gain.gain.value = 0.3;
+
+            osc.connect(gain);
+            osc.start();
+
+            this.currentKeyOsc = osc;
+            this.currentKeyGain = gain;
+        }
+
+        // ピアノロールのハイライト
+        this.highlightPitch = pitch;
+        this.render();
+
+        // ステップ録音ON時のみノート入力
+        if (this.isStepRecording) {
+            this.inputNote(note, octave);
+        }
+    },
+
+    stopKeySound() {
+        if (this.currentKeyGain) {
+            // フェードアウト
+            this.currentKeyGain.gain.exponentialRampToValueAtTime(0.01, this.audioCtx.currentTime + 0.1);
+        }
+        if (this.currentKeyOsc) {
+            this.currentKeyOsc.stop(this.audioCtx.currentTime + 0.1);
+            this.currentKeyOsc = null;
+            this.currentKeyGain = null;
+        }
+
+        // ハイライト解除
+        this.highlightPitch = -1;
+        this.render();
+    },
+
     playNote(note, octave, duration = 0.2) {
         if (!this.audioCtx) return;
 
-        const freq = this.getFrequency(note, octave);
-        const osc = this.audioCtx.createOscillator();
-        const gain = this.audioCtx.createGain();
-
-        // 波形タイプ
         const trackType = this.trackTypes[this.currentTrack];
-        if (trackType === 'square') {
-            osc.type = 'square';
-        } else if (trackType === 'triangle') {
-            osc.type = 'triangle';
+
+        // ノイズトラックはドラム音を使用
+        if (trackType === 'noise') {
+            const pitch = this.noteToPitch(note, octave);
+            this.playDrum(pitch, duration);
         } else {
-            // ノイズ用にホワイトノイズを作成
-            osc.type = 'sawtooth';
+            const gain = this.audioCtx.createGain();
+            gain.connect(this.audioCtx.destination);
+
+            const freq = this.getFrequency(note, octave);
+            const osc = this.audioCtx.createOscillator();
+
+            if (trackType === 'square') {
+                osc.type = 'square';
+            } else if (trackType === 'triangle') {
+                osc.type = 'triangle';
+            }
+
+            osc.frequency.value = freq;
+            gain.gain.value = 0.3;
+
+            osc.connect(gain);
+            osc.start();
+            gain.gain.exponentialRampToValueAtTime(0.01, this.audioCtx.currentTime + duration);
+            osc.stop(this.audioCtx.currentTime + duration);
         }
-
-        osc.frequency.value = freq;
-        gain.gain.value = 0.3;
-
-        osc.connect(gain);
-        gain.connect(this.audioCtx.destination);
-
-        osc.start();
-        gain.gain.exponentialRampToValueAtTime(0.01, this.audioCtx.currentTime + duration);
-        osc.stop(this.audioCtx.currentTime + duration);
     },
 
     getFrequency(note, octave) {
@@ -587,6 +736,60 @@ const SoundEditor = {
         const octave = Math.floor(pitch / 12) + 1;
         const noteIdx = pitch % 12;
         return { note: this.noteNames[noteIdx], octave };
+    },
+
+    // ドラム音生成（ピッチに応じたドラムタイプ）
+    playDrum(pitch, duration, audioCtx) {
+        const ctx = audioCtx || this.audioCtx;
+        if (!ctx) return;
+
+        // ノイズバッファ作成
+        const bufferSize = ctx.sampleRate * Math.max(duration, 0.3);
+        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+            data[i] = Math.random() * 2 - 1;
+        }
+
+        const noise = ctx.createBufferSource();
+        noise.buffer = buffer;
+
+        const gain = ctx.createGain();
+        const filter = ctx.createBiquadFilter();
+
+        // ピッチに応じてドラムタイプを決定
+        if (pitch < 20) {
+            // バスドラム（低音）: ローパス + 短いディケイ
+            filter.type = 'lowpass';
+            filter.frequency.value = 150;
+            gain.gain.setValueAtTime(0.5, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+            noise.connect(filter);
+            filter.connect(gain);
+        } else if (pitch < 40) {
+            // スネア（中音）: バンドパス + 中程度ディケイ
+            filter.type = 'bandpass';
+            filter.frequency.value = 1000 + (pitch - 20) * 50;
+            filter.Q.value = 1;
+            gain.gain.setValueAtTime(0.3, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+            noise.connect(filter);
+            filter.connect(gain);
+        } else {
+            // ハイハット（高音）: ハイパス + 短いディケイ
+            filter.type = 'highpass';
+            filter.frequency.value = 5000 + (pitch - 40) * 200;
+            gain.gain.setValueAtTime(0.2, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+            noise.connect(filter);
+            filter.connect(gain);
+        }
+
+        gain.connect(ctx.destination);
+        noise.start();
+        noise.stop(ctx.currentTime + duration);
+
+        return { noise, gain };
     },
 
     // ========== ノート入力 ==========
@@ -634,6 +837,20 @@ const SoundEditor = {
             if (this.currentStep > 0) this.currentStep--;
             this.render();
         }
+    },
+
+    clearCurrentTrack() {
+        const song = this.getCurrentSong();
+        const track = song.tracks[this.currentTrack];
+        if (track.notes.length === 0) return;
+
+        if (!confirm(`Tr${this.currentTrack + 1}の全ノートを削除しますか？`)) {
+            return;
+        }
+
+        track.notes = [];
+        this.currentStep = 0;
+        this.render();
     },
 
     // ========== ピアノロール ==========
@@ -1079,12 +1296,13 @@ const SoundEditor = {
         const track = song.tracks[this.currentTrack];
         const maxSteps = song.bars * 16;
 
-        // 背景
-        this.ctx.fillStyle = '#1a1a2e';
+        // 背景（ステージ設定の背景色を使用）
+        const bgColor = App.projectData?.stage?.bgColor || '#3CBCFC';
+        this.ctx.fillStyle = bgColor;
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-        // グリッド
-        this.ctx.strokeStyle = '#333';
+        // グリッド（白色）
+        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
         this.ctx.lineWidth = 1;
         const scrollY = this.scrollY || 0;
 
@@ -1130,9 +1348,8 @@ const SoundEditor = {
             }
         }
 
-        // ノート描画
-        const colors = ['#4ecdc4', '#ff6b6b', '#ffd93d', '#6bcb77'];
-        this.ctx.fillStyle = colors[this.currentTrack];
+        // ノート描画（白色）
+        this.ctx.fillStyle = '#fff';
 
         track.notes.forEach(note => {
             const x = note.step * this.cellSize - this.scrollX;
