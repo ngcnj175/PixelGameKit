@@ -1546,11 +1546,11 @@ body {
     color: #4a7c59;
 }
 
-.sound-ctrl-btn.rec {
+.sound-ctrl-btn.step-rec {
     color: #999;
 }
 
-.sound-ctrl-btn.rec.active {
+.sound-ctrl-btn.step-rec.active {
     color: #ff4444;
     animation: rec-blink 0.5s infinite;
 }

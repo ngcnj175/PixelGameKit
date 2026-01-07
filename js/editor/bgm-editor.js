@@ -18,6 +18,7 @@ const SoundEditor = {
     // 再生状態
     isPlaying: false,
     isPaused: false,
+    isStepRecording: false,
     playInterval: null,
 
     // ピアノロール
@@ -373,6 +374,20 @@ const SoundEditor = {
                 lastClickTime = now;
             });
         }
+
+        // STEP REC（ステップ録音ON/OFF）
+        const stepRecBtn = document.getElementById('sound-step-rec-btn');
+        if (stepRecBtn) {
+            stepRecBtn.addEventListener('click', () => {
+                this.isStepRecording = !this.isStepRecording;
+                stepRecBtn.classList.toggle('active', this.isStepRecording);
+                if (this.isStepRecording) {
+                    // ステップ録音ON: 現在位置をリセット
+                    this.currentStep = 0;
+                    this.render();
+                }
+            });
+        }
     },
 
     // ========== 鍵盤 ==========
@@ -514,8 +529,10 @@ const SoundEditor = {
             this.render();
         }, 200);
 
-        // ステップ入力: 鍵盤押下でノート入力
-        this.inputNote(note, octave);
+        // ステップ録音ON時のみノート入力
+        if (this.isStepRecording) {
+            this.inputNote(note, octave);
+        }
     },
 
     playNote(note, octave, duration = 0.2) {
@@ -627,6 +644,11 @@ const SoundEditor = {
         let originalStep = 0;
         let originalPitch = 0;
 
+        // 新規ノート入力用（ドラッグで長さ設定）
+        let isCreatingNote = false;
+        let creatingNote = null;
+        let createStartStep = 0;
+
         // 2本指スクロール用
         let isTwoFingerPan = false;
         let lastTouchX = 0;
@@ -683,13 +705,24 @@ const SoundEditor = {
                 const note = this.findNoteAt(step, pitch);
 
                 if (note) {
-                    // 長押し検出開始
+                    // 長押し検出開始（既存ノートの移動用）
                     originalStep = note.step;
                     originalPitch = note.pitch;
                     longPressTimer = setTimeout(() => {
                         isLongPress = true;
                         draggingNote = note;
                     }, 300);
+                } else {
+                    // 空セル: 新規ノート作成（ドラッグで長さ設定）
+                    const newNote = { step, pitch, length: 1 };
+                    const song = this.getCurrentSong();
+                    song.tracks[this.currentTrack].notes.push(newNote);
+                    isCreatingNote = true;
+                    creatingNote = newNote;
+                    createStartStep = step;
+                    const { note: noteName, octave } = this.pitchToNote(pitch);
+                    this.playNote(noteName, octave);
+                    this.render();
                 }
             }
         });
@@ -706,13 +739,24 @@ const SoundEditor = {
             const note = this.findNoteAt(step, pitch);
 
             if (note) {
-                // 長押し検出開始
+                // 長押し検出開始（既存ノートの移動用）
                 originalStep = note.step;
                 originalPitch = note.pitch;
                 longPressTimer = setTimeout(() => {
                     isLongPress = true;
                     draggingNote = note;
                 }, 300);
+            } else {
+                // 空セル: 新規ノート作成（ドラッグで長さ設定）
+                const newNote = { step, pitch, length: 1 };
+                const song = this.getCurrentSong();
+                song.tracks[this.currentTrack].notes.push(newNote);
+                isCreatingNote = true;
+                creatingNote = newNote;
+                createStartStep = step;
+                const { note: noteName, octave } = this.pitchToNote(pitch);
+                this.playNote(noteName, octave);
+                this.render();
             }
         });
 
@@ -736,11 +780,10 @@ const SoundEditor = {
             } else if (isDragging && e.touches.length === 1) {
                 e.preventDefault();
 
-                // 移動があったら長押しキャンセル
                 const pos = getPos(e);
                 const moved = Math.abs(pos.x - startX) > 5 || Math.abs(pos.y - startY) > 5;
 
-                if (moved && !isLongPress) {
+                if (moved && !isLongPress && !isCreatingNote) {
                     clearTimeout(longPressTimer);
                 }
 
@@ -749,6 +792,14 @@ const SoundEditor = {
                     const { step, pitch } = getStepPitch(pos);
                     draggingNote.step = Math.max(0, step);
                     draggingNote.pitch = pitch;
+                    this.render();
+                }
+
+                // 新規ノート作成中ならドラッグで長さ更新
+                if (isCreatingNote && creatingNote) {
+                    const { step } = getStepPitch(pos);
+                    const length = Math.max(1, step - createStartStep + 1);
+                    creatingNote.length = length;
                     this.render();
                 }
             }
@@ -759,7 +810,7 @@ const SoundEditor = {
                 const pos = getPos(e);
                 const moved = Math.abs(pos.x - startX) > 5 || Math.abs(pos.y - startY) > 5;
 
-                if (moved && !isLongPress) {
+                if (moved && !isLongPress && !isCreatingNote) {
                     clearTimeout(longPressTimer);
                 }
 
@@ -770,6 +821,14 @@ const SoundEditor = {
                     draggingNote.pitch = pitch;
                     this.render();
                 }
+
+                // 新規ノート作成中ならドラッグで長さ更新
+                if (isCreatingNote && creatingNote) {
+                    const { step } = getStepPitch(pos);
+                    const length = Math.max(1, step - createStartStep + 1);
+                    creatingNote.length = length;
+                    this.render();
+                }
             }
         });
 
@@ -778,33 +837,57 @@ const SoundEditor = {
             if (e.touches.length === 0) {
                 isTwoFingerPan = false;
 
-                if (isDragging && !isLongPress) {
-                    // タップ処理
+                // ノート作成中でない場合のみタップ処理（既存ノート削除）
+                if (isDragging && !isLongPress && !isCreatingNote) {
                     clearTimeout(longPressTimer);
                     const pos = getPosFromEvent(e);
                     const { step, pitch } = getStepPitch(pos);
-                    this.handleTap(step, pitch);
+                    // 既存ノートがあれば削除
+                    const existingNote = this.findNoteAt(step, pitch);
+                    if (existingNote) {
+                        const song = this.getCurrentSong();
+                        const track = song.tracks[this.currentTrack];
+                        const idx = track.notes.indexOf(existingNote);
+                        if (idx >= 0) {
+                            track.notes.splice(idx, 1);
+                            this.render();
+                        }
+                    }
                 }
 
                 isDragging = false;
                 isLongPress = false;
                 draggingNote = null;
+                isCreatingNote = false;
+                creatingNote = null;
                 clearTimeout(longPressTimer);
             }
         });
 
         this.canvas.addEventListener('mouseup', (e) => {
-            if (isDragging && !isLongPress) {
-                // タップ処理
+            // ノート作成中でない場合のみタップ処理（既存ノート削除）
+            if (isDragging && !isLongPress && !isCreatingNote) {
                 clearTimeout(longPressTimer);
                 const pos = getPos(e);
                 const { step, pitch } = getStepPitch(pos);
-                this.handleTap(step, pitch);
+                // 既存ノートがあれば削除
+                const existingNote = this.findNoteAt(step, pitch);
+                if (existingNote) {
+                    const song = this.getCurrentSong();
+                    const track = song.tracks[this.currentTrack];
+                    const idx = track.notes.indexOf(existingNote);
+                    if (idx >= 0) {
+                        track.notes.splice(idx, 1);
+                        this.render();
+                    }
+                }
             }
 
             isDragging = false;
             isLongPress = false;
             draggingNote = null;
+            isCreatingNote = false;
+            creatingNote = null;
             clearTimeout(longPressTimer);
         });
 
