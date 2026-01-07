@@ -24,7 +24,7 @@ const SoundEditor = {
     // ピアノロール
     cellSize: 20,
     scrollX: 0, // 横スクロール位置
-    viewOctave: 3, // 表示オクターブ開始位置
+    scrollY: 600, // 縦スクロール位置（初期は中央付近、60音×20px=1200px、中央600px）
     highlightPitch: -1, // ハイライト中の音階
 
     // 編集ツール
@@ -677,7 +677,11 @@ const SoundEditor = {
         const getStepPitch = (pos) => {
             const scrollY = this.scrollY || 0;
             const step = Math.floor((pos.x + this.scrollX) / this.cellSize);
-            const pitch = 15 - Math.floor((pos.y + scrollY) / this.cellSize) + this.viewOctave * 12;
+            // C1-B5（pitch 12-71）の60音範囲
+            // scrollYで縦スクロール、上が高音（B5=71）、下が低音（C1=12）
+            const maxPitch = 71; // B5
+            const row = Math.floor((pos.y + scrollY) / this.cellSize);
+            const pitch = Math.max(12, Math.min(71, maxPitch - row));
             return { step, pitch };
         };
 
@@ -770,9 +774,9 @@ const SoundEditor = {
                 const deltaY = lastTouchY - currentY;
 
                 this.scrollX = Math.max(0, this.scrollX + deltaX);
-                if (!this.scrollY) this.scrollY = 0;
-                // 5オクターブ（60音 × 20px = 1200px）をカバー
-                this.scrollY = Math.max(-600, Math.min(600, this.scrollY + deltaY));
+                // 60音（pitch 12-71）× 20px = 1200px の縦スクロール範囲
+                const maxScrollY = 60 * this.cellSize - this.canvas.height;
+                this.scrollY = Math.max(0, Math.min(maxScrollY, this.scrollY + deltaY));
 
                 lastTouchX = currentX;
                 lastTouchY = currentY;
@@ -1068,8 +1072,9 @@ const SoundEditor = {
 
         // ハイライト行
         const scrollYVal = this.scrollY || 0;
-        if (this.highlightPitch >= 0) {
-            const y = (15 - (this.highlightPitch - this.viewOctave * 12)) * this.cellSize - scrollYVal;
+        const maxPitch = 71; // B5
+        if (this.highlightPitch >= 12 && this.highlightPitch <= 71) {
+            const y = (maxPitch - this.highlightPitch) * this.cellSize - scrollYVal;
             if (y + this.cellSize >= 0 && y < this.canvas.height) {
                 this.ctx.fillStyle = 'rgba(74, 124, 89, 0.3)';
                 this.ctx.fillRect(0, y, this.canvas.width, this.cellSize);
@@ -1083,7 +1088,7 @@ const SoundEditor = {
 
         track.notes.forEach(note => {
             const x = note.step * this.cellSize - this.scrollX;
-            const y = (15 - (note.pitch - this.viewOctave * 12)) * this.cellSize - scrollY;
+            const y = (maxPitch - note.pitch) * this.cellSize - scrollY;
             const w = note.length * this.cellSize - 2;
 
             if (x + w >= 0 && x <= this.canvas.width && y + this.cellSize >= 0 && y < this.canvas.height) {
