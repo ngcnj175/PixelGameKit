@@ -1373,6 +1373,9 @@ body {
 
 #song-config-panel .config-body {
     padding: 12px;
+    max-height: 50vh;
+    overflow-y: auto;
+    padding-bottom: calc(16px + var(--safe-area-bottom));
 }
 
 #song-config-panel .config-row {
