@@ -30,6 +30,11 @@ const GameEngine = {
     // タイルアニメーション用フレームカウンター
     tileAnimationFrame: 0,
 
+    // BGM再生
+    bgmAudioCtx: null,
+    bgmPlayInterval: null,
+    currentBgmType: null, // 'stage', 'invincible', 'clear', 'gameover'
+
     init() {
         this.canvas = document.getElementById('game-canvas');
         if (!this.canvas) return;
@@ -54,6 +59,7 @@ const GameEngine = {
             cancelAnimationFrame(this.animationId);
             this.animationId = null;
         }
+        this.stopBgm();
     },
 
     // 一時停止トグル（Startボタン用）
@@ -283,6 +289,7 @@ const GameEngine = {
             this.wipeTimer++;
             if (this.wipeTimer >= 30) {
                 this.titleState = 'playing';
+                this.playBgm('stage'); // ステージBGM開始
             }
             this.renderWipe();
             this.animationId = requestAnimationFrame(() => this.gameLoop());
@@ -346,6 +353,7 @@ const GameEngine = {
                 this.titleState = 'gameover';
                 this.gameOverTimer = 0;
                 this.gameOverPending = false;
+                this.playBgm('gameover'); // ゲームオーバーBGM
             }
         }
 
@@ -883,5 +891,105 @@ const GameEngine = {
                 }
             }
         }
+    },
+
+    // ========== BGM再生 ==========
+    playBgm(type) {
+        // 同じBGMが再生中なら何もしない
+        if (this.currentBgmType === type && this.bgmPlayInterval) return;
+
+        this.stopBgm();
+
+        const stage = App.projectData.stage;
+        const bgm = stage?.bgm || {};
+        const songIdx = parseInt(bgm[type], 10);
+
+        if (isNaN(songIdx) || songIdx < 0) return;
+
+        const songs = App.projectData.songs || [];
+        const song = songs[songIdx];
+        if (!song) return;
+
+        // Web Audio初期化
+        if (!this.bgmAudioCtx) {
+            this.bgmAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+        const trackTypes = ['square', 'square', 'triangle', 'noise'];
+
+        const getFrequency = (pitch) => {
+            const octave = Math.floor(pitch / 12) + 1;
+            const noteIdx = pitch % 12;
+            const semitone = (octave - 4) * 12 + noteIdx - 9;
+            return 440 * Math.pow(2, semitone / 12);
+        };
+
+        const playNote = (freq, waveType, duration) => {
+            const osc = this.bgmAudioCtx.createOscillator();
+            const gain = this.bgmAudioCtx.createGain();
+
+            if (waveType === 'noise') {
+                // ノイズは特殊処理
+                const bufferSize = this.bgmAudioCtx.sampleRate * duration;
+                const buffer = this.bgmAudioCtx.createBuffer(1, bufferSize, this.bgmAudioCtx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+                const noise = this.bgmAudioCtx.createBufferSource();
+                noise.buffer = buffer;
+                noise.connect(gain);
+                gain.connect(this.bgmAudioCtx.destination);
+                gain.gain.setValueAtTime(0.1, this.bgmAudioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.bgmAudioCtx.currentTime + duration);
+                noise.start();
+                noise.stop(this.bgmAudioCtx.currentTime + duration);
+                return;
+            }
+
+            osc.type = waveType;
+            osc.frequency.setValueAtTime(freq, this.bgmAudioCtx.currentTime);
+
+            gain.gain.setValueAtTime(0.15, this.bgmAudioCtx.currentTime);
+            osc.connect(gain);
+            gain.connect(this.bgmAudioCtx.destination);
+
+            osc.start();
+            gain.gain.exponentialRampToValueAtTime(0.01, this.bgmAudioCtx.currentTime + duration);
+            osc.stop(this.bgmAudioCtx.currentTime + duration);
+        };
+
+        // BGM再生ループ
+        this.currentBgmType = type;
+        const stepDuration = 60 / song.bpm / 4; // 16分音符
+        let step = 0;
+        const maxSteps = song.bars * 16;
+
+        this.bgmPlayInterval = setInterval(() => {
+            if (this.isPaused) return;
+
+            song.tracks.forEach((track, trackIdx) => {
+                track.notes.forEach(note => {
+                    if (note.step === step) {
+                        const freq = getFrequency(note.pitch);
+                        playNote(freq, trackTypes[trackIdx], stepDuration * note.length);
+                    }
+                });
+            });
+
+            step++;
+            if (step >= maxSteps) {
+                step = 0; // ループ
+            }
+        }, stepDuration * 1000);
+    },
+
+    stopBgm() {
+        if (this.bgmPlayInterval) {
+            clearInterval(this.bgmPlayInterval);
+            this.bgmPlayInterval = null;
+        }
+        this.currentBgmType = null;
     }
 };

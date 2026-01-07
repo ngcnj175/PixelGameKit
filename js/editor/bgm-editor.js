@@ -198,8 +198,14 @@ const SoundEditor = {
                 song.name = nameInput.value || `Song${this._configSongIdx + 1}`;
             }
             this.closeSongConfig();
+            this.initSongPalette(); // ソングパレット更新（名前反映）
             this.updateBpmBarDisplay();
             this.render();
+
+            // ステージ設定のBGM選択肢も更新
+            if (typeof StageEditor !== 'undefined' && StageEditor.updateBgmSelects) {
+                StageEditor.updateBgmSelects();
+            }
         });
 
         // 削除

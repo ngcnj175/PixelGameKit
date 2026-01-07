@@ -1456,12 +1456,44 @@ const StageEditor = {
         if (timeMin) timeMin.value = Math.floor(totalSec / 60);
         if (timeSec) timeSec.value = totalSec % 60;
 
+        // BGM選択肢を動的生成
+        this.updateBgmSelects();
+
         // BGM
         const bgm = stage.bgm || {};
         if (bgmStage) bgmStage.value = bgm.stage || '';
         if (bgmInvincible) bgmInvincible.value = bgm.invincible || '';
         if (bgmClear) bgmClear.value = bgm.clear || '';
         if (bgmGameover) bgmGameover.value = bgm.gameover || '';
+    },
+
+    updateBgmSelects() {
+        const selects = [
+            document.getElementById('bgm-stage'),
+            document.getElementById('bgm-invincible'),
+            document.getElementById('bgm-clear'),
+            document.getElementById('bgm-gameover')
+        ];
+
+        const songs = App.projectData.songs || [];
+
+        selects.forEach(select => {
+            if (!select) return;
+            const currentValue = select.value;
+
+            // 選択肢をクリアして再構築
+            select.innerHTML = '<option value="">なし</option>';
+
+            songs.forEach((song, idx) => {
+                const option = document.createElement('option');
+                option.value = idx.toString();
+                option.textContent = song.name || `SONG ${idx + 1}`;
+                select.appendChild(option);
+            });
+
+            // 元の選択を復元
+            select.value = currentValue;
+        });
     },
 
     resizeStage(newWidth, newHeight) {
