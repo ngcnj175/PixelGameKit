@@ -88,6 +88,9 @@ const SoundEditor = {
     },
 
     // ========== ソングパレット ==========
+    // ダブルタップ検出用状態
+    songClickState: { index: null, count: 0, timer: null },
+
     initSongPalette() {
         const container = document.getElementById('song-gallery');
         if (!container) return;
@@ -100,41 +103,36 @@ const SoundEditor = {
             const item = document.createElement('div');
             item.className = 'song-item' + (idx === this.currentSongIdx ? ' active' : '');
 
-            // ダブルタップ/ダブルクリック検出
-            let lastTapTime = 0;
-            let touchHandled = false;
+            // タップ/クリック処理（タイルパレット方式）
+            const handleTap = () => {
+                const state = this.songClickState;
 
-            // タッチイベント（モバイル）
-            item.addEventListener('touchend', (e) => {
-                e.preventDefault();
-                touchHandled = true;
-                const now = Date.now();
-                if (now - lastTapTime < 350) {
-                    // ダブルタップ: 設定パネル表示
+                // 同じソングへの2回目のクリック（ダブルタップ）
+                if (state.index === idx && state.count === 1) {
+                    clearTimeout(state.timer);
+                    state.count = 0;
+                    state.index = null;
+
+                    // ダブルタップ：設定パネル表示
                     this.openSongConfig(idx);
                 } else {
-                    // シングルタップ: 選択
-                    this.selectSong(idx);
-                }
-                lastTapTime = now;
-            });
+                    // 最初のクリック：即座に選択
+                    clearTimeout(state.timer);
+                    state.index = idx;
+                    state.count = 1;
 
-            // クリックイベント（PC）
-            item.addEventListener('click', () => {
-                if (touchHandled) {
-                    touchHandled = false;
-                    return; // タッチ処理済みならスキップ
-                }
-                const now = Date.now();
-                if (now - lastTapTime < 350) {
-                    // ダブルクリック: 設定パネル表示
-                    this.openSongConfig(idx);
-                } else {
-                    // シングルクリック: 選択
+                    // 即座に選択を反映
                     this.selectSong(idx);
+
+                    // ダブルタップ用タイマー
+                    state.timer = setTimeout(() => {
+                        state.count = 0;
+                        state.index = null;
+                    }, 300);
                 }
-                lastTapTime = now;
-            });
+            };
+
+            item.addEventListener('click', handleTap);
 
             container.appendChild(item);
         });
