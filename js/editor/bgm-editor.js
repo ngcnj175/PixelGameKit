@@ -351,14 +351,28 @@ const SoundEditor = {
             this.inputTie();
         });
 
-        // PLAY/STOP
-        document.getElementById('sound-play-btn')?.addEventListener('click', () => {
-            if (this.isPlaying) {
-                this.stop();
-            } else {
-                this.play();
-            }
-        });
+        // PLAY/PAUSE/STOP（シングル=一時停止/再生、ダブル=停止）
+        const playBtn = document.getElementById('sound-play-btn');
+        if (playBtn) {
+            let lastClickTime = 0;
+            playBtn.addEventListener('click', () => {
+                const now = Date.now();
+                if (now - lastClickTime < 300) {
+                    // ダブルクリック: 停止（位置リセット）
+                    this.stop();
+                } else if (this.isPlaying) {
+                    // 再生中シングルクリック: 一時停止
+                    this.pause();
+                } else if (this.isPaused) {
+                    // 一時停止中シングルクリック: 再開
+                    this.resume();
+                } else {
+                    // 停止中シングルクリック: 再生
+                    this.play();
+                }
+                lastClickTime = now;
+            });
+        }
 
         // REC
         document.getElementById('sound-rec-btn')?.addEventListener('click', (e) => {
@@ -769,17 +783,15 @@ const SoundEditor = {
         if (this.isPlaying) return;
         this.isPlaying = true;
 
-        const playBtn = document.getElementById('sound-play-btn');
-        if (playBtn) {
-            const span = playBtn.querySelector('span');
-            if (span) span.textContent = 'STOP';
-        }
+        this.updatePlayButton('play');
 
         const song = this.getCurrentSong();
         const stepDuration = 60 / song.bpm / 4; // 16分音符
-        let step = 0;
+        const startStep = this.isPaused ? this.currentStep : 0;
+        let step = startStep;
         const maxSteps = song.bars * 16;
 
+        this.isPaused = false;
         this.playInterval = setInterval(() => {
             // 全トラック再生
             song.tracks.forEach((track, trackIdx) => {
@@ -804,16 +816,45 @@ const SoundEditor = {
         }, stepDuration * 1000);
     },
 
-    stop() {
+    pause() {
         this.isPlaying = false;
+        this.isPaused = true;
         if (this.playInterval) {
             clearInterval(this.playInterval);
             this.playInterval = null;
         }
+        this.updatePlayButton('pause');
+    },
+
+    resume() {
+        this.play();
+    },
+
+    stop() {
+        this.isPlaying = false;
+        this.isPaused = false;
+        this.currentStep = 0;
+        if (this.playInterval) {
+            clearInterval(this.playInterval);
+            this.playInterval = null;
+        }
+        this.updatePlayButton('stop');
+        this.render();
+    },
+
+    updatePlayButton(state) {
         const playBtn = document.getElementById('sound-play-btn');
-        if (playBtn) {
-            const span = playBtn.querySelector('span');
-            if (span) span.textContent = 'PLAY';
+        if (!playBtn) return;
+
+        const svg = playBtn.querySelector('svg');
+        if (!svg) return;
+
+        if (state === 'play') {
+            // 停止アイコン（■）
+            svg.innerHTML = '<rect x="6" y="6" width="12" height="12" />';
+        } else {
+            // 再生アイコン（▶）
+            svg.innerHTML = '<path d="M8 5v14l11-7z" />';
         }
     },
 

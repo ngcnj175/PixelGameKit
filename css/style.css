@@ -1547,10 +1547,11 @@ body {
 }
 
 .sound-ctrl-btn.rec {
-    color: #c44;
+    color: #999;
 }
 
 .sound-ctrl-btn.rec.active {
+    color: #ff4444;
     animation: rec-blink 0.5s infinite;
 }
 
