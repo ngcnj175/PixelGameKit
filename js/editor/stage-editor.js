@@ -920,10 +920,19 @@ const StageEditor = {
         this.canvas.addEventListener('mouseup', handleEnd);
         this.canvas.addEventListener('mouseleave', handleEnd);
 
+        // 2本指パン誤入力防止用
+        let pendingDrawTimer = null;
+        let pendingDrawData = null;
+
         // タッチイベント（1本指：タイル操作、2本指：パン）
         this.canvas.addEventListener('touchstart', (e) => {
             if (e.touches.length === 2) {
-                // 2本指：パン開始
+                // 2本指：パン開始 - 保留中の入力があればキャンセル
+                if (pendingDrawTimer) {
+                    clearTimeout(pendingDrawTimer);
+                    pendingDrawTimer = null;
+                    pendingDrawData = null;
+                }
                 isPanning = true;
                 isDrawing = false;
                 const touch1 = e.touches[0];
@@ -934,8 +943,16 @@ const StageEditor = {
                 lastScrollY = this.canvasScrollY;
                 e.preventDefault();
             } else if (e.touches.length === 1 && !isPanning) {
-                // 1本指：タイル操作
-                handleStart(e.touches[0]);
+                // 1本指：遅延してタイル操作（2本指パン誤入力防止）
+                e.preventDefault();
+                pendingDrawData = e.touches[0];
+                pendingDrawTimer = setTimeout(() => {
+                    if (pendingDrawData && !isPanning) {
+                        handleStart(pendingDrawData);
+                    }
+                    pendingDrawTimer = null;
+                    pendingDrawData = null;
+                }, 50);
             }
         }, { passive: false });
 

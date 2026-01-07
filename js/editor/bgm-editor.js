@@ -677,21 +677,43 @@ const SoundEditor = {
         const getStepPitch = (pos) => {
             const scrollY = this.scrollY || 0;
             const step = Math.floor((pos.x + this.scrollX) / this.cellSize);
-            // C1-B5（pitch 12-71）の60音範囲
-            // scrollYで縦スクロール、上が高音（B5=71）、下が低音（C1=12）
-            const maxPitch = 71; // B5
+            // C1-B5（pitch 0-59）の60音範囲（noteToPitchと一致）
+            // scrollYで縦スクロール、上が高音（B5=59）、下が低音（C1=0）
+            const maxPitch = 59; // B5
             const row = Math.floor((pos.y + scrollY) / this.cellSize);
-            const pitch = Math.max(12, Math.min(71, maxPitch - row));
+            const pitch = Math.max(0, Math.min(59, maxPitch - row));
             return { step, pitch };
         };
+
+        // 2本指パン誤入力防止用
+        let pendingInputTimer = null;
+        let pendingInputData = null;
 
         // タッチスタート
         this.canvas.addEventListener('touchstart', (e) => {
             if (e.touches.length === 2) {
-                // 2本指パン開始
+                // 2本指パン開始 - 保留中の入力があればキャンセル
+                if (pendingInputTimer) {
+                    clearTimeout(pendingInputTimer);
+                    pendingInputTimer = null;
+                    pendingInputData = null;
+                }
+                // 作成中のノートがあれば削除
+                if (isCreatingNote && creatingNote) {
+                    const song = this.getCurrentSong();
+                    const track = song.tracks[this.currentTrack];
+                    const idx = track.notes.indexOf(creatingNote);
+                    if (idx >= 0) {
+                        track.notes.splice(idx, 1);
+                        this.render();
+                    }
+                    isCreatingNote = false;
+                    creatingNote = null;
+                }
                 isTwoFingerPan = true;
                 lastTouchX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
                 lastTouchY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+                isDragging = false;
                 e.preventDefault();
                 return;
             }
@@ -717,16 +739,23 @@ const SoundEditor = {
                         draggingNote = note;
                     }, 300);
                 } else {
-                    // 空セル: 新規ノート作成（ドラッグで長さ設定）
-                    const newNote = { step, pitch, length: 1 };
-                    const song = this.getCurrentSong();
-                    song.tracks[this.currentTrack].notes.push(newNote);
-                    isCreatingNote = true;
-                    creatingNote = newNote;
-                    createStartStep = step;
-                    const { note: noteName, octave } = this.pitchToNote(pitch);
-                    this.playNote(noteName, octave);
-                    this.render();
+                    // 空セル: 遅延してノート作成（2本指パン誤入力防止）
+                    pendingInputData = { step, pitch, pos };
+                    pendingInputTimer = setTimeout(() => {
+                        if (pendingInputData && !isTwoFingerPan) {
+                            const newNote = { step: pendingInputData.step, pitch: pendingInputData.pitch, length: 1 };
+                            const song = this.getCurrentSong();
+                            song.tracks[this.currentTrack].notes.push(newNote);
+                            isCreatingNote = true;
+                            creatingNote = newNote;
+                            createStartStep = pendingInputData.step;
+                            const { note: noteName, octave } = this.pitchToNote(pendingInputData.pitch);
+                            this.playNote(noteName, octave);
+                            this.render();
+                        }
+                        pendingInputTimer = null;
+                        pendingInputData = null;
+                    }, 50);
                 }
             }
         });
@@ -1072,8 +1101,8 @@ const SoundEditor = {
 
         // ハイライト行
         const scrollYVal = this.scrollY || 0;
-        const maxPitch = 71; // B5
-        if (this.highlightPitch >= 12 && this.highlightPitch <= 71) {
+        const maxPitch = 59; // B5（noteToPitchと一致）
+        if (this.highlightPitch >= 0 && this.highlightPitch <= 59) {
             const y = (maxPitch - this.highlightPitch) * this.cellSize - scrollYVal;
             if (y + this.cellSize >= 0 && y < this.canvas.height) {
                 this.ctx.fillStyle = 'rgba(74, 124, 89, 0.3)';
