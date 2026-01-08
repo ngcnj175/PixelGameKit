@@ -360,6 +360,15 @@ const StageEditor = {
             html += this.renderSliderWithCheck('JUMP POWER', 'jumpPower', config.jumpPower ?? 10, 1, 20, 'W JUMP', 'wJump', config.wJump);
             html += this.renderSlider('SHOT MAX RANGE', 'shotMaxRange', config.shotMaxRange ?? 0, 0, 16);
 
+            // プレイヤー専用SE設定
+            if (type === 'player') {
+                html += '<div class="param-section-label">SE:</div>';
+                html += this.renderSeSelect('JUMP', 'seJump', config.seJump ?? 0);
+                html += this.renderSeSelect('ATTACK', 'seAttack', config.seAttack ?? 1);
+                html += this.renderSeSelect('DAMAGE', 'seDamage', config.seDamage ?? 2);
+                html += this.renderSeSelect('ITEM GET', 'seItemGet', config.seItemGet ?? 3);
+            }
+
             if (type === 'enemy') {
                 html += `
                     <div class="param-row">
@@ -419,6 +428,38 @@ const StageEditor = {
                     <input type="checkbox" data-key="${checkKey}" ${checkValue ? 'checked' : ''}>
                     ${checkLabel}
                 </label>
+            </div>
+        `;
+    },
+
+    renderSeSelect(label, key, selectedValue) {
+        // sounds配列がない場合はデフォルトプリセットを使用
+        let sounds = App.projectData?.sounds;
+        if (!sounds || sounds.length === 0) {
+            sounds = [
+                { id: 0, name: 'JUMP', type: 'jump' },
+                { id: 1, name: 'ATTACK', type: 'attack' },
+                { id: 2, name: 'DAMAGE', type: 'damage' },
+                { id: 3, name: 'ITEM GET', type: 'itemGet' }
+            ];
+            // プロジェクトデータに追加
+            if (App.projectData) {
+                App.projectData.sounds = sounds;
+            }
+        }
+
+        let options = '<option value="-1">OFF</option>';
+        sounds.forEach((se, idx) => {
+            const selected = selectedValue === idx ? 'selected' : '';
+            options += `<option value="${idx}" ${selected}>${se.name}</option>`;
+        });
+        return `
+            <div class="param-row se-row">
+                <span class="param-label">${label}:</span>
+                <select class="param-select se-select" data-key="${key}">
+                    ${options}
+                </select>
+                <button class="se-preview-btn" data-key="${key}">▶</button>
             </div>
         `;
     },
@@ -496,7 +537,27 @@ const StageEditor = {
             select.addEventListener('change', () => {
                 const key = select.dataset.key;
                 if (key && this.editingTemplate?.config) {
-                    this.editingTemplate.config[key] = select.value;
+                    // SE関連は数値で保存
+                    if (key.startsWith('se')) {
+                        this.editingTemplate.config[key] = parseInt(select.value);
+                    } else {
+                        this.editingTemplate.config[key] = select.value;
+                    }
+                }
+            });
+        });
+
+        // SEプレビューボタン
+        document.querySelectorAll('.se-preview-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const key = btn.dataset.key;
+                const select = document.querySelector(`.se-select[data-key="${key}"]`);
+                if (select) {
+                    const seIndex = parseInt(select.value);
+                    if (seIndex >= 0) {
+                        this.playSePreview(seIndex);
+                    }
                 }
             });
         });
@@ -1760,5 +1821,93 @@ const StageEditor = {
 
         modal.querySelector('#cp-cancel').addEventListener('click', close);
         overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+    },
+
+    // SEプレビュー再生
+    playSePreview(seIndex) {
+        const sounds = App.projectData?.sounds || [];
+        if (seIndex < 0 || seIndex >= sounds.length) return;
+
+        const se = sounds[seIndex];
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+        switch (se.type) {
+            case 'jump':
+                this.playSe_Jump(ctx);
+                break;
+            case 'attack':
+                this.playSe_Attack(ctx);
+                break;
+            case 'damage':
+                this.playSe_Damage(ctx);
+                break;
+            case 'itemGet':
+                this.playSe_ItemGet(ctx);
+                break;
+        }
+    },
+
+    // SE: ジャンプ（上昇する音）
+    playSe_Jump(ctx) {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(200, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(600, ctx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.15);
+    },
+
+    // SE: 攻撃（短い衝撃音）
+    playSe_Attack(ctx) {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(400, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.4, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.1);
+    },
+
+    // SE: ダメージ（下降する音）
+    playSe_Damage(ctx) {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(400, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.3);
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.3);
+    },
+
+    // SE: アイテム取得（キラキラ音）
+    playSe_ItemGet(ctx) {
+        const playNote = (freq, startTime, duration) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.value = freq;
+            gain.gain.setValueAtTime(0.3, startTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(startTime);
+            osc.stop(startTime + duration);
+        };
+        playNote(523, ctx.currentTime, 0.1);       // C5
+        playNote(659, ctx.currentTime + 0.08, 0.1); // E5
+        playNote(784, ctx.currentTime + 0.16, 0.15); // G5
     }
 };

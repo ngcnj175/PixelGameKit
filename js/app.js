@@ -55,7 +55,14 @@ const App = {
                     triangle: [],
                     noise: []
                 }
-            }
+            },
+            // プリセットSE
+            sounds: [
+                { id: 0, name: 'JUMP', type: 'jump' },
+                { id: 1, name: 'ATTACK', type: 'attack' },
+                { id: 2, name: 'DAMAGE', type: 'damage' },
+                { id: 3, name: 'ITEM GET', type: 'itemGet' }
+            ]
         };
     },
 

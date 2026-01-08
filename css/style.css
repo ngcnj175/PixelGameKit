@@ -905,6 +905,42 @@ body {
     color: #000000;
 }
 
+/* SE選択行 */
+.param-section-label {
+    font-size: 12px;
+    font-weight: bold;
+    color: var(--text-dark);
+    margin: 12px 0 6px 0;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.se-row {
+    gap: 4px;
+}
+
+.se-select {
+    flex: 1;
+    width: auto;
+}
+
+.se-preview-btn {
+    width: 32px;
+    height: 28px;
+    padding: 0;
+    font-size: 14px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background: var(--bg-screen);
+    color: var(--text-dark);
+    cursor: pointer;
+}
+
+.se-preview-btn:active {
+    background: var(--color-dark);
+    color: var(--color-light);
+}
+
 /* 閉じるボタン */
 .config-actions {
     justify-content: center;
