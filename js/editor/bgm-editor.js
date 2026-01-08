@@ -567,14 +567,23 @@ const SoundEditor = {
         // 初期カーソル
         keyboardArea.style.cursor = 'grab';
 
-        // 初期スクロール位置（C4が左端に表示: C1-C4は白鍵21個分、21*40=840px）
-        setTimeout(() => {
-            keyboardArea.scrollLeft = 840;
-            this.updateScrollbar();
-        }, 100);
-
         // rangeスライダー連動
         this.initKeyboardScrollbar();
+
+        // 初期スクロール位置（C4が左端に表示: C1-C4は白鍵21個分、21*40=840px）
+        setTimeout(() => {
+            const targetScroll = 840;
+            keyboardArea.scrollLeft = targetScroll;
+
+            // スクロールバーも同期
+            const scrollbar = document.getElementById('keyboard-scrollbar');
+            if (scrollbar) {
+                const maxScroll = keyboardArea.scrollWidth - keyboardArea.clientWidth;
+                if (maxScroll > 0) {
+                    scrollbar.value = (targetScroll / maxScroll) * 100;
+                }
+            }
+        }, 200);
     },
 
     initKeyboardScrollbar() {
@@ -835,9 +844,15 @@ const SoundEditor = {
     inputTie() {
         const song = this.getCurrentSong();
         const track = song.tracks[this.currentTrack];
+        const maxSteps = song.bars * 16;
+
         if (track.notes.length > 0) {
             const lastNote = track.notes[track.notes.length - 1];
             lastNote.length++;
+            // ノートを伸ばした分、currentStepも進める
+            if (this.currentStep < maxSteps) {
+                this.currentStep++;
+            }
             this.render();
         }
     },
@@ -1396,10 +1411,10 @@ const SoundEditor = {
             }
         });
 
-        // 現在位置（再生中のみ表示）
+        // 現在位置（再生中のみ表示、ビビッドグリーン）
         if (this.isPlaying) {
             const x = this.currentStep * this.cellSize - this.scrollX;
-            this.ctx.strokeStyle = '#fff';
+            this.ctx.strokeStyle = '#00FF00';
             this.ctx.lineWidth = 2;
             this.ctx.beginPath();
             this.ctx.moveTo(x, 0);
