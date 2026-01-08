@@ -1345,6 +1345,13 @@ const SoundEditor = {
             }
         }
 
+        // 指定小節数外の範囲をグレーアウト
+        const maxX = maxSteps * this.cellSize - this.scrollX;
+        if (maxX < this.canvas.width) {
+            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            this.ctx.fillRect(maxX, 0, this.canvas.width - maxX, this.canvas.height);
+        }
+
         // ハイライト行
         const maxPitch = 59; // B5（noteToPitchと一致）
         if (this.highlightPitch >= 0 && this.highlightPitch <= 59) {
