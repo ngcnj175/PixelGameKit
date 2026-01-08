@@ -636,6 +636,8 @@ const GameEngine = {
                     enemy.takeDamage(fromRight);
                     enemy.lives = 0;
                     enemy.die(fromRight);
+                    // SE再生
+                    this.player.playSE('enemyDefeat');
                     return;
                 }
 
@@ -649,6 +651,8 @@ const GameEngine = {
                     const fromRight = this.player.x > enemy.x;
                     enemy.takeDamage(fromRight);
                     this.player.vy = -0.25;
+                    // SE再生（敵がダメージを受けた時）
+                    this.player.playSE('enemyDefeat');
                 } else if (!this.player.invincible) {
                     const fromRight = enemy.x > this.player.x;
                     this.player.takeDamage(fromRight);

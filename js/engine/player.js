@@ -56,6 +56,34 @@ class Player {
         this.wJumpEnabled = template?.config?.wJump || false;
         this.canDoubleJump = false;
         this.hasDoubleJumped = false;
+
+        // SE設定（-1はOFF）
+        this.seJump = template?.config?.seJump ?? 0;
+        this.seAttack = template?.config?.seAttack ?? 1;
+        this.seDamage = template?.config?.seDamage ?? 2;
+        this.seItemGet = template?.config?.seItemGet ?? 3;
+        this.seEnemyDefeat = template?.config?.seEnemyDefeat ?? 4;
+    }
+
+    // SE再生ヘルパー（設定がOFFの場合は鳴らさない）
+    playSE(seKey) {
+        if (typeof NesAudio === 'undefined') return;
+
+        const sounds = App.projectData?.sounds || [];
+        let seIndex = -1;
+
+        switch (seKey) {
+            case 'jump': seIndex = this.seJump; break;
+            case 'attack': seIndex = this.seAttack; break;
+            case 'damage': seIndex = this.seDamage; break;
+            case 'itemGet': seIndex = this.seItemGet; break;
+            case 'enemyDefeat': seIndex = this.seEnemyDefeat; break;
+        }
+
+        if (seIndex >= 0 && seIndex < sounds.length) {
+            const se = sounds[seIndex];
+            NesAudio.playSE(se.type);
+        }
     }
 
     update(engine) {
@@ -197,11 +225,15 @@ class Player {
                 this.onGround = false;
                 this.hasDoubleJumped = false;
                 this.canDoubleJump = this.wJumpEnabled;
+                // SE再生
+                this.playSE('jump');
             } else if (this.wJumpEnabled && this.canDoubleJump && !this.hasDoubleJumped && !this._jumpKeyWasPressed) {
                 // 2段ジャンプ
                 this.vy = this.jumpPower;
                 this.hasDoubleJumped = true;
                 this.canDoubleJump = false;
+                // SE再生
+                this.playSE('jump');
             }
         }
         this._jumpKeyWasPressed = GameController.isPressed('a');
@@ -217,6 +249,9 @@ class Player {
         this.attackTimer = 15;
         this.attackCooldown = 30;
         this.animFrame = 0;
+
+        // SE再生
+        this.playSE('attack');
 
         // SHOTプロジェクタイル発射
         const shotSprite = this.template?.sprites?.shot?.frames?.[0];
@@ -245,6 +280,9 @@ class Player {
 
         this.lives--;
 
+        // SE再生
+        this.playSE('damage');
+
         if (this.lives <= 0) {
             this.die();
         } else {
@@ -265,11 +303,15 @@ class Player {
                 this.starTimer = this.starDuration;
                 this.invincible = true;
                 this.invincibleTimer = this.starDuration;
+                // SE再生
+                this.playSE('itemGet');
                 break;
             case 'lifeup':
                 if (this.lives < this.maxLives) {
                     this.lives++;
                 }
+                // SE再生
+                this.playSE('itemGet');
                 break;
         }
     }

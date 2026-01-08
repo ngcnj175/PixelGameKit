@@ -367,6 +367,7 @@ const StageEditor = {
                 html += this.renderSeSelect('ATTACK', 'seAttack', config.seAttack ?? 1);
                 html += this.renderSeSelect('DAMAGE', 'seDamage', config.seDamage ?? 2);
                 html += this.renderSeSelect('ITEM GET', 'seItemGet', config.seItemGet ?? 3);
+                html += this.renderSeSelect('ENEMY DEFEAT', 'seEnemyDefeat', config.seEnemyDefeat ?? 4);
             }
 
             if (type === 'enemy') {
@@ -440,7 +441,8 @@ const StageEditor = {
                 { id: 0, name: 'JUMP', type: 'jump' },
                 { id: 1, name: 'ATTACK', type: 'attack' },
                 { id: 2, name: 'DAMAGE', type: 'damage' },
-                { id: 3, name: 'ITEM GET', type: 'itemGet' }
+                { id: 3, name: 'ITEM GET', type: 'itemGet' },
+                { id: 4, name: 'ENEMY DEFEAT', type: 'enemyDefeat' }
             ];
             // プロジェクトデータに追加
             if (App.projectData) {

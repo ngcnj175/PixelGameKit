@@ -115,5 +115,107 @@ const NesAudio = {
         gain.connect(this.masterGain);
 
         source.start();
+    },
+
+    // ========== SE再生 ==========
+    playSE(seType) {
+        this.ensureContext();
+
+        switch (seType) {
+            case 'jump':
+                this.playSE_Jump();
+                break;
+            case 'attack':
+                this.playSE_Attack();
+                break;
+            case 'damage':
+                this.playSE_Damage();
+                break;
+            case 'itemGet':
+                this.playSE_ItemGet();
+                break;
+            case 'enemyDefeat':
+                this.playSE_EnemyDefeat();
+                break;
+        }
+    },
+
+    // SE: ジャンプ（上昇する音）
+    playSE_Jump() {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(200, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(600, this.ctx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
+        osc.connect(gain);
+        gain.connect(this.masterGain);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.15);
+    },
+
+    // SE: 攻撃（短い衝撃音）
+    playSE_Attack() {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(400, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(100, this.ctx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.25, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.1);
+        osc.connect(gain);
+        gain.connect(this.masterGain);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.1);
+    },
+
+    // SE: ダメージ（下降する音）
+    playSE_Damage() {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(400, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(100, this.ctx.currentTime + 0.3);
+        gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+        osc.connect(gain);
+        gain.connect(this.masterGain);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.3);
+    },
+
+    // SE: アイテム取得（キラキラ音）
+    playSE_ItemGet() {
+        const playNote = (freq, startTime, duration) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.value = freq;
+            gain.gain.setValueAtTime(0.2, startTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+            osc.connect(gain);
+            gain.connect(this.masterGain);
+            osc.start(startTime);
+            osc.stop(startTime + duration);
+        };
+        playNote(523, this.ctx.currentTime, 0.1);        // C5
+        playNote(659, this.ctx.currentTime + 0.08, 0.1); // E5
+        playNote(784, this.ctx.currentTime + 0.16, 0.15); // G5
+    },
+
+    // SE: 敵を倒す（短い「ポン」音）
+    playSE_EnemyDefeat() {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(600, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(200, this.ctx.currentTime + 0.08);
+        gain.gain.setValueAtTime(0.25, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.1);
+        osc.connect(gain);
+        gain.connect(this.masterGain);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.1);
     }
 };
