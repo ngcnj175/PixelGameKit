@@ -24,7 +24,7 @@ const SoundEditor = {
     // ピアノロール
     cellSize: 20,
     scrollX: 0, // 横スクロール位置
-    scrollY: 600, // 縦スクロール位置（初期は中央付近、60音×20px=1200px、中央600px）
+    scrollY: 480, // 縦スクロール位置（C4が下端に表示: (71-36)*20=700、表示領域を考慮して調整）
     highlightPitch: -1, // ハイライト中の音階
 
     // 編集ツール
@@ -566,6 +566,12 @@ const SoundEditor = {
 
         // 初期カーソル
         keyboardArea.style.cursor = 'grab';
+
+        // 初期スクロール位置（C4が左端に表示: C1-C4は白鍵21個分、21*40=840px）
+        setTimeout(() => {
+            keyboardArea.scrollLeft = 840;
+            this.updateScrollbar();
+        }, 100);
 
         // rangeスライダー連動
         this.initKeyboardScrollbar();
