@@ -964,6 +964,9 @@ const GameEngine = {
                 // 音量とディケイ（durationに応じて）
                 const volume = 0.3 - (pitch / 59) * 0.15;
                 gain.gain.setValueAtTime(volume, ctx.currentTime);
+                // 70%の時間は音量維持、残り30%で減衰
+                const sustainTime = duration * 0.7;
+                gain.gain.setValueAtTime(volume, ctx.currentTime + sustainTime);
                 gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
 
                 noise.connect(filter);
@@ -980,12 +983,17 @@ const GameEngine = {
             osc.type = waveType;
             osc.frequency.setValueAtTime(freq, ctx.currentTime);
 
-            gain.gain.setValueAtTime(0.15, ctx.currentTime);
+            // 矩形波は音量を下げる（0.10）、三角波は維持（0.15）
+            const volume = (waveType === 'square') ? 0.10 : 0.15;
+            gain.gain.setValueAtTime(volume, ctx.currentTime);
+            // 80%の時間は音量維持、残り20%で減衰
+            const sustainTime = duration * 0.8;
+            gain.gain.setValueAtTime(volume, ctx.currentTime + sustainTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
+
             osc.connect(gain);
             gain.connect(ctx.destination);
-
             osc.start();
-            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
             osc.stop(ctx.currentTime + duration);
         };
 

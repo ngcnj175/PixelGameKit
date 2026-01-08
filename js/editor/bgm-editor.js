@@ -710,11 +710,16 @@ const SoundEditor = {
             }
 
             osc.frequency.value = freq;
-            gain.gain.value = 0.3;
+            // Tr1/Tr2（矩形波）は音量を下げる、Tr3（三角波）は維持
+            const volume = (trackType === 'square') ? 0.19 : 0.3;
+            gain.gain.setValueAtTime(volume, this.audioCtx.currentTime);
+            // 80%の時間は音量維持、残り20%で減衰
+            const sustainTime = duration * 0.8;
+            gain.gain.setValueAtTime(volume, this.audioCtx.currentTime + sustainTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, this.audioCtx.currentTime + duration);
 
             osc.connect(gain);
             osc.start();
-            gain.gain.exponentialRampToValueAtTime(0.01, this.audioCtx.currentTime + duration);
             osc.stop(this.audioCtx.currentTime + duration);
         }
     },
@@ -780,6 +785,9 @@ const SoundEditor = {
         // 音量とディケイ（durationに応じて）
         const volume = 0.3 - (pitch / 59) * 0.15; // 低音ほど大きく
         gain.gain.setValueAtTime(volume, ctx.currentTime);
+        // 70%の時間は音量維持、残り30%で減衰
+        const sustainTime = duration * 0.7;
+        gain.gain.setValueAtTime(volume, ctx.currentTime + sustainTime);
         gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
 
         noise.connect(filter);
@@ -1302,7 +1310,7 @@ const SoundEditor = {
 
         // グリッド（白色）
         this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
-        this.ctx.lineWidth = 1;
+        this.ctx.lineWidth = 0.5;
         const scrollY = this.scrollY || 0;
 
         // 縦線
