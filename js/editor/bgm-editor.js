@@ -471,7 +471,7 @@ const SoundEditor = {
         container.innerHTML = '';
 
         // 5オクターブ (C1-B5)
-        const octaves = [1, 2, 3, 4, 5];
+        const octaves = [1, 2, 3, 4, 5, 6];
         let whiteKeyIndex = 0;
         const whiteKeyWidth = 40; // CSS拡大版に合わせる
 
@@ -909,9 +909,9 @@ const SoundEditor = {
             const step = Math.floor((pos.x + this.scrollX) / this.cellSize);
             // C1-B5（pitch 0-59）の60音範囲（noteToPitchと一致）
             // scrollYで縦スクロール、上が高音（B5=59）、下が低音（C1=0）
-            const maxPitch = 59; // B5
+            const maxPitch = 71; // B6
             const row = Math.floor((pos.y + scrollY) / this.cellSize);
-            const pitch = Math.max(0, Math.min(59, maxPitch - row));
+            const pitch = Math.max(0, Math.min(71, maxPitch - row));
             return { step, pitch };
         };
 
@@ -1331,9 +1331,24 @@ const SoundEditor = {
             this.ctx.stroke();
         }
 
-        // 小節区切り
-        this.ctx.strokeStyle = '#666';
-        this.ctx.lineWidth = 2;
+        // オクターブ区切り（Cの音、白1px）
+        const maxPitch = 71;
+        this.ctx.strokeStyle = '#fff';
+        this.ctx.lineWidth = 1;
+        for (let octave = 1; octave <= 6; octave++) {
+            const cPitch = (octave - 1) * 12; // C1=0, C2=12, C3=24, C4=36, C5=48
+            const y = (maxPitch - cPitch + 1) * this.cellSize - scrollY;
+            if (y >= 0 && y <= this.canvas.height) {
+                this.ctx.beginPath();
+                this.ctx.moveTo(0, y);
+                this.ctx.lineTo(this.canvas.width, y);
+                this.ctx.stroke();
+            }
+        }
+
+        // 小節区切り（白1px）
+        this.ctx.strokeStyle = '#fff';
+        this.ctx.lineWidth = 1;
         const barWidth = 16 * this.cellSize;
         for (let bar = 0; bar <= song.bars; bar++) {
             const x = bar * barWidth - this.scrollX;
@@ -1353,8 +1368,8 @@ const SoundEditor = {
         }
 
         // ハイライト行
-        const maxPitch = 59; // B5（noteToPitchと一致）
-        if (this.highlightPitch >= 0 && this.highlightPitch <= 59) {
+        // maxPitchは既に宣言済み
+        if (this.highlightPitch >= 0 && this.highlightPitch <= 71) {
             const y = (maxPitch - this.highlightPitch) * this.cellSize - scrollY;
             if (y + this.cellSize >= 0 && y < this.canvas.height) {
                 this.ctx.fillStyle = 'rgba(74, 124, 89, 0.3)';
