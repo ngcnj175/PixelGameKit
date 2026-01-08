@@ -929,8 +929,8 @@ const GameEngine = {
             const ctx = this.bgmAudioCtx;
 
             if (waveType === 'noise') {
-                // ドラム音（ピッチに応じてバスドラム/スネア/ハイハット）
-                const bufferSize = ctx.sampleRate * Math.max(duration, 0.3);
+                // ドラム音（ピッチに応じた連続的なフィルター周波数）
+                const bufferSize = ctx.sampleRate * Math.max(duration, 0.05);
                 const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
                 const data = buffer.getChannelData(0);
                 for (let i = 0; i < bufferSize; i++) {
@@ -943,26 +943,28 @@ const GameEngine = {
                 const gain = ctx.createGain();
                 const filter = ctx.createBiquadFilter();
 
+                // ピッチ0-59を周波数100Hz-12000Hzにマッピング（指数的）
+                const minFreq = 100;
+                const maxFreq = 12000;
+                const freqRatio = Math.pow(maxFreq / minFreq, pitch / 59);
+                const filterFreq = minFreq * freqRatio;
+
                 if (pitch < 20) {
-                    // バスドラム
                     filter.type = 'lowpass';
-                    filter.frequency.value = 150;
-                    gain.gain.setValueAtTime(0.5, ctx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+                    filter.frequency.value = filterFreq;
                 } else if (pitch < 40) {
-                    // スネア
                     filter.type = 'bandpass';
-                    filter.frequency.value = 1000 + (pitch - 20) * 50;
-                    filter.Q.value = 1;
-                    gain.gain.setValueAtTime(0.3, ctx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+                    filter.frequency.value = filterFreq;
+                    filter.Q.value = 2;
                 } else {
-                    // ハイハット
                     filter.type = 'highpass';
-                    filter.frequency.value = 5000 + (pitch - 40) * 200;
-                    gain.gain.setValueAtTime(0.2, ctx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+                    filter.frequency.value = filterFreq * 0.5;
                 }
+
+                // 音量とディケイ（durationに応じて）
+                const volume = 0.3 - (pitch / 59) * 0.15;
+                gain.gain.setValueAtTime(volume, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
 
                 noise.connect(filter);
                 filter.connect(gain);

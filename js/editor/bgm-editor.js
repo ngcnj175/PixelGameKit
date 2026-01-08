@@ -738,13 +738,13 @@ const SoundEditor = {
         return { note: this.noteNames[noteIdx], octave };
     },
 
-    // ドラム音生成（ピッチに応じたドラムタイプ）
+    // ドラム音生成（ピッチに応じた連続的なフィルター周波数）
     playDrum(pitch, duration, audioCtx) {
         const ctx = audioCtx || this.audioCtx;
         if (!ctx) return;
 
-        // ノイズバッファ作成
-        const bufferSize = ctx.sampleRate * Math.max(duration, 0.3);
+        // ノイズバッファ作成（durationを反映）
+        const bufferSize = ctx.sampleRate * Math.max(duration, 0.05);
         const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
         const data = buffer.getChannelData(0);
         for (let i = 0; i < bufferSize; i++) {
@@ -757,34 +757,33 @@ const SoundEditor = {
         const gain = ctx.createGain();
         const filter = ctx.createBiquadFilter();
 
-        // ピッチに応じてドラムタイプを決定
+        // ピッチ0-59を周波数100Hz-12000Hzにマッピング（指数的）
+        // 低音ほど低い周波数、高音ほど高い周波数
+        const minFreq = 100;
+        const maxFreq = 12000;
+        const freqRatio = Math.pow(maxFreq / minFreq, pitch / 59);
+        const filterFreq = minFreq * freqRatio;
+
+        // 低音はローパス、高音はハイパス、中間はバンドパス
         if (pitch < 20) {
-            // バスドラム（低音）: ローパス + 短いディケイ
             filter.type = 'lowpass';
-            filter.frequency.value = 150;
-            gain.gain.setValueAtTime(0.5, ctx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
-            noise.connect(filter);
-            filter.connect(gain);
+            filter.frequency.value = filterFreq;
         } else if (pitch < 40) {
-            // スネア（中音）: バンドパス + 中程度ディケイ
             filter.type = 'bandpass';
-            filter.frequency.value = 1000 + (pitch - 20) * 50;
-            filter.Q.value = 1;
-            gain.gain.setValueAtTime(0.3, ctx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
-            noise.connect(filter);
-            filter.connect(gain);
+            filter.frequency.value = filterFreq;
+            filter.Q.value = 2;
         } else {
-            // ハイハット（高音）: ハイパス + 短いディケイ
             filter.type = 'highpass';
-            filter.frequency.value = 5000 + (pitch - 40) * 200;
-            gain.gain.setValueAtTime(0.2, ctx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
-            noise.connect(filter);
-            filter.connect(gain);
+            filter.frequency.value = filterFreq * 0.5;
         }
 
+        // 音量とディケイ（durationに応じて）
+        const volume = 0.3 - (pitch / 59) * 0.15; // 低音ほど大きく
+        gain.gain.setValueAtTime(volume, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
+
+        noise.connect(filter);
+        filter.connect(gain);
         gain.connect(ctx.destination);
         noise.start();
         noise.stop(ctx.currentTime + duration);
