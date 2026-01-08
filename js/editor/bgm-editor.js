@@ -570,20 +570,28 @@ const SoundEditor = {
         // rangeスライダー連動
         this.initKeyboardScrollbar();
 
-        // 初期スクロール位置（C4が左端に表示: C1-C4は白鍵21個分、21*40=840px）
-        setTimeout(() => {
+        // 初期スクロール位置（C4が左端に表示）
+        // C1からC4まで白鍵は21個（C,D,E,F,G,A,B × 3オクターブ = 21個）
+        // 白鍵幅40px × 21 = 840px
+        const setInitialScroll = () => {
             const targetScroll = 840;
-            keyboardArea.scrollLeft = targetScroll;
+            if (keyboardArea.scrollWidth > keyboardArea.clientWidth) {
+                keyboardArea.scrollLeft = targetScroll;
 
-            // スクロールバーも同期
-            const scrollbar = document.getElementById('keyboard-scrollbar');
-            if (scrollbar) {
-                const maxScroll = keyboardArea.scrollWidth - keyboardArea.clientWidth;
-                if (maxScroll > 0) {
-                    scrollbar.value = (targetScroll / maxScroll) * 100;
+                // スクロールバーも同期
+                const scrollbar = document.getElementById('keyboard-scrollbar');
+                if (scrollbar) {
+                    const maxScroll = keyboardArea.scrollWidth - keyboardArea.clientWidth;
+                    if (maxScroll > 0) {
+                        scrollbar.value = (targetScroll / maxScroll) * 100;
+                    }
                 }
+            } else {
+                // まだ描画されていない場合、再試行
+                requestAnimationFrame(setInitialScroll);
             }
-        }, 200);
+        };
+        requestAnimationFrame(setInitialScroll);
     },
 
     initKeyboardScrollbar() {
