@@ -2316,13 +2316,11 @@ body {
     cursor: pointer;
 }
 
-/* ========================================
-   ステージ設定パネル
-   ======================================== */
-
+/* ステージ設定パネル（折りたたみ式・影付き） */
 #stage-settings-panel {
     background: #f5f5f5;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 2px solid var(--border-color);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     overflow: visible;
 }
 
@@ -2350,6 +2348,10 @@ body {
 
 #stage-settings-panel.collapsed #stage-settings-content {
     display: none;
+}
+
+#stage-settings-panel.collapsed {
+    box-shadow: none;
 }
 
 #stage-settings-content {
