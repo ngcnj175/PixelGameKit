@@ -815,7 +815,7 @@ const SpriteEditor = {
             return;
         }
 
-        // ペーストモード（ドラッグ開始）
+        // ペーストモード（どこでもドラッグ開始、指を離すと確定）
         if (this.pasteMode && this.pasteData) {
             this.isDrawing = true;
             this.pasteDragStart = { x: pixel.x, y: pixel.y };
@@ -886,7 +886,7 @@ const SpriteEditor = {
             return;
         }
 
-        // ペーストモード確定
+        // ペーストモード：指を離すと確定
         if (this.pasteMode && this.pasteData) {
             this.confirmPaste();
             this.pasteDragStart = null;
@@ -988,12 +988,10 @@ const SpriteEditor = {
         this.pasteMode = true;
         this.selectionMode = false;
         this.pasteData = JSON.parse(JSON.stringify(this.rangeClipboard));
-        // 中央に配置
-        const dataH = this.pasteData.length;
-        const dataW = this.pasteData[0].length;
+        // 2×2右下にオフセットして配置
         this.pasteOffset = {
-            x: Math.floor((16 - dataW) / 2),
-            y: Math.floor((16 - dataH) / 2)
+            x: 2,
+            y: 2
         };
         this.currentTool = 'paste';
         document.querySelectorAll('#paint-tools .paint-tool-btn').forEach(b => {
@@ -1068,6 +1066,12 @@ const SpriteEditor = {
     },
 
     flipVertical() {
+        // ペーストモード時はペーストデータを反転
+        if (this.pasteMode && this.pasteData) {
+            this.pasteData.reverse();
+            this.render();
+            return;
+        }
         const sprite = App.projectData.sprites[this.currentSprite];
         sprite.data.reverse();
         this.render();
@@ -1075,6 +1079,12 @@ const SpriteEditor = {
     },
 
     flipHorizontal() {
+        // ペーストモード時はペーストデータを反転
+        if (this.pasteMode && this.pasteData) {
+            this.pasteData.forEach(row => row.reverse());
+            this.render();
+            return;
+        }
         const sprite = App.projectData.sprites[this.currentSprite];
         sprite.data.forEach(row => row.reverse());
         this.render();

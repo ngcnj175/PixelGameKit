@@ -20,6 +20,7 @@ const SoundEditor = {
     isPaused: false,
     isStepRecording: false,
     playInterval: null,
+    activeOscillators: [null, null, null, null], // トラックごとの再生中オシレーター（同時発音1制限用）
 
     // ピアノロール
     cellSize: 20,
@@ -747,6 +748,60 @@ const SoundEditor = {
         }
     },
 
+    // 再生用（トラックごとに同時発音数1に制限）
+    playNoteMonophonic(note, octave, duration, trackIdx) {
+        if (!this.audioCtx) return;
+
+        const trackType = this.trackTypes[trackIdx];
+
+        // 前の音を停止
+        if (this.activeOscillators[trackIdx]) {
+            try {
+                this.activeOscillators[trackIdx].osc.stop();
+            } catch (e) { }
+            this.activeOscillators[trackIdx] = null;
+        }
+
+        // ノイズトラックはドラム音を使用
+        if (trackType === 'noise') {
+            const pitch = this.noteToPitch(note, octave);
+            this.playDrum(pitch, duration);
+        } else {
+            const gain = this.audioCtx.createGain();
+            gain.connect(this.audioCtx.destination);
+
+            const freq = this.getFrequency(note, octave);
+            const osc = this.audioCtx.createOscillator();
+
+            if (trackType === 'square') {
+                osc.type = 'square';
+            } else if (trackType === 'triangle') {
+                osc.type = 'triangle';
+            }
+
+            osc.frequency.value = freq;
+            const volume = (trackType === 'square') ? 0.19 : 0.3;
+            gain.gain.setValueAtTime(volume, this.audioCtx.currentTime);
+            const sustainTime = duration * 0.8;
+            gain.gain.setValueAtTime(volume, this.audioCtx.currentTime + sustainTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, this.audioCtx.currentTime + duration);
+
+            osc.connect(gain);
+            osc.start();
+            osc.stop(this.audioCtx.currentTime + duration);
+
+            // アクティブオシレーターを記録
+            this.activeOscillators[trackIdx] = { osc, gain };
+
+            // 停止後にクリア
+            setTimeout(() => {
+                if (this.activeOscillators[trackIdx] && this.activeOscillators[trackIdx].osc === osc) {
+                    this.activeOscillators[trackIdx] = null;
+                }
+            }, duration * 1000);
+        }
+    },
+
     getFrequency(note, octave) {
         const noteIdx = this.noteNames.indexOf(note);
         // A4 = 440Hz
@@ -1274,10 +1329,8 @@ const SoundEditor = {
                 track.notes.forEach(note => {
                     if (note.step === step) {
                         const { note: noteName, octave } = this.pitchToNote(note.pitch);
-                        const savedTrack = this.currentTrack;
-                        this.currentTrack = trackIdx;
-                        this.playNote(noteName, octave, stepDuration * note.length);
-                        this.currentTrack = savedTrack;
+                        // 同時発音数1に制限（トラックごと）
+                        this.playNoteMonophonic(noteName, octave, stepDuration * note.length, trackIdx);
                     }
                 });
             });
