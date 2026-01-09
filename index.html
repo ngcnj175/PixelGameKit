@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/svg+xml" href="assets/icons/icon-192.svg">
     <link rel="apple-touch-icon" href="assets/icons/icon-192.svg">
-    <title>PixelGameKit v1.51.5</title>
+    <title>PixelGameKit v1.51.6</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 
@@ -504,11 +504,13 @@
                 </div>
             </div>
 
-            <!-- ソングパレット（鍵盤下） -->
-            <div id="song-palette-area">
+            <!-- ソングパレット（タイルパレットと同じ構造） -->
+            <div id="song-palette-area" class="gallery-row">
                 <button id="add-song-btn" class="gallery-add-btn">+</button>
-                <div id="song-gallery">
-                    <!-- ソングボタンはJSで生成 -->
+                <div class="gallery-scroll">
+                    <div id="song-gallery">
+                        <!-- ソングボタンはJSで生成 -->
+                    </div>
                 </div>
             </div>
 

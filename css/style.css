@@ -1328,23 +1328,15 @@ body {
     flex-direction: column;
 }
 
-/* ソングパレット（タイルパレット模倣） */
+/* ソングパレット（タイルパレットと同じスタイル） */
 #song-palette-area {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px;
-    padding-bottom: calc(8px + var(--safe-area-bottom));
-    background: rgba(0, 0, 0, 0.1);
-    border-top: 2px solid var(--border-dark);
+    padding-bottom: calc(6px + var(--safe-area-bottom));
 }
 
 #song-gallery {
     display: flex;
-    gap: 6px;
-    overflow-x: auto;
-    flex: 1;
-    touch-action: manipulation;
+    gap: 4px;
+    padding: 4px 8px;
 }
 
 .song-item {
@@ -1355,7 +1347,8 @@ body {
     border: 2px solid var(--border-color);
     border-radius: 0;
     cursor: pointer;
-    position: relative;
+    image-rendering: pixelated;
+    overflow: hidden;
     transition: transform 0.15s ease, border-color 0.15s ease;
 }
 
