@@ -1400,6 +1400,21 @@ const SoundEditor = {
         this.ctx.fillStyle = bgColor;
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
+        // 偶数拍（2拍、4拍）の背景を薄くする
+        const beatWidth = 4 * this.cellSize; // 1拍 = 4ステップ
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.08)';
+        for (let bar = 0; bar < song.bars; bar++) {
+            for (let beat = 0; beat < 4; beat++) {
+                // 偶数拍（2拍目=beat1、4拍目=beat3）を暗くする
+                if (beat === 1 || beat === 3) {
+                    const x = (bar * 16 + beat * 4) * this.cellSize - this.scrollX;
+                    if (x + beatWidth >= 0 && x <= this.canvas.width) {
+                        this.ctx.fillRect(x, 0, beatWidth, this.canvas.height);
+                    }
+                }
+            }
+        }
+
         // グリッド（白色）
         this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
         this.ctx.lineWidth = 0.5;
