@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/svg+xml" href="assets/icons/icon-192.svg">
     <link rel="apple-touch-icon" href="assets/icons/icon-192.svg">
-    <title>PixelGameKit v1.50.5</title>
+    <title>PixelGameKit v1.50.8</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 
@@ -273,9 +273,19 @@
                             </div>
                         </div>
                     </div>
-                    <!-- 制限時間 -->
+                    <!-- クリア条件 -->
                     <div class="setting-row">
-                        <label>制限時間</label>
+                        <label>クリア条件</label>
+                        <select id="stage-clear-condition" class="setting-select">
+                            <option value="none">なし</option>
+                            <option value="item">アイテム取得</option>
+                            <option value="enemies">敵ぜんめつ</option>
+                            <option value="survival">サバイバル</option>
+                        </select>
+                    </div>
+                    <!-- 制限時間 -->
+                    <div class="setting-row" id="time-limit-row">
+                        <label id="time-limit-label">制限時間</label>
                         <div class="time-control">
                             <input type="number" id="stage-time-min" min="0" max="99" value="0">
                             <span>分</span>
@@ -440,7 +450,7 @@
                     <button class="track-tab" data-track="2">Tr3</button>
                     <button class="track-tab" data-track="3">Tr4</button>
                 </div>
-                <div id="bpm-bar-controls">
+                <div id="bpm-bar-controls" class="hidden">
                     <span class="ctrl-label">BPM</span>
                     <button id="bpm-dec" class="ctrl-btn">◁</button>
                     <span id="bpm-value">120</span>

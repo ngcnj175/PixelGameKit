@@ -785,32 +785,42 @@ const SoundEditor = {
         const gain = ctx.createGain();
         const filter = ctx.createBiquadFilter();
 
-        // ピッチ0-59を周波数100Hz-12000Hzにマッピング（指数的）
-        // 低音ほど低い周波数、高音ほど高い周波数
-        const minFreq = 100;
-        const maxFreq = 12000;
-        const freqRatio = Math.pow(maxFreq / minFreq, pitch / 59);
+        // ピッチ0-71を周波数80Hz-15000Hzにマッピング（指数的）
+        const minFreq = 80;
+        const maxFreq = 15000;
+        const maxPitch = 71;
+        const freqRatio = Math.pow(maxFreq / minFreq, pitch / maxPitch);
         const filterFreq = minFreq * freqRatio;
 
-        // 低音はローパス、高音はハイパス、中間はバンドパス
-        if (pitch < 20) {
+        // 低音はローパス（バスドラム）、中音はバンドパス（スネア）、高音はハイパス（ハイハット）
+        if (pitch < 24) {
+            // バスドラム: 強いローパス、低いQ値
             filter.type = 'lowpass';
             filter.frequency.value = filterFreq;
-        } else if (pitch < 40) {
+            filter.Q.value = 1;
+        } else if (pitch < 48) {
+            // スネア: バンドパス、適度なQ値
             filter.type = 'bandpass';
             filter.frequency.value = filterFreq;
-            filter.Q.value = 2;
+            filter.Q.value = 3;
         } else {
+            // ハイハット: ハイパス
             filter.type = 'highpass';
-            filter.frequency.value = filterFreq * 0.5;
+            filter.frequency.value = filterFreq * 0.4;
+            filter.Q.value = 1;
         }
 
-        // 音量とディケイ（durationに応じて）
-        const volume = 0.3 - (pitch / 59) * 0.15; // 低音ほど大きく
-        gain.gain.setValueAtTime(volume, ctx.currentTime);
-        // 70%の時間は音量維持、残り30%で減衰
-        const sustainTime = duration * 0.7;
-        gain.gain.setValueAtTime(volume, ctx.currentTime + sustainTime);
+        // 音量とディケイ（durationに応じて）- より強いアタック
+        const baseVolume = 0.5; // 音量アップ
+        const volume = baseVolume - (pitch / maxPitch) * 0.2; // 低音ほど大きく
+
+        // アタックを強調（急速に音量を上げる）
+        gain.gain.setValueAtTime(0, ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(volume, ctx.currentTime + 0.005); // 5ms アタック
+
+        // 50%の時間は音量維持、残り50%で減衰
+        const sustainTime = duration * 0.5;
+        gain.gain.setValueAtTime(volume, ctx.currentTime + 0.005 + sustainTime);
         gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
 
         noise.connect(filter);

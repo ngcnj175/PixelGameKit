@@ -254,6 +254,10 @@ const GameEngine = {
         this.gameOverPending = false;
         this.gameOverWaitTimer = 0;
 
+        // クリア条件関連
+        this.isCleared = false;
+        this.allEnemiesSpawned = true; // 初期状態では全敵がスポーン済みとみなす
+
         // ステージ上のアイテムを検索
         if (stage && stage.layers && stage.layers.fg) {
             for (let y = 0; y < stage.height; y++) {
@@ -671,20 +675,51 @@ const GameEngine = {
     },
 
     checkClearCondition() {
-        const objects = App.projectData.objects;
-        const goal = objects.find(o => o.type === 'goal');
+        if (this.isCleared) return;
 
-        if (goal && this.player) {
-            const tileX = Math.floor(this.player.x);
-            const tileY = Math.floor(this.player.y);
+        const stage = App.projectData.stage;
+        const clearCondition = stage.clearCondition || 'none';
 
-            if (tileX === goal.x && tileY === goal.y) {
-                this.stop();
-                setTimeout(() => {
-                    alert('クリア！');
-                }, 100);
-            }
+        switch (clearCondition) {
+            case 'item':
+                // CLEARアイテムを取得したらクリア（collectItemで処理）
+                // ここでは何もしない
+                break;
+
+            case 'enemies':
+                // すべての敵を倒したらクリア
+                if (this.enemies.length === 0 && this.allEnemiesSpawned) {
+                    this.triggerClear();
+                }
+                break;
+
+            case 'survival':
+                // サバイバル時間経過でクリア（updateTimerで処理）
+                break;
+
+            case 'none':
+            default:
+                // 従来のゴールタイル方式（存在する場合）
+                const objects = App.projectData.objects;
+                const goal = objects.find(o => o.type === 'goal');
+                if (goal && this.player) {
+                    const tileX = Math.floor(this.player.x);
+                    const tileY = Math.floor(this.player.y);
+                    if (tileX === goal.x && tileY === goal.y) {
+                        this.triggerClear();
+                    }
+                }
+                break;
         }
+    },
+
+    triggerClear() {
+        if (this.isCleared) return;
+        this.isCleared = true;
+        this.stop();
+        setTimeout(() => {
+            alert('クリア！');
+        }, 100);
     },
 
     getCollision(x, y) {
@@ -947,30 +982,39 @@ const GameEngine = {
                 const gain = ctx.createGain();
                 const filter = ctx.createBiquadFilter();
 
-                // ピッチ0-59を周波数100Hz-12000Hzにマッピング（指数的）
-                const minFreq = 100;
-                const maxFreq = 12000;
-                const freqRatio = Math.pow(maxFreq / minFreq, pitch / 59);
+                // ピッチ0-71を周波数80Hz-15000Hzにマッピング（指数的）
+                const minFreq = 80;
+                const maxFreq = 15000;
+                const maxPitch = 71;
+                const freqRatio = Math.pow(maxFreq / minFreq, pitch / maxPitch);
                 const filterFreq = minFreq * freqRatio;
 
-                if (pitch < 20) {
+                // 低音はローパス（バスドラム）、中音はバンドパス（スネア）、高音はハイパス（ハイハット）
+                if (pitch < 24) {
                     filter.type = 'lowpass';
                     filter.frequency.value = filterFreq;
-                } else if (pitch < 40) {
+                    filter.Q.value = 1;
+                } else if (pitch < 48) {
                     filter.type = 'bandpass';
                     filter.frequency.value = filterFreq;
-                    filter.Q.value = 2;
+                    filter.Q.value = 3;
                 } else {
                     filter.type = 'highpass';
-                    filter.frequency.value = filterFreq * 0.5;
+                    filter.frequency.value = filterFreq * 0.4;
+                    filter.Q.value = 1;
                 }
 
-                // 音量とディケイ（durationに応じて）
-                const volume = 0.3 - (pitch / 59) * 0.15;
-                gain.gain.setValueAtTime(volume, ctx.currentTime);
-                // 70%の時間は音量維持、残り30%で減衰
-                const sustainTime = duration * 0.7;
-                gain.gain.setValueAtTime(volume, ctx.currentTime + sustainTime);
+                // 音量とディケイ（durationに応じて）- より強いアタック
+                const baseVolume = 0.35;
+                const volume = baseVolume - (pitch / maxPitch) * 0.15;
+
+                // アタックを強調
+                gain.gain.setValueAtTime(0, ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(volume, ctx.currentTime + 0.005);
+
+                // 50%の時間は音量維持、残り50%で減衰
+                const sustainTime = duration * 0.5;
+                gain.gain.setValueAtTime(volume, ctx.currentTime + 0.005 + sustainTime);
                 gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
 
                 noise.connect(filter);

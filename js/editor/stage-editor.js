@@ -400,6 +400,7 @@ const StageEditor = {
                     <select class="param-select" data-key="itemType">
                         <option value="star" ${config.itemType === 'star' ? 'selected' : ''}>STAR</option>
                         <option value="lifeup" ${config.itemType === 'lifeup' ? 'selected' : ''}>LifeUp</option>
+                        <option value="clear" ${config.itemType === 'clear' ? 'selected' : ''}>CLEAR</option>
                     </select>
                 </div>
             `;
@@ -1441,6 +1442,30 @@ const StageEditor = {
             });
         }
 
+        // クリア条件
+        const clearCondition = document.getElementById('stage-clear-condition');
+        const timeLimitRow = document.getElementById('time-limit-row');
+        const timeLimitLabel = document.getElementById('time-limit-label');
+
+        const updateTimeLimitLabel = () => {
+            const condition = clearCondition?.value || 'none';
+            if (condition === 'survival') {
+                if (timeLimitLabel) timeLimitLabel.textContent = 'サバイバル時間';
+                if (timeLimitRow) timeLimitRow.style.display = '';
+            } else {
+                if (timeLimitLabel) timeLimitLabel.textContent = '制限時間';
+                // 他の条件でも制限時間は表示する（0なら無制限）
+                if (timeLimitRow) timeLimitRow.style.display = '';
+            }
+        };
+
+        if (clearCondition) {
+            clearCondition.addEventListener('change', () => {
+                App.projectData.stage.clearCondition = clearCondition.value;
+                updateTimeLimitLabel();
+            });
+        }
+
         // 制限時間（分秒形式）
         const timeMin = document.getElementById('stage-time-min');
         const timeSec = document.getElementById('stage-time-sec');
@@ -1513,6 +1538,19 @@ const StageEditor = {
 
         // 透明色
         if (transparentSelect) transparentSelect.value = stage.transparentIndex || 0;
+
+        // クリア条件
+        const clearConditionEl = document.getElementById('stage-clear-condition');
+        const timeLimitLabel = document.getElementById('time-limit-label');
+        if (clearConditionEl) {
+            clearConditionEl.value = stage.clearCondition || 'none';
+            // ラベル更新
+            if (stage.clearCondition === 'survival') {
+                if (timeLimitLabel) timeLimitLabel.textContent = 'サバイバル時間';
+            } else {
+                if (timeLimitLabel) timeLimitLabel.textContent = '制限時間';
+            }
+        }
 
         // 制限時間（分秒）
         const totalSec = stage.timeLimit || 0;

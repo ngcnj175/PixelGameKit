@@ -313,6 +313,16 @@ class Player {
                 // SE再生
                 this.playSE('itemGet');
                 break;
+            case 'clear':
+                // クリアアイテム取得
+                this.playSE('itemGet');
+                // クリア条件がitemの場合、クリアをトリガー
+                if (App.projectData.stage.clearCondition === 'item') {
+                    if (typeof GameEngine !== 'undefined') {
+                        GameEngine.triggerClear();
+                    }
+                }
+                break;
         }
     }
 

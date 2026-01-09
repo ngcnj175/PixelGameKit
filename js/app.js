@@ -36,6 +36,7 @@ const App = {
                     clear: '',
                     gameover: ''
                 },
+                clearCondition: 'none', // none, item, enemies, survival
                 timeLimit: 0,
                 layers: {
                     bg: this.create2DArray(16, 16, -1),
