@@ -188,19 +188,16 @@ body {
     align-items: center;
     justify-content: center;
     padding: 8px;
-    /* キャンバス周りの隙間を同じ色で埋める */
-    background: #3CBCFC;
+    background: var(--bg-device);
     overflow: hidden;
 }
 
 #game-canvas {
-    display: block;
-    background: #3CBCFC;
+    background: var(--bg-screen);
     border: none;
     border-radius: 0;
     outline: none;
     box-shadow: none;
-    -webkit-tap-highlight-color: transparent;
     image-rendering: pixelated;
     image-rendering: crisp-edges;
     aspect-ratio: 1 / 1;

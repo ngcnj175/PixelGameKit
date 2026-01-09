@@ -556,9 +556,8 @@ const GameEngine = {
         const sprite = App.projectData.sprites[spriteIdx];
         if (!sprite) return;
 
-        // 小数点のずれによる隙間を防ぐためにroundで丸める
-        const screenX = Math.round((obj.x - this.camera.x) * this.TILE_SIZE);
-        const screenY = Math.round((obj.y - this.camera.y) * this.TILE_SIZE);
+        const screenX = (obj.x - this.camera.x) * this.TILE_SIZE;
+        const screenY = (obj.y - this.camera.y) * this.TILE_SIZE;
         const palette = App.nesPalette;
         const pixelSize = this.TILE_SIZE / 16;
         const flipX = obj.facingRight === false;
@@ -981,9 +980,8 @@ const GameEngine = {
 
     renderSprite(sprite, tileX, tileY, palette) {
         const pixelSize = this.TILE_SIZE / 16;
-        // 小数点のずれによる隙間（黒線）を防ぐためにroundで丸める
-        const screenX = Math.round((tileX - this.camera.x) * this.TILE_SIZE);
-        const screenY = Math.round((tileY - this.camera.y) * this.TILE_SIZE);
+        const screenX = (tileX - this.camera.x) * this.TILE_SIZE;
+        const screenY = (tileY - this.camera.y) * this.TILE_SIZE;
 
         // 画面外スキップ
         if (screenX + this.TILE_SIZE < 0 || screenX > this.canvas.width ||
