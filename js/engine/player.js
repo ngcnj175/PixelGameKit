@@ -442,8 +442,8 @@ class Player {
         // 死亡中も落下するスプライトを表示
         if (this.isDead && this.isDying) {
             // 落下演出中はスプライトを表示
-            const screenX = (this.x - camera.x) * tileSize;
-            const screenY = (this.y - camera.y) * tileSize;
+            const screenX = Math.round((this.x - camera.x) * tileSize);
+            const screenY = Math.round((this.y - camera.y) * tileSize);
             const frames = this.template?.sprites?.idle?.frames || [];
             const spriteIdx = frames[0];
             const sprite = App.projectData.sprites[spriteIdx];
@@ -475,8 +475,8 @@ class Player {
             return;
         }
 
-        const screenX = (this.x - camera.x) * tileSize;
-        const screenY = (this.y - camera.y) * tileSize;
+        const screenX = Math.round((this.x - camera.x) * tileSize);
+        const screenY = Math.round((this.y - camera.y) * tileSize);
 
         const spriteSlot = this.getSpriteSlot();
         const frames = this.template?.sprites?.[spriteSlot]?.frames || this.template?.sprites?.idle?.frames || [];
@@ -523,8 +523,8 @@ class Player {
     renderDeathParticles(ctx, tileSize, camera) {
         const pixelSize = tileSize / 16;
         this.deathParticles.forEach(p => {
-            const screenX = (p.x - camera.x) * tileSize;
-            const screenY = (p.y - camera.y) * tileSize;
+            const screenX = Math.round((p.x - camera.x) * tileSize);
+            const screenY = Math.round((p.y - camera.y) * tileSize);
             const size = (p.size || 1) * pixelSize;
             ctx.fillStyle = p.color;
             ctx.fillRect(screenX, screenY, size, size);

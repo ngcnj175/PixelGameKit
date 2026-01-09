@@ -258,8 +258,8 @@ class Enemy {
     render(ctx, tileSize, camera) {
         if (!this.template) return;
 
-        const screenX = (this.x - camera.x) * tileSize;
-        const screenY = (this.y - camera.y) * tileSize;
+        const screenX = Math.round((this.x - camera.x) * tileSize);
+        const screenY = Math.round((this.y - camera.y) * tileSize);
 
         const spriteSlot = this.getSpriteSlot();
         const frames = this.template?.sprites?.[spriteSlot]?.frames || this.template?.sprites?.idle?.frames || [];
