@@ -316,10 +316,14 @@ class Player {
             case 'clear':
                 // クリアアイテム取得
                 this.playSE('itemGet');
-                // クリア条件がitemの場合、クリアをトリガー
+                // クリア条件がitemの場合、カウントして全取得でクリア
                 if (App.projectData.stage.clearCondition === 'item') {
                     if (typeof GameEngine !== 'undefined') {
-                        GameEngine.triggerClear();
+                        GameEngine.collectedClearItems++;
+                        // 全てのクリアアイテムを取得したらクリア
+                        if (GameEngine.collectedClearItems >= GameEngine.totalClearItems) {
+                            GameEngine.triggerClear();
+                        }
                     }
                 }
                 break;

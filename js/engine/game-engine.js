@@ -44,6 +44,13 @@ const GameEngine = {
     start() {
         if (this.isRunning) return;
 
+        // サバイバルモードで制限時間が0の場合はエラー
+        const stage = App.projectData.stage;
+        if (stage.clearCondition === 'survival' && (!stage.timeLimit || stage.timeLimit <= 0)) {
+            alert('サバイバルモードでは制限時間を設定してください');
+            return;
+        }
+
         this.isRunning = true;
         this.isPaused = false;
         this.hasStarted = true;
@@ -257,6 +264,14 @@ const GameEngine = {
         // クリア条件関連
         this.isCleared = false;
         this.allEnemiesSpawned = true; // 初期状態では全敵がスポーン済みとみなす
+        this.totalClearItems = 0; // クリアアイテム総数
+        this.collectedClearItems = 0; // 取得済みクリアアイテム数
+
+        // タイマー関連
+        const timeLimit = stage.timeLimit || 0;
+        this.remainingTime = timeLimit; // 残り時間（秒）
+        this.frameCounter = 0; // フレームカウンター（60FPSで1秒）
+        this.hasTimeLimit = timeLimit > 0;
 
         // ステージ上のアイテムを検索
         if (stage && stage.layers && stage.layers.fg) {
@@ -267,6 +282,7 @@ const GameEngine = {
                         const { template, templateIdx } = getTemplateFromTileId(tileId);
                         if (template && template.type === 'item') {
                             const spriteIdx = template.sprites?.idle?.frames?.[0] ?? template.sprites?.main?.frames?.[0];
+                            const itemType = template.config?.itemType || 'star';
                             this.items.push({
                                 x: x,
                                 y: y,
@@ -275,9 +291,13 @@ const GameEngine = {
                                 template: template,
                                 templateIdx: templateIdx, // アニメーション用にtemplateIdxを追加
                                 spriteIdx: spriteIdx,
-                                itemType: template.config?.itemType || 'star',
+                                itemType: itemType,
                                 collected: false
                             });
+                            // クリアアイテムをカウント
+                            if (itemType === 'clear') {
+                                this.totalClearItems++;
+                            }
                         }
                     }
                 }
@@ -327,6 +347,29 @@ const GameEngine = {
             this.update();
             // タイルアニメーションフレームカウンターを更新
             this.tileAnimationFrame++;
+
+            // タイマー更新（playingの時のみ）
+            if (this.titleState === 'playing' && this.hasTimeLimit && !this.isCleared) {
+                this.frameCounter++;
+                if (this.frameCounter >= 60) { // 60FPSで1秒
+                    this.frameCounter = 0;
+                    this.remainingTime--;
+
+                    // タイムアウト処理
+                    if (this.remainingTime <= 0) {
+                        this.remainingTime = 0;
+                        const clearCondition = App.projectData.stage.clearCondition || 'none';
+                        if (clearCondition === 'survival') {
+                            // サバイバルモード: 時間経過でクリア
+                            this.triggerClear();
+                        } else {
+                            // 通常モード: 時間切れでゲームオーバー
+                            this.gameOverPending = true;
+                            this.gameOverWaitTimer = 30;
+                        }
+                    }
+                }
+            }
         }
         this.render();
 
@@ -829,6 +872,36 @@ const GameEngine = {
             this.ctx.textBaseline = 'middle';
             this.ctx.fillStyle = '#ffffff';
             this.ctx.fillText('PAUSE', centerX, centerY);
+        }
+
+        // タイマー表示（右上）
+        if (this.hasTimeLimit && this.titleState === 'playing') {
+            const min = Math.floor(this.remainingTime / 60);
+            const sec = this.remainingTime % 60;
+            const timeText = `${min}:${sec.toString().padStart(2, '0')}`;
+
+            this.ctx.font = 'bold 16px Arial';
+            this.ctx.textAlign = 'right';
+            this.ctx.textBaseline = 'top';
+
+            // 残り10秒以下は赤、それ以外は白
+            if (this.remainingTime <= 10) {
+                this.ctx.fillStyle = '#ff4444';
+            } else {
+                this.ctx.fillStyle = '#ffffff';
+            }
+
+            // 影
+            this.ctx.fillStyle = '#000000';
+            this.ctx.fillText(timeText, this.canvas.width - 9, 11);
+
+            // 本体
+            if (this.remainingTime <= 10) {
+                this.ctx.fillStyle = '#ff4444';
+            } else {
+                this.ctx.fillStyle = '#ffffff';
+            }
+            this.ctx.fillText(timeText, this.canvas.width - 10, 10);
         }
     },
 

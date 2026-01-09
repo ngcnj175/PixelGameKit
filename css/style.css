@@ -1492,11 +1492,11 @@ body {
     color: #fff;
 }
 
-/* トラックパネル（全て同一行） */
+/* トラックパネル（中央配置） */
 #track-panel {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
     padding: 8px;
     border-bottom: 2px solid var(--border-dark);
 }
