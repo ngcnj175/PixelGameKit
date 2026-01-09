@@ -188,12 +188,16 @@ body {
     align-items: center;
     justify-content: center;
     padding: 8px;
+    background: var(--bg-device);
+    overflow: hidden;
 }
 
 #game-canvas {
     background: var(--bg-screen);
     border: none;
     border-radius: 0;
+    outline: none;
+    box-shadow: none;
     image-rendering: pixelated;
     image-rendering: crisp-edges;
     aspect-ratio: 1 / 1;
