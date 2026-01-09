@@ -20,6 +20,16 @@ const SpriteEditor = {
     SPRITE_SIZE: 16,
     pixelSize: 20,
 
+    // 範囲選択・ペーストモード
+    selectionMode: false,
+    selectionStart: null,
+    selectionEnd: null,
+    rangeClipboard: null,  // 範囲コピー用クリップボード
+    pasteMode: false,
+    pasteData: null,
+    pasteOffset: { x: 0, y: 0 },
+    pasteDragStart: null,
+
     init() {
         this.canvas = document.getElementById('paint-canvas');
         if (!this.canvas) return;
@@ -626,6 +636,27 @@ const SpriteEditor = {
             }
         }
 
+        // ペーストプレビュー（確定前）
+        if (this.pasteMode && this.pasteData) {
+            const dataH = this.pasteData.length;
+            const dataW = this.pasteData[0].length;
+            for (let dy = 0; dy < dataH; dy++) {
+                for (let dx = 0; dx < dataW; dx++) {
+                    const tx = this.pasteOffset.x + dx;
+                    const ty = this.pasteOffset.y + dy;
+                    if (tx >= 0 && tx < 16 && ty >= 0 && ty < 16) {
+                        const val = this.pasteData[dy][dx];
+                        if (val >= 0) {
+                            this.ctx.fillStyle = palette[val];
+                            this.ctx.globalAlpha = 0.7;
+                            this.ctx.fillRect(tx * this.pixelSize, ty * this.pixelSize, this.pixelSize, this.pixelSize);
+                            this.ctx.globalAlpha = 1.0;
+                        }
+                    }
+                }
+            }
+        }
+
         // グリッド線（白）
         this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
         this.ctx.lineWidth = 1;
@@ -640,6 +671,42 @@ const SpriteEditor = {
             this.ctx.moveTo(0, i * this.pixelSize);
             this.ctx.lineTo(this.canvas.width, i * this.pixelSize);
             this.ctx.stroke();
+        }
+
+        // 範囲選択表示（点線）
+        if (this.selectionMode && this.selectionStart && this.selectionEnd) {
+            const x1 = Math.min(this.selectionStart.x, this.selectionEnd.x);
+            const y1 = Math.min(this.selectionStart.y, this.selectionEnd.y);
+            const x2 = Math.max(this.selectionStart.x, this.selectionEnd.x);
+            const y2 = Math.max(this.selectionStart.y, this.selectionEnd.y);
+
+            this.ctx.strokeStyle = '#ffffff';
+            this.ctx.lineWidth = 2;
+            this.ctx.setLineDash([4, 4]);
+            this.ctx.strokeRect(
+                x1 * this.pixelSize,
+                y1 * this.pixelSize,
+                (x2 - x1 + 1) * this.pixelSize,
+                (y2 - y1 + 1) * this.pixelSize
+            );
+            this.ctx.setLineDash([]);
+        }
+
+        // ペースト範囲表示（点線）
+        if (this.pasteMode && this.pasteData) {
+            const dataH = this.pasteData.length;
+            const dataW = this.pasteData[0].length;
+
+            this.ctx.strokeStyle = '#00ff00';
+            this.ctx.lineWidth = 2;
+            this.ctx.setLineDash([4, 4]);
+            this.ctx.strokeRect(
+                this.pasteOffset.x * this.pixelSize,
+                this.pasteOffset.y * this.pixelSize,
+                dataW * this.pixelSize,
+                dataH * this.pixelSize
+            );
+            this.ctx.setLineDash([]);
         }
 
         this.canvas.style.backgroundColor = bgColor;
@@ -733,12 +800,29 @@ const SpriteEditor = {
     onPointerDown(e) {
         if (App.currentScreen !== 'paint') return;
 
-        this.isDrawing = true;
         const pixel = this.getPixelFromEvent(e);
 
         if (pixel.x < 0 || pixel.x >= 16 || pixel.y < 0 || pixel.y >= 16) {
             return;
         }
+
+        // 範囲選択モード
+        if (this.selectionMode) {
+            this.isDrawing = true;
+            this.selectionStart = { x: pixel.x, y: pixel.y };
+            this.selectionEnd = { x: pixel.x, y: pixel.y };
+            this.render();
+            return;
+        }
+
+        // ペーストモード（ドラッグ開始）
+        if (this.pasteMode && this.pasteData) {
+            this.isDrawing = true;
+            this.pasteDragStart = { x: pixel.x, y: pixel.y };
+            return;
+        }
+
+        this.isDrawing = true;
 
         // 描画開始時に履歴を保存
         this.saveHistory();
@@ -763,17 +847,53 @@ const SpriteEditor = {
         if (!this.isDrawing || App.currentScreen !== 'paint') return;
 
         const pixel = this.getPixelFromEvent(e);
+
+        // 範囲選択モード
+        if (this.selectionMode) {
+            this.selectionEnd = {
+                x: Math.max(0, Math.min(15, pixel.x)),
+                y: Math.max(0, Math.min(15, pixel.y))
+            };
+            this.render();
+            return;
+        }
+
+        // ペーストモード（ドラッグ移動）
+        if (this.pasteMode && this.pasteDragStart) {
+            const dx = pixel.x - this.pasteDragStart.x;
+            const dy = pixel.y - this.pasteDragStart.y;
+            this.pasteOffset.x += dx;
+            this.pasteOffset.y += dy;
+            this.pasteDragStart = { x: pixel.x, y: pixel.y };
+            this.render();
+            return;
+        }
+
         if (pixel.x !== this.lastPixel.x || pixel.y !== this.lastPixel.y) {
             this.processPixel(pixel.x, pixel.y);
         }
     },
 
     onPointerUp() {
-        if (this.isDrawing) {
-            this.isDrawing = false;
-            this.lastPixel = { x: -1, y: -1 };
-            this.initSpriteGallery();
+        if (!this.isDrawing) return;
+
+        this.isDrawing = false;
+        this.lastPixel = { x: -1, y: -1 };
+
+        // 範囲選択モード確定
+        if (this.selectionMode && this.selectionStart && this.selectionEnd) {
+            this.confirmRangeCopy();
+            return;
         }
+
+        // ペーストモード確定
+        if (this.pasteMode && this.pasteData) {
+            this.confirmPaste();
+            this.pasteDragStart = null;
+            return;
+        }
+
+        this.initSpriteGallery();
     },
 
     processPixel(x, y) {
@@ -846,19 +966,103 @@ const SpriteEditor = {
         this.initSpriteGallery();
     },
 
+    // 範囲選択モード開始
     copySprite() {
-        const sprite = App.projectData.sprites[this.currentSprite];
-        this.clipboard = JSON.parse(JSON.stringify(sprite.data));
+        this.selectionMode = true;
+        this.pasteMode = false;
+        this.selectionStart = null;
+        this.selectionEnd = null;
+        this.currentTool = 'copy';
+        // ツールボタンのアクティブ状態を更新
+        document.querySelectorAll('#paint-tools .paint-tool-btn').forEach(b => {
+            b.classList.toggle('active', b.dataset.tool === 'copy');
+        });
     },
 
+    // ペーストモード開始
     pasteSprite() {
-        if (!this.clipboard) {
-            alert('クリップボードが空です');
+        if (!this.rangeClipboard || this.rangeClipboard.length === 0) {
+            alert('先にコピーする範囲を選択してください');
             return;
         }
+        this.pasteMode = true;
+        this.selectionMode = false;
+        this.pasteData = JSON.parse(JSON.stringify(this.rangeClipboard));
+        // 中央に配置
+        const dataH = this.pasteData.length;
+        const dataW = this.pasteData[0].length;
+        this.pasteOffset = {
+            x: Math.floor((16 - dataW) / 2),
+            y: Math.floor((16 - dataH) / 2)
+        };
+        this.currentTool = 'paste';
+        document.querySelectorAll('#paint-tools .paint-tool-btn').forEach(b => {
+            b.classList.toggle('active', b.dataset.tool === 'paste');
+        });
+        this.render();
+    },
+
+    // 範囲コピー確定
+    confirmRangeCopy() {
+        if (!this.selectionStart || !this.selectionEnd) return;
+
+        const sprite = App.projectData.sprites[this.currentSprite];
+        const x1 = Math.min(this.selectionStart.x, this.selectionEnd.x);
+        const y1 = Math.min(this.selectionStart.y, this.selectionEnd.y);
+        const x2 = Math.max(this.selectionStart.x, this.selectionEnd.x);
+        const y2 = Math.max(this.selectionStart.y, this.selectionEnd.y);
+
+        // 範囲内のデータをコピー
+        const data = [];
+        for (let y = y1; y <= y2; y++) {
+            const row = [];
+            for (let x = x1; x <= x2; x++) {
+                row.push(sprite.data[y][x]);
+            }
+            data.push(row);
+        }
+        this.rangeClipboard = data;
+
+        // 選択モード終了
+        this.selectionMode = false;
+        this.selectionStart = null;
+        this.selectionEnd = null;
+        this.currentTool = 'pen';
+        document.querySelectorAll('#paint-tools .paint-tool-btn').forEach(b => {
+            b.classList.toggle('active', b.dataset.tool === 'pen');
+        });
+        this.render();
+    },
+
+    // ペースト確定
+    confirmPaste() {
+        if (!this.pasteData) return;
+
         this.saveHistory();
         const sprite = App.projectData.sprites[this.currentSprite];
-        sprite.data = JSON.parse(JSON.stringify(this.clipboard));
+        const dataH = this.pasteData.length;
+        const dataW = this.pasteData[0].length;
+
+        for (let dy = 0; dy < dataH; dy++) {
+            for (let dx = 0; dx < dataW; dx++) {
+                const tx = this.pasteOffset.x + dx;
+                const ty = this.pasteOffset.y + dy;
+                if (tx >= 0 && tx < 16 && ty >= 0 && ty < 16) {
+                    const val = this.pasteData[dy][dx];
+                    if (val >= 0) { // 透明以外を上書き
+                        sprite.data[ty][tx] = val;
+                    }
+                }
+            }
+        }
+
+        // ペーストモード終了
+        this.pasteMode = false;
+        this.pasteData = null;
+        this.currentTool = 'pen';
+        document.querySelectorAll('#paint-tools .paint-tool-btn').forEach(b => {
+            b.classList.toggle('active', b.dataset.tool === 'pen');
+        });
         this.render();
         this.initSpriteGallery();
     },
