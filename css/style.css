@@ -193,17 +193,9 @@ body {
 }
 
 #game-canvas {
-    background: var(--bg-screen);
-    border: none;
-    border-radius: 0;
-    outline: none;
-    box-shadow: none;
+    display: block;
     image-rendering: pixelated;
     image-rendering: crisp-edges;
-    aspect-ratio: 1 / 1;
-    max-height: 100%;
-    max-width: 100%;
-    object-fit: contain;
 }
 
 /* コントローラーエリア */
