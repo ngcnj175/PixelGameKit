@@ -169,19 +169,19 @@ const GameEngine = {
         const container = document.getElementById('game-viewport');
         if (!container) return;
 
-        // 2倍スケールでTILE_SIZEを設定（計算に使う前に）
-        const scale = 2;
-        this.TILE_SIZE = 16 * scale;
-
+        const stage = App.projectData.stage;
         const maxWidth = container.clientWidth - 16;
         const maxHeight = container.clientHeight - 16;
 
-        // タイル単位でフィット
-        const viewTilesX = Math.floor(maxWidth / this.TILE_SIZE);
-        const viewTilesY = Math.floor(maxHeight / this.TILE_SIZE);
+        // 2倍表示でフィット
+        const scale = 2;
+        const viewTilesX = Math.floor(maxWidth / (this.TILE_SIZE * scale));
+        const viewTilesY = Math.floor(maxHeight / (this.TILE_SIZE * scale));
 
-        this.canvas.width = viewTilesX * this.TILE_SIZE;
-        this.canvas.height = viewTilesY * this.TILE_SIZE;
+        this.canvas.width = viewTilesX * this.TILE_SIZE * scale;
+        this.canvas.height = viewTilesY * this.TILE_SIZE * scale;
+
+        this.TILE_SIZE = 16 * scale; // 2倍スケール
     },
 
     initGame() {
