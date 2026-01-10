@@ -248,14 +248,29 @@ const StageEditor = {
 
     // ========== 設定パネル ==========
     initConfigPanel() {
+        const panel = document.getElementById('tile-config-panel');
+
+        // パネル内のクリック/タップイベントがキャンバスに伝播しないように
+        if (panel) {
+            panel.addEventListener('click', (e) => e.stopPropagation());
+            panel.addEventListener('touchstart', (e) => e.stopPropagation());
+            panel.addEventListener('touchend', (e) => e.stopPropagation());
+        }
+
         const closeBtn = document.getElementById('config-close-btn');
         if (closeBtn) {
-            closeBtn.addEventListener('click', () => this.closeConfigPanel());
+            closeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.closeConfigPanel();
+            });
         }
 
         const saveBtn = document.getElementById('config-save-btn');
         if (saveBtn) {
-            saveBtn.addEventListener('click', () => this.saveTemplate());
+            saveBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.saveTemplate();
+            });
         }
     },
 

@@ -341,8 +341,8 @@ const GameEngine = {
             // STAGE CLEARテキストと暗転エフェクト
             this.renderClearEffect();
 
-            // フェーズ終了: 約3秒後にタイトルへ
-            if (this.clearTimer >= 180) {
+            // フェーズ終了: 210フレーム（2秒テキスト + 0.5秒暗転 + 1秒待機）後にタイトルへ
+            if (this.clearTimer >= 210) {
                 this.restart();
                 return;
             }
@@ -800,13 +800,18 @@ const GameEngine = {
         const w = this.canvas.width;
         const h = this.canvas.height;
 
-        // 両サイドからの暗転（進行に応じて広がる、完全不透明）
-        const progress = Math.min(this.clearTimer / 150, 1); // 150フレームで完全暗転
-        const darkWidth = (w / 2) * progress;
+        // フェーズ1: 最初の120フレーム（2秒）はテキストのみ
+        // フェーズ2: 120〜150フレーム（30フレーム）で両サイドから暗転
 
-        ctx.fillStyle = '#333333'; // GAME OVERと同じ色
-        ctx.fillRect(0, 0, darkWidth, h); // 左から
-        ctx.fillRect(w - darkWidth, 0, darkWidth, h); // 右から
+        // 両サイドからの暗転（120フレーム後から開始、30フレームで完了）
+        if (this.clearTimer > 120) {
+            const wipeProgress = Math.min((this.clearTimer - 120) / 30, 1);
+            const darkWidth = (w / 2) * wipeProgress;
+
+            ctx.fillStyle = '#333333'; // GAME OVERと同じ色
+            ctx.fillRect(0, 0, darkWidth, h); // 左から
+            ctx.fillRect(w - darkWidth, 0, darkWidth, h); // 右から
+        }
 
         // STAGE CLEAR テキスト（点滅、GAME OVERと同じフォント）
         if (Math.floor(this.clearTimer / 10) % 2 === 0) {
