@@ -264,6 +264,13 @@ const SoundEditor = {
             alert('最後のソングは削除できません');
             return;
         }
+
+        // iOSでconfirmダイアログ中に音が溜まる問題対策：再生停止
+        const wasPlaying = this.isPlaying;
+        if (wasPlaying) {
+            this.stop();
+        }
+
         if (!confirm('このソングを削除しますか？')) {
             // iOSでconfirmダイアログ後にAudioContextがsuspendになる対策
             if (this.audioCtx && this.audioCtx.state === 'suspended') {
@@ -982,6 +989,12 @@ const SoundEditor = {
         const song = this.getCurrentSong();
         const track = song.tracks[this.currentTrack];
         if (track.notes.length === 0) return;
+
+        // iOSでconfirmダイアログ中に音が溜まる問題対策：再生停止
+        const wasPlaying = this.isPlaying;
+        if (wasPlaying) {
+            this.stop();
+        }
 
         if (!confirm(`Tr${this.currentTrack + 1}の全ノートを削除しますか？`)) {
             // iOSでconfirmダイアログ後にAudioContextがsuspendになる対策
