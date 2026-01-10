@@ -1084,6 +1084,10 @@ const GameEngine = {
         if (!this.bgmAudioCtx) {
             this.bgmAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
         }
+        // iOSでsuspendedの場合にresume
+        if (this.bgmAudioCtx.state === 'suspended') {
+            this.bgmAudioCtx.resume();
+        }
 
         const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
         const trackTypes = ['square', 'square', 'triangle', 'noise'];

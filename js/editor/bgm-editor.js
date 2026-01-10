@@ -265,8 +265,18 @@ const SoundEditor = {
             return;
         }
         if (!confirm('このソングを削除しますか？')) {
+            // iOSでconfirmダイアログ後にAudioContextがsuspendになる対策
+            if (this.audioCtx && this.audioCtx.state === 'suspended') {
+                this.audioCtx.resume();
+            }
             return;
         }
+
+        // iOSでconfirmダイアログ後にAudioContextがsuspendになる対策
+        if (this.audioCtx && this.audioCtx.state === 'suspended') {
+            this.audioCtx.resume();
+        }
+
         this.songs.splice(idx, 1);
         if (this.currentSongIdx >= this.songs.length) {
             this.currentSongIdx = this.songs.length - 1;
@@ -974,7 +984,16 @@ const SoundEditor = {
         if (track.notes.length === 0) return;
 
         if (!confirm(`Tr${this.currentTrack + 1}の全ノートを削除しますか？`)) {
+            // iOSでconfirmダイアログ後にAudioContextがsuspendになる対策
+            if (this.audioCtx && this.audioCtx.state === 'suspended') {
+                this.audioCtx.resume();
+            }
             return;
+        }
+
+        // iOSでconfirmダイアログ後にAudioContextがsuspendになる対策
+        if (this.audioCtx && this.audioCtx.state === 'suspended') {
+            this.audioCtx.resume();
         }
 
         track.notes = [];
