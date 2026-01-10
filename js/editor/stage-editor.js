@@ -1079,6 +1079,13 @@ const StageEditor = {
         if (clientX === undefined || clientY === undefined) return;
 
         const rect = this.canvas.getBoundingClientRect();
+
+        // キャンバス外のタッチは無視（ステージ設定パネルなど他UI要素のタップ対策）
+        if (clientX < rect.left || clientX > rect.right ||
+            clientY < rect.top || clientY > rect.bottom) {
+            return;
+        }
+
         const scrollX = this.canvasScrollX || 0;
         const scrollY = this.canvasScrollY || 0;
         const x = Math.floor((clientX - rect.left - scrollX) / this.tileSize);
