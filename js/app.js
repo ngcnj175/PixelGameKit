@@ -6,6 +6,7 @@
 const App = {
     currentScreen: 'play',
     projectData: null,
+    isPlayOnlyMode: false, // 共有URL読み込み時はtrue（編集不可）
 
     // デフォルトパレット（#000000のみ）
     nesPalette: [
@@ -196,17 +197,37 @@ const App = {
                 const data = Share.decode(hash);
                 if (data) {
                     this.projectData = data;
-                    console.log('Project loaded from URL');
+                    this.isPlayOnlyMode = true; // プレイ専用モード
+                    console.log('Project loaded from URL (play-only mode)');
                     // パレットを復元
                     if (this.projectData.palette) {
                         this.nesPalette = this.projectData.palette;
                     }
+                    // URLからハッシュを削除
                     history.replaceState(null, '', window.location.pathname);
+                    // プレイ専用モードUI適用
+                    this.applyPlayOnlyMode();
                 }
             } catch (e) {
                 console.warn('Failed to load from URL:', e);
             }
         }
+    },
+
+    // プレイ専用モードのUI適用
+    applyPlayOnlyMode() {
+        // ヘッダーのファイルツールバーを非表示
+        const toolbarFile = document.getElementById('toolbar-file');
+        if (toolbarFile) {
+            toolbarFile.style.display = 'none';
+        }
+        // ナビゲーションでプレイ以外を非表示
+        const navBtns = document.querySelectorAll('.nav-icon');
+        navBtns.forEach(btn => {
+            if (btn.id !== 'nav-play-btn') {
+                btn.style.display = 'none';
+            }
+        });
     },
 
     initMenu() {
@@ -294,6 +315,16 @@ const App = {
             // 長押しでなければ通常保存
             this.saveProject();
         });
+
+        // 共有ボタン
+        document.getElementById('share-icon-btn')?.addEventListener('click', () => {
+            // プロジェクトデータを共有ダイアログで開く
+            this.projectData.palette = this.nesPalette.slice();
+            Share.openDialog(this.projectData);
+        });
+
+        // 共有ダイアログのイベント初期化
+        Share.initDialogEvents();
 
         // ナビゲーション切り替え
         const screens = ['play', 'paint', 'stage', 'sound'];
