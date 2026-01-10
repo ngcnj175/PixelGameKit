@@ -63,6 +63,10 @@ class Player {
         this.seDamage = template?.config?.seDamage ?? 2;
         this.seItemGet = template?.config?.seItemGet ?? 3;
         this.seEnemyDefeat = template?.config?.seEnemyDefeat ?? 4;
+
+        // 喜びジャンプ（クリア演出用）
+        this.joyJumpActive = false;
+        this.joyJumpStartY = 0;
     }
 
     // SE再生ヘルパー（設定がOFFの場合は鳴らさない）
@@ -529,5 +533,45 @@ class Player {
             ctx.fillStyle = p.color;
             ctx.fillRect(screenX, screenY, size, size);
         });
+    }
+
+    // 喜びジャンプ開始（クリア演出用）
+    startJoyJump() {
+        this.joyJumpActive = true;
+        this.joyJumpStartY = this.y;
+        this.vy = this.jumpPower * 1.2; // 少し高くジャンプ
+        this.facingRight = true; // 正面向き（右向き）
+        this.vx = 0; // 移動停止
+        this.state = 'jump';
+    }
+
+    // 喜びジャンプ更新（重力のみ、衝突なし）
+    updateJoyJump() {
+        if (!this.joyJumpActive) return;
+
+        // 重力
+        this.vy += this.gravity;
+        if (this.vy > this.maxFallSpeed) {
+            this.vy = this.maxFallSpeed;
+        }
+
+        this.y += this.vy;
+
+        // 開始位置まで落ちたら再ジャンプ（ループ）
+        if (this.y >= this.joyJumpStartY && this.vy > 0) {
+            this.y = this.joyJumpStartY;
+            this.vy = this.jumpPower * 1.2;
+        }
+
+        // アニメーション
+        this.animTimer++;
+        const interval = 6;
+        if (this.animTimer >= interval) {
+            this.animTimer = 0;
+            const frames = this.template?.sprites?.jump?.frames || this.template?.sprites?.idle?.frames || [];
+            if (frames.length > 0) {
+                this.animFrame = (this.animFrame + 1) % frames.length;
+            }
+        }
     }
 }

@@ -22,10 +22,11 @@ const GameEngine = {
     camera: { x: 0, y: 0 },
 
     // タイトル画面
-    titleState: 'title', // 'title', 'wipe', 'playing', 'gameover'
+    titleState: 'title', // 'title', 'wipe', 'playing', 'clear', 'gameover'
     wipeTimer: 0,
     titleBlinkTimer: 0,
     gameOverTimer: 0,
+    clearTimer: 0,
 
     // タイルアニメーション用フレームカウンター
     tileAnimationFrame: 0,
@@ -316,6 +317,36 @@ const GameEngine = {
                 this.playBgm('stage'); // ステージBGM開始
             }
             this.renderWipe();
+            this.animationId = requestAnimationFrame(() => this.gameLoop());
+            return;
+        }
+
+        // STAGE CLEAR演出中
+        if (this.titleState === 'clear') {
+            this.clearTimer++;
+
+            // プレイヤーの喜びジャンプ（最初の30フレームで発動）
+            if (this.player && this.clearTimer === 1) {
+                this.player.startJoyJump();
+            }
+
+            // プレイヤーのジャンプ更新（重力と位置のみ）
+            if (this.player) {
+                this.player.updateJoyJump();
+            }
+
+            // ゲーム画面を描画（敵やアイテムは静止）
+            this.render();
+
+            // STAGE CLEARテキストと暗転エフェクト
+            this.renderClearEffect();
+
+            // フェーズ終了: 約3秒後にタイトルへ
+            if (this.clearTimer >= 180) {
+                this.restart();
+                return;
+            }
+
             this.animationId = requestAnimationFrame(() => this.gameLoop());
             return;
         }
@@ -759,10 +790,39 @@ const GameEngine = {
     triggerClear() {
         if (this.isCleared) return;
         this.isCleared = true;
-        this.stop();
-        setTimeout(() => {
-            alert('クリア！');
-        }, 100);
+        this.clearTimer = 0;
+        this.titleState = 'clear';
+        this.playBgm('clear'); // クリアBGM開始
+    },
+
+    renderClearEffect() {
+        const ctx = this.ctx;
+        const w = this.canvas.width;
+        const h = this.canvas.height;
+
+        // 両サイドからの暗転（進行に応じて広がる）
+        const progress = Math.min(this.clearTimer / 150, 1); // 150フレームで完全暗転
+        const darkWidth = (w / 2) * progress;
+
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+        ctx.fillRect(0, 0, darkWidth, h); // 左から
+        ctx.fillRect(w - darkWidth, 0, darkWidth, h); // 右から
+
+        // STAGE CLEAR テキスト（点滅）
+        if (Math.floor(this.clearTimer / 10) % 2 === 0) {
+            ctx.font = 'bold 24px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            // 縁取り（黒）
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 4;
+            ctx.strokeText('STAGE CLEAR', w / 2, h / 2);
+
+            // 本体（白）
+            ctx.fillStyle = '#fff';
+            ctx.fillText('STAGE CLEAR', w / 2, h / 2);
+        }
     },
 
     getCollision(x, y) {
