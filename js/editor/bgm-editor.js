@@ -79,6 +79,29 @@ const SoundEditor = {
         this.render();
     },
 
+    // iOSでconfirmダイアログ後にAudioContextが壊れる問題対策
+    resetAudioContext() {
+        // 古いコンテキストをクローズ
+        if (this.audioCtx) {
+            try {
+                this.audioCtx.close();
+            } catch (e) { }
+        }
+        // 新しいコンテキストを作成
+        this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        // アクティブオシレーターをクリア
+        this.activeOscillators = [null, null, null, null];
+
+        // ゲームエンジンのコンテキストもリセット
+        if (typeof GameEngine !== 'undefined' && GameEngine.bgmAudioCtx) {
+            try {
+                GameEngine.bgmAudioCtx.close();
+            } catch (e) { }
+            GameEngine.bgmAudioCtx = null;
+        }
+    },
+
     resize() {
         if (!this.canvas) return;
         // ピアノロール: 16x16グリッド
@@ -272,17 +295,13 @@ const SoundEditor = {
         }
 
         if (!confirm('このソングを削除しますか？')) {
-            // iOSでconfirmダイアログ後にAudioContextがsuspendになる対策
-            if (this.audioCtx && this.audioCtx.state === 'suspended') {
-                this.audioCtx.resume();
-            }
+            // iOSでconfirmダイアログ後にAudioContextが壊れる対策：再作成
+            this.resetAudioContext();
             return;
         }
 
-        // iOSでconfirmダイアログ後にAudioContextがsuspendになる対策
-        if (this.audioCtx && this.audioCtx.state === 'suspended') {
-            this.audioCtx.resume();
-        }
+        // iOSでconfirmダイアログ後にAudioContextが壊れる対策：再作成
+        this.resetAudioContext();
 
         this.songs.splice(idx, 1);
         if (this.currentSongIdx >= this.songs.length) {
@@ -997,17 +1016,13 @@ const SoundEditor = {
         }
 
         if (!confirm(`Tr${this.currentTrack + 1}の全ノートを削除しますか？`)) {
-            // iOSでconfirmダイアログ後にAudioContextがsuspendになる対策
-            if (this.audioCtx && this.audioCtx.state === 'suspended') {
-                this.audioCtx.resume();
-            }
+            // iOSでconfirmダイアログ後にAudioContextが壊れる対策：再作成
+            this.resetAudioContext();
             return;
         }
 
-        // iOSでconfirmダイアログ後にAudioContextがsuspendになる対策
-        if (this.audioCtx && this.audioCtx.state === 'suspended') {
-            this.audioCtx.resume();
-        }
+        // iOSでconfirmダイアログ後にAudioContextが壊れる対策：再作成
+        this.resetAudioContext();
 
         track.notes = [];
         this.currentStep = 0;
