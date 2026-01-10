@@ -58,6 +58,12 @@ const GameEngine = {
         this.startMessageTimer = 90; // START!表示時間（1.5秒）
         this.resize();
         this.initGame();
+
+        // 既存のループがあればキャンセル（重複防止）
+        if (this.animationId) {
+            cancelAnimationFrame(this.animationId);
+            this.animationId = null;
+        }
         this.gameLoop();
     },
 
@@ -87,6 +93,11 @@ const GameEngine = {
             this.isPaused = false;
             if (!this.isRunning) {
                 this.isRunning = true;
+                // 既存のループがあればキャンセル（重複防止）
+                if (this.animationId) {
+                    cancelAnimationFrame(this.animationId);
+                    this.animationId = null;
+                }
                 this.gameLoop();
             }
         } else if (this.isRunning) {
