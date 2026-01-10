@@ -119,6 +119,10 @@ class Player {
             this.starTimer--;
             if (this.starTimer <= 0) {
                 this.starPower = false;
+                // ステージBGMに戻す
+                if (typeof GameEngine !== 'undefined') {
+                    GameEngine.playBgm('stage');
+                }
             }
         }
 
@@ -307,6 +311,10 @@ class Player {
                 this.starTimer = this.starDuration;
                 this.invincible = true;
                 this.invincibleTimer = this.starDuration;
+                // 無敵BGM再生
+                if (typeof GameEngine !== 'undefined') {
+                    GameEngine.playBgm('invincible');
+                }
                 // SE再生
                 this.playSE('itemGet');
                 break;
