@@ -1577,6 +1577,8 @@ body {
     display: flex;
     flex-direction: column;
     gap: 4px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 .sound-ctrl-btn {

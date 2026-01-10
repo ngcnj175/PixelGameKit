@@ -431,7 +431,7 @@ const GameEngine = {
                 this.titleState = 'gameover';
                 this.gameOverTimer = 0;
                 this.gameOverPending = false;
-                this.playBgm('gameover'); // ゲームオーバーBGM
+                this.playBgm('gameover', false); // ゲームオーバーBGM（ループなし）
             }
         }
 
@@ -792,7 +792,7 @@ const GameEngine = {
         this.isCleared = true;
         this.clearTimer = 0;
         this.titleState = 'clear';
-        this.playBgm('clear'); // クリアBGM開始
+        this.playBgm('clear', false); // クリアBGM開始（ループなし）
     },
 
     renderClearEffect() {
@@ -1064,7 +1064,7 @@ const GameEngine = {
     },
 
     // ========== BGM再生 ==========
-    playBgm(type) {
+    playBgm(type, loop = true) {
         // 同じBGMが再生中なら何もしない
         if (this.currentBgmType === type && this.bgmPlayInterval) return;
 
@@ -1088,6 +1088,9 @@ const GameEngine = {
         const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
         const trackTypes = ['square', 'square', 'triangle', 'noise'];
 
+        // 各トラックのアクティブな発音を追跡（同時発音数1制限用）
+        const activeNodes = [null, null, null, null];
+
         const getFrequency = (pitch) => {
             const octave = Math.floor(pitch / 12) + 1;
             const noteIdx = pitch % 12;
@@ -1095,8 +1098,16 @@ const GameEngine = {
             return 440 * Math.pow(2, semitone / 12);
         };
 
-        const playNote = (freq, waveType, duration, pitch) => {
+        const playNote = (freq, waveType, duration, pitch, trackIdx) => {
             const ctx = this.bgmAudioCtx;
+
+            // 前の音を停止（同時発音数1制限）
+            if (activeNodes[trackIdx]) {
+                try {
+                    activeNodes[trackIdx].stop();
+                } catch (e) { }
+                activeNodes[trackIdx] = null;
+            }
 
             if (waveType === 'noise') {
                 // ドラム音（ピッチに応じた連続的なフィルター周波数）
@@ -1153,6 +1164,9 @@ const GameEngine = {
                 gain.connect(ctx.destination);
                 noise.start();
                 noise.stop(ctx.currentTime + duration);
+
+                // アクティブノードを記録
+                activeNodes[trackIdx] = noise;
                 return;
             }
 
@@ -1174,6 +1188,9 @@ const GameEngine = {
             gain.connect(ctx.destination);
             osc.start();
             osc.stop(ctx.currentTime + duration);
+
+            // アクティブノードを記録
+            activeNodes[trackIdx] = osc;
         };
 
         // BGM再生ループ
@@ -1189,14 +1206,18 @@ const GameEngine = {
                 track.notes.forEach(note => {
                     if (note.step === step) {
                         const freq = getFrequency(note.pitch);
-                        playNote(freq, trackTypes[trackIdx], stepDuration * note.length, note.pitch);
+                        playNote(freq, trackTypes[trackIdx], stepDuration * note.length, note.pitch, trackIdx);
                     }
                 });
             });
 
             step++;
             if (step >= maxSteps) {
-                step = 0; // ループ
+                if (loop) {
+                    step = 0; // ループ再生
+                } else {
+                    this.stopBgm(); // 1回再生のみで終了
+                }
             }
         }, stepDuration * 1000);
     },
