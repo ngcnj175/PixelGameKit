@@ -539,7 +539,7 @@ class Player {
     startJoyJump() {
         this.joyJumpActive = true;
         this.joyJumpStartY = this.y;
-        this.vy = this.jumpPower * 1.2; // 少し高くジャンプ
+        this.vy = this.jumpPower * 0.6; // 低めのジャンプ
         this.facingRight = true; // 正面向き（右向き）
         this.vx = 0; // 移動停止
         this.state = 'jump';
@@ -560,7 +560,7 @@ class Player {
         // 開始位置まで落ちたら再ジャンプ（ループ）
         if (this.y >= this.joyJumpStartY && this.vy > 0) {
             this.y = this.joyJumpStartY;
-            this.vy = this.jumpPower * 1.2;
+            this.vy = this.jumpPower * 0.6;
         }
 
         // アニメーション

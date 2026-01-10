@@ -800,27 +800,20 @@ const GameEngine = {
         const w = this.canvas.width;
         const h = this.canvas.height;
 
-        // 両サイドからの暗転（進行に応じて広がる）
+        // 両サイドからの暗転（進行に応じて広がる、完全不透明）
         const progress = Math.min(this.clearTimer / 150, 1); // 150フレームで完全暗転
         const darkWidth = (w / 2) * progress;
 
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+        ctx.fillStyle = '#333333'; // GAME OVERと同じ色
         ctx.fillRect(0, 0, darkWidth, h); // 左から
         ctx.fillRect(w - darkWidth, 0, darkWidth, h); // 右から
 
-        // STAGE CLEAR テキスト（点滅）
+        // STAGE CLEAR テキスト（点滅、GAME OVERと同じフォント）
         if (Math.floor(this.clearTimer / 10) % 2 === 0) {
-            ctx.font = 'bold 24px Arial';
+            ctx.font = '16px Arial';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-
-            // 縁取り（黒）
-            ctx.strokeStyle = '#000';
-            ctx.lineWidth = 4;
-            ctx.strokeText('STAGE CLEAR', w / 2, h / 2);
-
-            // 本体（白）
-            ctx.fillStyle = '#fff';
+            ctx.fillStyle = '#ffffff';
             ctx.fillText('STAGE CLEAR', w / 2, h / 2);
         }
     },

@@ -1329,6 +1329,11 @@ const StageEditor = {
         const header = document.getElementById('stage-settings-header');
         if (!panel || !header) return;
 
+        // パネル内のクリック/タッチイベントがキャンバスに伝播しないように
+        panel.addEventListener('click', (e) => e.stopPropagation());
+        panel.addEventListener('touchstart', (e) => e.stopPropagation());
+        panel.addEventListener('touchend', (e) => e.stopPropagation());
+
         // 折りたたみ（初期状態は開いている）
         header.addEventListener('click', () => {
             const wasCollapsed = panel.classList.contains('collapsed');
