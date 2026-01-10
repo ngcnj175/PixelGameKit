@@ -1489,15 +1489,28 @@ const StageEditor = {
         // 制限時間（分秒形式）
         const timeMin = document.getElementById('stage-time-min');
         const timeSec = document.getElementById('stage-time-sec');
+
+        // 入力フィールドのイベント伝播を止める
+        [timeMin, timeSec].forEach(input => {
+            if (input) {
+                input.addEventListener('click', (e) => e.stopPropagation());
+                input.addEventListener('touchstart', (e) => e.stopPropagation());
+                input.addEventListener('touchend', (e) => e.stopPropagation());
+                input.addEventListener('focus', (e) => e.stopPropagation());
+            }
+        });
+
         if (timeMin) {
-            timeMin.addEventListener('change', () => {
+            timeMin.addEventListener('change', (e) => {
+                e.stopPropagation();
                 const min = parseInt(timeMin.value) || 0;
                 const sec = parseInt(timeSec?.value) || 0;
                 App.projectData.stage.timeLimit = min * 60 + sec;
             });
         }
         if (timeSec) {
-            timeSec.addEventListener('change', () => {
+            timeSec.addEventListener('change', (e) => {
+                e.stopPropagation();
                 const min = parseInt(timeMin?.value) || 0;
                 const sec = parseInt(timeSec.value) || 0;
                 App.projectData.stage.timeLimit = min * 60 + sec;
