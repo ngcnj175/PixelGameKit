@@ -318,8 +318,10 @@ const App = {
 
         // 共有ボタン
         document.getElementById('share-icon-btn')?.addEventListener('click', () => {
+            console.log('Share button clicked');
             // プロジェクトデータを共有ダイアログで開く
             this.projectData.palette = this.nesPalette.slice();
+            console.log('Opening share dialog...');
             Share.openDialog(this.projectData);
         });
 

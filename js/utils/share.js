@@ -97,23 +97,28 @@ const Share = {
 
     // 共有ダイアログを開く
     openDialog(data) {
+        console.log('openDialog called', data);
         const dialog = document.getElementById('share-dialog');
         const urlInput = document.getElementById('share-url-input');
         const copySuccess = document.getElementById('copy-success');
 
+        console.log('dialog:', dialog, 'urlInput:', urlInput);
         if (!dialog || !urlInput) return;
 
         // URL生成
         const sizeInfo = this.checkSize(data);
+        console.log('sizeInfo:', sizeInfo);
         if (!sizeInfo.isValid) {
             alert('ゲームデータが大きすぎるため共有できません。\nスプライト数やノート数を減らしてください。');
             return;
         }
 
         const shareUrl = this.createUrl(data);
+        console.log('shareUrl:', shareUrl);
         urlInput.value = shareUrl;
         copySuccess.classList.add('hidden');
         dialog.classList.remove('hidden');
+        console.log('Dialog should be visible now');
     },
 
     // 共有ダイアログを閉じる
