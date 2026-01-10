@@ -878,7 +878,12 @@ const StageEditor = {
             div.appendChild(badge);
 
             // タップ/クリック処理（シングル：即座に選択、ダブル：設定表示）
-            const handleTap = () => {
+            const handleTap = (e) => {
+                // イベントターゲットがこのdiv内でない場合は無視（iPhoneバグ対策）
+                if (e && e.target && !div.contains(e.target)) {
+                    return;
+                }
+
                 const state = this.tileClickState;
 
                 // 同じタイルへの2回目のクリック（ダブルタップ）
