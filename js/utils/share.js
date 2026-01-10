@@ -1,8 +1,63 @@
 /**
- * PixelGameKit - URL共有ユーティリティ
+ * PixelGameKit - URL共有ユーティリティ（Firebase対応）
  */
 
 const Share = {
+    // 短縮ID生成（8文字）
+    generateShortId() {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        let id = '';
+        for (let i = 0; i < 8; i++) {
+            id += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return id;
+    },
+
+    // Firebaseにゲームデータを保存
+    async saveGame(data) {
+        if (!window.firebaseDB) {
+            console.error('Firebase not initialized');
+            return null;
+        }
+
+        try {
+            const id = this.generateShortId();
+            const encoded = this.encode(data);
+
+            await window.firebaseDB.ref('games/' + id).set({
+                data: encoded,
+                createdAt: Date.now()
+            });
+
+            console.log('Game saved with ID:', id);
+            return id;
+        } catch (e) {
+            console.error('Failed to save game:', e);
+            return null;
+        }
+    },
+
+    // Firebaseからゲームデータを読み込み
+    async loadGame(id) {
+        if (!window.firebaseDB) {
+            console.error('Firebase not initialized');
+            return null;
+        }
+
+        try {
+            const snapshot = await window.firebaseDB.ref('games/' + id).once('value');
+            const record = snapshot.val();
+
+            if (record && record.data) {
+                return this.decode(record.data);
+            }
+            return null;
+        } catch (e) {
+            console.error('Failed to load game:', e);
+            return null;
+        }
+    },
+
     // プロジェクトデータをURLエンコード
     encode(data) {
         try {
@@ -41,27 +96,9 @@ const Share = {
         }
     },
 
-    // 共有URL生成
-    createUrl(data) {
-        const encoded = this.encode(data);
-        if (encoded) {
-            return window.location.origin + window.location.pathname + '#' + encoded;
-        }
-        return null;
-    },
-
-    // データサイズ確認（URL長さ制限チェック用）
-    checkSize(data) {
-        const encoded = this.encode(data);
-        if (encoded) {
-            const url = this.createUrl(data);
-            return {
-                dataLength: encoded.length,
-                urlLength: url.length,
-                isValid: url.length < 8000 // 安全なURL長さ
-            };
-        }
-        return { dataLength: 0, urlLength: 0, isValid: false };
+    // 短縮共有URL生成（Firebase ID使用）
+    createShortUrl(id) {
+        return window.location.origin + window.location.pathname + '?g=' + id;
     },
 
     // クリップボードにコピー
@@ -89,36 +126,35 @@ const Share = {
     },
 
     // X (Twitter) 共有URL生成
-    createTwitterUrl(shareUrl, text = 'PixelGameKitでゲームを作りました！🎮') {
+    createTwitterUrl(shareUrl, text = 'PixelGameKitでゲームを作ったよ！🎮\nプレイしてみてね！') {
         const tweetText = encodeURIComponent(text);
         const encodedUrl = encodeURIComponent(shareUrl);
         return `https://twitter.com/intent/tweet?text=${tweetText}&url=${encodedUrl}`;
     },
 
-    // 共有ダイアログを開く
-    openDialog(data) {
-        console.log('openDialog called', data);
+    // 共有ダイアログを開く（Firebase保存）
+    async openDialog(data) {
         const dialog = document.getElementById('share-dialog');
         const urlInput = document.getElementById('share-url-input');
         const copySuccess = document.getElementById('copy-success');
 
-        console.log('dialog:', dialog, 'urlInput:', urlInput);
         if (!dialog || !urlInput) return;
 
-        // URL生成
-        const sizeInfo = this.checkSize(data);
-        console.log('sizeInfo:', sizeInfo);
-        if (!sizeInfo.isValid) {
-            alert('ゲームデータが大きすぎるため共有できません。\nスプライト数やノート数を減らしてください。');
+        // ローディング表示
+        urlInput.value = '共有URL生成中...';
+        copySuccess.classList.add('hidden');
+        dialog.classList.remove('hidden');
+
+        // Firebaseに保存
+        const id = await this.saveGame(data);
+
+        if (!id) {
+            urlInput.value = 'エラー：保存に失敗しました';
             return;
         }
 
-        const shareUrl = this.createUrl(data);
-        console.log('shareUrl:', shareUrl);
+        const shareUrl = this.createShortUrl(id);
         urlInput.value = shareUrl;
-        copySuccess.classList.add('hidden');
-        dialog.classList.remove('hidden');
-        console.log('Dialog should be visible now');
     },
 
     // 共有ダイアログを閉じる
@@ -140,18 +176,22 @@ const Share = {
 
         if (copyBtn && urlInput) {
             copyBtn.addEventListener('click', async () => {
-                const success = await this.copyToClipboard(urlInput.value);
-                if (success && copySuccess) {
-                    copySuccess.classList.remove('hidden');
-                    setTimeout(() => copySuccess.classList.add('hidden'), 2000);
+                if (urlInput.value.startsWith('http')) {
+                    const success = await this.copyToClipboard(urlInput.value);
+                    if (success && copySuccess) {
+                        copySuccess.classList.remove('hidden');
+                        setTimeout(() => copySuccess.classList.add('hidden'), 2000);
+                    }
                 }
             });
         }
 
         if (shareXBtn && urlInput) {
             shareXBtn.addEventListener('click', () => {
-                const twitterUrl = this.createTwitterUrl(urlInput.value);
-                window.open(twitterUrl, '_blank');
+                if (urlInput.value.startsWith('http')) {
+                    const twitterUrl = this.createTwitterUrl(urlInput.value);
+                    window.open(twitterUrl, '_blank');
+                }
             });
         }
 

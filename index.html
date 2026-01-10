@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/svg+xml" href="assets/icons/icon-192.svg">
     <link rel="apple-touch-icon" href="assets/icons/icon-192.svg">
-    <title>PixelGameKit v1.54.3</title>
+    <title>PixelGameKit v1.55.0</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 
@@ -912,6 +912,25 @@
 
     <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script>
+    <script>
+        // Firebase設定
+        const firebaseConfig = {
+            apiKey: "AIzaSyBsFgWrSzxROQFUNHkNNGge7L4Zu3HJX6E",
+            authDomain: "pixelgamekit.firebaseapp.com",
+            databaseURL: "https://pixelgamekit-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "pixelgamekit",
+            storageBucket: "pixelgamekit.firebasestorage.app",
+            messagingSenderId: "1086024698812",
+            appId: "1:1086024698812:web:ead683283290403f3f79b9"
+        };
+        firebase.initializeApp(firebaseConfig);
+        window.firebaseDB = firebase.database();
+    </script>
+
     <script src="js/utils/storage.js"></script>
     <script src="js/utils/share.js"></script>
     <script src="js/editor/sprite-editor.js"></script>

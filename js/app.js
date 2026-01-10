@@ -190,26 +190,49 @@ const App = {
         }
     },
 
-    checkUrlData() {
+    async checkUrlData() {
+        // ?g=xxx パラメータをチェック（Firebase短縮URL）
+        const urlParams = new URLSearchParams(window.location.search);
+        const gameId = urlParams.get('g');
+
+        if (gameId) {
+            console.log('Loading game from Firebase:', gameId);
+            const data = await Share.loadGame(gameId);
+            if (data) {
+                this.projectData = data;
+                this.isPlayOnlyMode = true;
+                console.log('Project loaded from Firebase (play-only mode)');
+                if (this.projectData.palette) {
+                    this.nesPalette = this.projectData.palette;
+                }
+                // URLからパラメータを削除
+                history.replaceState(null, '', window.location.pathname);
+                this.applyPlayOnlyMode();
+                // 各エディタをリフレッシュ
+                this.refreshCurrentScreen();
+            } else {
+                console.warn('Failed to load game:', gameId);
+            }
+            return;
+        }
+
+        // 従来のハッシュ形式もサポート（後方互換）
         const hash = window.location.hash.slice(1);
         if (hash) {
             try {
                 const data = Share.decode(hash);
                 if (data) {
                     this.projectData = data;
-                    this.isPlayOnlyMode = true; // プレイ専用モード
-                    console.log('Project loaded from URL (play-only mode)');
-                    // パレットを復元
+                    this.isPlayOnlyMode = true;
+                    console.log('Project loaded from URL hash (play-only mode)');
                     if (this.projectData.palette) {
                         this.nesPalette = this.projectData.palette;
                     }
-                    // URLからハッシュを削除
                     history.replaceState(null, '', window.location.pathname);
-                    // プレイ専用モードUI適用
                     this.applyPlayOnlyMode();
                 }
             } catch (e) {
-                console.warn('Failed to load from URL:', e);
+                console.warn('Failed to load from URL hash:', e);
             }
         }
     },
