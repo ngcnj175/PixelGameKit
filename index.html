@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/svg+xml" href="assets/icons/icon-192.svg">
     <link rel="apple-touch-icon" href="assets/icons/icon-192.svg">
-    <title>PixelGameKit v1.53.0</title>
+    <title>PixelGameKit v1.53.1</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 
@@ -378,25 +378,27 @@
                     </div>
                 </div>
 
-                <!-- タイル設定パネル（ソング設定パネルと同じUI） -->
+                <!-- タイル設定パネル（インライン展開） -->
                 <div id="tile-config-panel" class="hidden">
-                    <div class="config-header">
-                        <span id="tile-type-label" class="config-title">素材</span>
-                        <div class="config-header-btns">
-                            <button id="config-save-btn" class="header-btn">保存</button>
-                            <button id="config-close-btn" class="header-btn">閉じる</button>
-                        </div>
-                    </div>
-                    <div class="config-body">
-                        <!-- スプライト設定（属性によって表示内容変更） -->
-                        <div id="sprite-config-section">
-                            <!-- JSで動的生成 -->
-                        </div>
+                    <!-- 閉じるボタン -->
+                    <button id="config-close-btn" class="panel-close-btn">✕</button>
 
-                        <!-- パラメータ設定（属性によって表示内容変更） -->
-                        <div id="param-config-section">
-                            <!-- JSで動的生成 -->
-                        </div>
+                    <!-- 属性表示（ラベルのみ、変更不可） -->
+                    <div id="tile-type-label" class="config-type-label">素材</div>
+
+                    <!-- スプライト設定（属性によって表示内容変更） -->
+                    <div id="sprite-config-section">
+                        <!-- JSで動的生成 -->
+                    </div>
+
+                    <!-- パラメータ設定（属性によって表示内容変更） -->
+                    <div id="param-config-section">
+                        <!-- JSで動的生成 -->
+                    </div>
+
+                    <!-- アクションボタン -->
+                    <div class="config-row config-actions">
+                        <button id="config-save-btn" class="config-btn primary">保存</button>
                     </div>
                 </div>
             </div>

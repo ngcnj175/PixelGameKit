@@ -248,47 +248,14 @@ const StageEditor = {
 
     // ========== 設定パネル ==========
     initConfigPanel() {
-        // 重複リスナー防止
-        if (this.configPanelInitialized) return;
-        this.configPanelInitialized = true;
-
-        const panel = document.getElementById('tile-config-panel');
-
-        // パネル内のクリック/タップイベントがキャンバスに伝播しないように
-        if (panel) {
-            panel.addEventListener('click', (e) => e.stopPropagation());
-            panel.addEventListener('touchstart', (e) => e.stopPropagation());
-            panel.addEventListener('touchend', (e) => e.stopPropagation());
-        }
-
         const closeBtn = document.getElementById('config-close-btn');
         if (closeBtn) {
-            closeBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                e.preventDefault();
-                this.closeConfigPanel();
-            });
-            // タッチイベント（iPhone対応）
-            closeBtn.addEventListener('touchend', (e) => {
-                e.stopPropagation();
-                e.preventDefault();
-                this.closeConfigPanel();
-            });
+            closeBtn.addEventListener('click', () => this.closeConfigPanel());
         }
 
         const saveBtn = document.getElementById('config-save-btn');
         if (saveBtn) {
-            saveBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                e.preventDefault();
-                this.saveTemplate();
-            });
-            // タッチイベント（iPhone対応）
-            saveBtn.addEventListener('touchend', (e) => {
-                e.stopPropagation();
-                e.preventDefault();
-                this.saveTemplate();
-            });
+            saveBtn.addEventListener('click', () => this.saveTemplate());
         }
     },
 
