@@ -82,16 +82,13 @@ const App = {
     },
 
     // 初期化
-    async init() {
+    init() {
         console.log('PixelGameKit initializing...');
 
         this.registerServiceWorker();
         this.loadOrCreateProject();
-
-        // URL共有データの読み込み（Firebaseからの読み込みを待機）
-        await this.checkUrlData();
-
         this.initMenu();
+        this.checkUrlData();
 
         // 各エディタ初期化
         if (typeof SpriteEditor !== 'undefined') SpriteEditor.init();

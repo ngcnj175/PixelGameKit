@@ -23,7 +23,6 @@ const GameEngine = {
 
     // タイトル画面
     titleState: 'title', // 'title', 'wipe', 'playing', 'clear', 'gameover'
-    titleAnimationId: null, // タイトル画面用のアニメーションID
     wipeTimer: 0,
     titleBlinkTimer: 0,
     gameOverTimer: 0,
@@ -73,11 +72,6 @@ const GameEngine = {
         if (this.animationId) {
             cancelAnimationFrame(this.animationId);
             this.animationId = null;
-        }
-        // タイトル画面ループもキャンセル
-        if (this.titleAnimationId) {
-            cancelAnimationFrame(this.titleAnimationId);
-            this.titleAnimationId = null;
         }
         this.stopBgm();
     },
@@ -510,7 +504,7 @@ const GameEngine = {
 
         // タイトル画面のループ
         if (this.titleState === 'title') {
-            this.titleAnimationId = requestAnimationFrame(() => this.renderTitleScreen());
+            requestAnimationFrame(() => this.renderTitleScreen());
         }
     },
 
