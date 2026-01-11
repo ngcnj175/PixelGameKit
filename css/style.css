@@ -2705,3 +2705,65 @@ body {
 #share-close-btn {
     margin-top: 16px;
 }
+
+/* ========== パレットプリセット選択ダイアログ ========== */
+.palette-preset-modal {
+    max-width: 320px;
+}
+
+.palette-preset-modal h3 {
+    margin: 0 0 16px;
+    text-align: center;
+    color: var(--color-light);
+}
+
+.preset-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.preset-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px;
+    background: var(--bg-darker);
+    border: 1px solid var(--border-dark);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.preset-item:hover {
+    background: var(--bg-dark);
+}
+
+.preset-item input[type="radio"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--color-medium);
+}
+
+.preset-name {
+    flex: 1;
+    font-weight: bold;
+    color: var(--color-light);
+}
+
+.preset-count {
+    color: #888;
+    font-size: 12px;
+}
+
+.preset-buttons {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+}
+
+.preset-buttons .modal-btn {
+    flex: 1;
+    max-width: 100px;
+}

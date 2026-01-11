@@ -40,6 +40,7 @@ const SpriteEditor = {
         this.initTools();
         this.initSpriteGallery();
         this.initCanvasEvents();
+        this.initPresetDialogEvents();
     },
 
     refresh() {
@@ -146,13 +147,111 @@ const SpriteEditor = {
             container.appendChild(div);
         });
 
-        // 追加ボタンのイベント設定
+        // 追加ボタンのイベント設定（短押し: 色追加、長押し: プリセット選択）
         const addBtn = document.getElementById('add-color-btn');
         if (addBtn) {
-            addBtn.onclick = () => {
-                App.nesPalette.push('#000000');
-                this.initColorPalette();
+            let longPressTimer = null;
+            let isLongPress = false;
+
+            const startPress = () => {
+                isLongPress = false;
+                longPressTimer = setTimeout(() => {
+                    isLongPress = true;
+                    this.openPresetDialog();
+                }, 800);
             };
+
+            const endPress = () => {
+                clearTimeout(longPressTimer);
+                if (!isLongPress) {
+                    // 短押し: 色追加
+                    App.nesPalette.push('#000000');
+                    this.initColorPalette();
+                }
+            };
+
+            addBtn.addEventListener('mousedown', startPress);
+            addBtn.addEventListener('mouseup', endPress);
+            addBtn.addEventListener('mouseleave', () => clearTimeout(longPressTimer));
+            addBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startPress(); }, { passive: false });
+            addBtn.addEventListener('touchend', (e) => { e.preventDefault(); endPress(); }, { passive: false });
+            addBtn.addEventListener('touchcancel', () => clearTimeout(longPressTimer));
+        }
+    },
+
+    // プリセット選択ダイアログを開く
+    openPresetDialog() {
+        const dialog = document.getElementById('palette-preset-dialog');
+        if (dialog) {
+            // デフォルトでパステルを選択
+            const pastelRadio = document.querySelector('input[name="palette-preset"][value="pastel"]');
+            if (pastelRadio) pastelRadio.checked = true;
+            dialog.classList.remove('hidden');
+        }
+    },
+
+    // プリセット選択ダイアログを閉じる
+    closePresetDialog() {
+        const dialog = document.getElementById('palette-preset-dialog');
+        if (dialog) {
+            dialog.classList.add('hidden');
+        }
+    },
+
+    // プリセットを適用（追加モード）
+    applyPresetAdd() {
+        const selected = document.querySelector('input[name="palette-preset"]:checked');
+        if (!selected) {
+            alert('プリセットを選択してください');
+            return;
+        }
+        const preset = App.PALETTE_PRESETS[selected.value];
+        if (preset) {
+            // 既存パレットに追加
+            preset.colors.forEach(color => {
+                if (!App.nesPalette.includes(color)) {
+                    App.nesPalette.push(color);
+                }
+            });
+            this.initColorPalette();
+            this.closePresetDialog();
+        }
+    },
+
+    // プリセットを適用（置換モード）
+    applyPresetReplace() {
+        const selected = document.querySelector('input[name="palette-preset"]:checked');
+        if (!selected) {
+            alert('プリセットを選択してください');
+            return;
+        }
+        if (!confirm('現在のパレットを置換しますか？\nスプライトの色が変わる可能性があります。')) {
+            return;
+        }
+        const preset = App.PALETTE_PRESETS[selected.value];
+        if (preset) {
+            App.nesPalette = preset.colors.slice();
+            this.initColorPalette();
+            this.closePresetDialog();
+        }
+    },
+
+    // プリセットダイアログのイベント初期化
+    initPresetDialogEvents() {
+        const addBtn = document.getElementById('preset-add-btn');
+        const replaceBtn = document.getElementById('preset-replace-btn');
+        const closeBtn = document.getElementById('preset-close-btn');
+        const dialog = document.getElementById('palette-preset-dialog');
+
+        if (addBtn) addBtn.addEventListener('click', () => this.applyPresetAdd());
+        if (replaceBtn) replaceBtn.addEventListener('click', () => this.applyPresetReplace());
+        if (closeBtn) closeBtn.addEventListener('click', () => this.closePresetDialog());
+
+        // 背景クリックで閉じる
+        if (dialog) {
+            dialog.addEventListener('click', (e) => {
+                if (e.target === dialog) this.closePresetDialog();
+            });
         }
     },
 

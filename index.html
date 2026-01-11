@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/svg+xml" href="assets/icons/icon-192.svg">
     <link rel="apple-touch-icon" href="assets/icons/icon-192.svg">
-    <title>PixelGameKit v1.55.1</title>
+    <title>PixelGameKit v1.56.0</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 
@@ -907,6 +907,42 @@
             </div>
 
             <button id="share-close-btn" class="modal-btn cancel-btn">閉じる</button>
+        </div>
+    </div>
+
+    <!-- パレットプリセット選択ダイアログ -->
+    <div id="palette-preset-dialog" class="modal-overlay hidden">
+        <div class="modal-content palette-preset-modal">
+            <h3>パレットプリセット</h3>
+
+            <div id="palette-preset-list" class="preset-list">
+                <label class="preset-item">
+                    <input type="radio" name="palette-preset" value="pastel">
+                    <span class="preset-name">パステル</span>
+                    <span class="preset-count">(16色)</span>
+                </label>
+                <label class="preset-item">
+                    <input type="radio" name="palette-preset" value="famicom">
+                    <span class="preset-name">ファミコン</span>
+                    <span class="preset-count">(54色)</span>
+                </label>
+                <label class="preset-item">
+                    <input type="radio" name="palette-preset" value="gameboy">
+                    <span class="preset-name">ゲームボーイ</span>
+                    <span class="preset-count">(4色)</span>
+                </label>
+                <label class="preset-item">
+                    <input type="radio" name="palette-preset" value="mono">
+                    <span class="preset-name">モノクロ</span>
+                    <span class="preset-count">(8色)</span>
+                </label>
+            </div>
+
+            <div class="preset-buttons">
+                <button id="preset-add-btn" class="modal-btn ok-btn">追加</button>
+                <button id="preset-replace-btn" class="modal-btn" style="background: #e67e22;">置換</button>
+                <button id="preset-close-btn" class="modal-btn cancel-btn">閉じる</button>
+            </div>
         </div>
     </div>
 
