@@ -37,6 +37,7 @@ const SpriteEditor = {
         this.ctx = this.canvas.getContext('2d');
 
         this.initColorPalette();
+        this.initAddColorButton(); // ＋ボタンのイベント設定（1回だけ）
         this.initTools();
         this.initSpriteGallery();
         this.initCanvasEvents();
@@ -146,37 +147,40 @@ const SpriteEditor = {
 
             container.appendChild(div);
         });
+    },
 
-        // 追加ボタンのイベント設定（短押し: 色追加、長押し: プリセット選択）
+    // ＋ボタンのイベント設定（init時に1回だけ呼ばれる）
+    initAddColorButton() {
         const addBtn = document.getElementById('add-color-btn');
-        if (addBtn) {
-            let longPressTimer = null;
-            let isLongPress = false;
+        if (!addBtn || addBtn.dataset.initialized) return; // 既に初期化済みならスキップ
+        addBtn.dataset.initialized = 'true';
 
-            const startPress = () => {
-                isLongPress = false;
-                longPressTimer = setTimeout(() => {
-                    isLongPress = true;
-                    this.openPresetDialog();
-                }, 800);
-            };
+        let longPressTimer = null;
+        let isLongPress = false;
 
-            const endPress = () => {
-                clearTimeout(longPressTimer);
-                if (!isLongPress) {
-                    // 短押し: 色追加
-                    App.nesPalette.push('#000000');
-                    this.initColorPalette();
-                }
-            };
+        const startPress = () => {
+            isLongPress = false;
+            longPressTimer = setTimeout(() => {
+                isLongPress = true;
+                this.openPresetDialog();
+            }, 800);
+        };
 
-            addBtn.addEventListener('mousedown', startPress);
-            addBtn.addEventListener('mouseup', endPress);
-            addBtn.addEventListener('mouseleave', () => clearTimeout(longPressTimer));
-            addBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startPress(); }, { passive: false });
-            addBtn.addEventListener('touchend', (e) => { e.preventDefault(); endPress(); }, { passive: false });
-            addBtn.addEventListener('touchcancel', () => clearTimeout(longPressTimer));
-        }
+        const endPress = () => {
+            clearTimeout(longPressTimer);
+            if (!isLongPress) {
+                // 短押し: 色追加
+                App.nesPalette.push('#000000');
+                this.initColorPalette();
+            }
+        };
+
+        addBtn.addEventListener('mousedown', startPress);
+        addBtn.addEventListener('mouseup', endPress);
+        addBtn.addEventListener('mouseleave', () => clearTimeout(longPressTimer));
+        addBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startPress(); }, { passive: false });
+        addBtn.addEventListener('touchend', (e) => { e.preventDefault(); endPress(); }, { passive: false });
+        addBtn.addEventListener('touchcancel', () => clearTimeout(longPressTimer));
     },
 
     // プリセット選択ダイアログを開く
