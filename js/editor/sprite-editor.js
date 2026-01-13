@@ -27,6 +27,10 @@ const SpriteEditor = {
     panStartY: 0,
     isPanning: false,
 
+    // ダブルクリック検出用
+    lastSpriteClickTime: 0,
+    lastSpriteClickIndex: -1,
+
     // 範囲選択・ペーストモード
     selectionMode: false,
     selectionStart: null,
@@ -667,23 +671,24 @@ const SpriteEditor = {
             div.addEventListener('touchend', cancelLongPress);
 
             // ダブルクリックでサイズ切り替え
-            let lastClickTime = 0;
             div.addEventListener('click', (e) => {
                 if (!isLongPress) {
                     const now = Date.now();
-                    if (now - lastClickTime < 300) {
+                    if (now - this.lastSpriteClickTime < 300 && this.lastSpriteClickIndex === index) {
                         // ダブルクリック → サイズ切り替え
                         this.toggleSpriteSize(index);
-                        lastClickTime = 0;
+                        this.lastSpriteClickTime = 0;
+                        this.lastSpriteClickIndex = -1;
                     } else {
                         // シングルクリック → 選択
                         this.currentSprite = index;
                         this.history = []; // スプライト変更時は履歴クリア
                         this.viewportOffsetX = 0;  // オフセットリセット
                         this.viewportOffsetY = 0;
+                        this.lastSpriteClickTime = now;
+                        this.lastSpriteClickIndex = index;
                         this.initSpriteGallery();
                         this.render();
-                        lastClickTime = now;
                     }
                 }
             });
