@@ -99,11 +99,13 @@ const App = {
         };
     },
 
-    createEmptySprite() {
+    createEmptySprite(size = 1) {
+        const dimension = size === 2 ? 32 : 16;
         return {
             id: 0,
             name: 'sprite_0',
-            data: this.create2DArray(16, 16, -1)
+            data: this.create2DArray(dimension, dimension, -1),
+            size: size  // 1 = 16x16, 2 = 32x32
         };
     },
 

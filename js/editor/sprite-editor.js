@@ -20,6 +20,13 @@ const SpriteEditor = {
     SPRITE_SIZE: 16,
     pixelSize: 20,
 
+    // 32x32用の追加プロパティ
+    viewportOffsetX: 0,
+    viewportOffsetY: 0,
+    panStartX: 0,
+    panStartY: 0,
+    isPanning: false,
+
     // 範囲選択・ペーストモード
     selectionMode: false,
     selectionStart: null,
@@ -52,10 +59,22 @@ const SpriteEditor = {
     },
 
     resize() {
-        this.pixelSize = 320 / this.SPRITE_SIZE;
+        const dimension = this.getCurrentSpriteDimension();
+        this.pixelSize = 320 / 16;  // 常に16x16分の表示サイズを維持
         this.canvas.width = 320;
         this.canvas.height = 320;
         this.render();
+    },
+
+    // 現在のスプライトのサイズを取得
+    getCurrentSpriteSize() {
+        const sprite = App.projectData.sprites[this.currentSprite];
+        return sprite?.size || 1;
+    },
+
+    // 現在のスプライトの実ピクセル数を取得
+    getCurrentSpriteDimension() {
+        return this.getCurrentSpriteSize() === 2 ? 32 : 16;
     },
 
     // ========== Undo機能 ==========
@@ -647,13 +666,25 @@ const SpriteEditor = {
             div.addEventListener('touchstart', startLongPress, { passive: true });
             div.addEventListener('touchend', cancelLongPress);
 
-            // クリック（長押しでなければ選択）
+            // ダブルクリックでサイズ切り替え
+            let lastClickTime = 0;
             div.addEventListener('click', (e) => {
                 if (!isLongPress) {
-                    this.currentSprite = index;
-                    this.history = []; // スプライト変更時は履歴クリア
-                    this.initSpriteGallery();
-                    this.render();
+                    const now = Date.now();
+                    if (now - lastClickTime < 300) {
+                        // ダブルクリック → サイズ切り替え
+                        this.toggleSpriteSize(index);
+                        lastClickTime = 0;
+                    } else {
+                        // シングルクリック → 選択
+                        this.currentSprite = index;
+                        this.history = []; // スプライト変更時は履歴クリア
+                        this.viewportOffsetX = 0;  // オフセットリセット
+                        this.viewportOffsetY = 0;
+                        this.initSpriteGallery();
+                        this.render();
+                        lastClickTime = now;
+                    }
                 }
             });
 
@@ -729,12 +760,20 @@ const SpriteEditor = {
         this.ctx.fillStyle = bgColor;
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-        for (let y = 0; y < 16; y++) {
-            for (let x = 0; x < 16; x++) {
-                const colorIndex = sprite.data[y][x];
-                if (colorIndex >= 0) {
-                    this.ctx.fillStyle = palette[colorIndex];
-                    this.ctx.fillRect(x * this.pixelSize, y * this.pixelSize, this.pixelSize, this.pixelSize);
+        const dimension = this.getCurrentSpriteDimension();
+
+        // 表示範囲（ビューポート）は常に16x16ピクセル分
+        for (let vy = 0; vy < 16; vy++) {
+            for (let vx = 0; vx < 16; vx++) {
+                const sx = vx + this.viewportOffsetX;  // スプライト内の実座標
+                const sy = vy + this.viewportOffsetY;
+
+                if (sx >= 0 && sx < dimension && sy >= 0 && sy < dimension) {
+                    const colorIndex = sprite.data[sy][sx];
+                    if (colorIndex >= 0) {
+                        this.ctx.fillStyle = palette[colorIndex];
+                        this.ctx.fillRect(vx * this.pixelSize, vy * this.pixelSize, this.pixelSize, this.pixelSize);
+                    }
                 }
             }
         }
@@ -824,12 +863,16 @@ const SpriteEditor = {
         canvas.style.backgroundColor = bgColor;
         ctx.clearRect(0, 0, 16, 16);
 
-        for (let y = 0; y < 16; y++) {
-            for (let x = 0; x < 16; x++) {
+        const spriteSize = sprite.size || 1;
+        const dimension = spriteSize === 2 ? 32 : 16;
+        const scale = 16 / dimension;  // 32x32の場合は0.5倍に縮小
+
+        for (let y = 0; y < dimension; y++) {
+            for (let x = 0; x < dimension; x++) {
                 const colorIndex = sprite.data[y][x];
                 if (colorIndex >= 0) {
                     ctx.fillStyle = palette[colorIndex];
-                    ctx.fillRect(x, y, 1, 1);
+                    ctx.fillRect(x * scale, y * scale, scale, scale);
                 }
             }
         }
@@ -840,10 +883,45 @@ const SpriteEditor = {
         App.projectData.sprites.push({
             id: id,
             name: 'sprite_' + id,
-            data: App.create2DArray(16, 16, -1)
+            data: App.create2DArray(16, 16, -1),
+            size: 1  // デフォルトは16x16
         });
         this.currentSprite = id;
         this.history = [];
+        this.initSpriteGallery();
+        this.render();
+    },
+
+    // スプライトのサイズを切り替え（16x16 ↔ 32x32）
+    toggleSpriteSize(index) {
+        const sprite = App.projectData.sprites[index];
+        if (!sprite) return;
+
+        const currentSize = sprite.size || 1;
+        const newSize = currentSize === 1 ? 2 : 1;
+        const currentDim = currentSize === 2 ? 32 : 16;
+        const newDim = newSize === 2 ? 32 : 16;
+
+        // 新しいデータ配列を作成
+        const newData = App.create2DArray(newDim, newDim, -1);
+
+        // データをコピー（縮小の場合は左上のみ、拡大の場合は左上に配置）
+        const copyDim = Math.min(currentDim, newDim);
+        for (let y = 0; y < copyDim; y++) {
+            for (let x = 0; x < copyDim; x++) {
+                newData[y][x] = sprite.data[y][x];
+            }
+        }
+
+        sprite.data = newData;
+        sprite.size = newSize;
+
+        // 現在編集中のスプライトなら、オフセットをリセット
+        if (index === this.currentSprite) {
+            this.viewportOffsetX = 0;
+            this.viewportOffsetY = 0;
+        }
+
         this.initSpriteGallery();
         this.render();
     },
@@ -882,21 +960,59 @@ const SpriteEditor = {
 
         this.canvas.addEventListener('touchstart', (e) => {
             e.preventDefault();
-            this.onPointerDown(e.touches[0]);
+
+            // 2本指の場合はパン開始
+            if (e.touches.length === 2 && this.getCurrentSpriteSize() === 2) {
+                this.isPanning = true;
+                const touch1 = e.touches[0];
+                const touch2 = e.touches[1];
+                this.panStartX = (touch1.clientX + touch2.clientX) / 2;
+                this.panStartY = (touch1.clientY + touch2.clientY) / 2;
+            } else if (e.touches.length === 1) {
+                this.onPointerDown(e.touches[0]);
+            }
         }, { passive: false });
 
         this.canvas.addEventListener('touchmove', (e) => {
             e.preventDefault();
-            this.onPointerMove(e.touches[0]);
+
+            // 2本指パン処理
+            if (e.touches.length === 2 && this.isPanning && this.getCurrentSpriteSize() === 2) {
+                const touch1 = e.touches[0];
+                const touch2 = e.touches[1];
+                const centerX = (touch1.clientX + touch2.clientX) / 2;
+                const centerY = (touch1.clientY + touch2.clientY) / 2;
+
+                const deltaX = centerX - this.panStartX;
+                const deltaY = centerY - this.panStartY;
+
+                // オフセットを更新（ピクセル単位で移動）
+                this.viewportOffsetX -= Math.floor(deltaX / this.pixelSize);
+                this.viewportOffsetY -= Math.floor(deltaY / this.pixelSize);
+
+                // 範囲制限（0〜16の範囲内）
+                this.viewportOffsetX = Math.max(0, Math.min(16, this.viewportOffsetX));
+                this.viewportOffsetY = Math.max(0, Math.min(16, this.viewportOffsetY));
+
+                this.panStartX = centerX;
+                this.panStartY = centerY;
+
+                this.render();
+            } else if (e.touches.length === 1) {
+                this.onPointerMove(e.touches[0]);
+            }
         }, { passive: false });
 
-        document.addEventListener('touchend', () => this.onPointerUp());
+        document.addEventListener('touchend', () => {
+            this.isPanning = false;
+            this.onPointerUp();
+        });
     },
 
     getPixelFromEvent(e) {
         const rect = this.canvas.getBoundingClientRect();
-        const x = Math.floor((e.clientX - rect.left) / this.pixelSize);
-        const y = Math.floor((e.clientY - rect.top) / this.pixelSize);
+        const x = Math.floor((e.clientX - rect.left) / this.pixelSize) + this.viewportOffsetX;
+        const y = Math.floor((e.clientY - rect.top) / this.pixelSize) + this.viewportOffsetY;
         return { x, y };
     },
 
@@ -904,8 +1020,9 @@ const SpriteEditor = {
         if (App.currentScreen !== 'paint') return;
 
         const pixel = this.getPixelFromEvent(e);
+        const dimension = this.getCurrentSpriteDimension();
 
-        if (pixel.x < 0 || pixel.x >= 16 || pixel.y < 0 || pixel.y >= 16) {
+        if (pixel.x < 0 || pixel.x >= dimension || pixel.y < 0 || pixel.y >= dimension) {
             return;
         }
 
