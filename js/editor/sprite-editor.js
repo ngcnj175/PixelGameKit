@@ -1118,6 +1118,22 @@ const SpriteEditor = {
         this.saveHistory();
 
         const sprite = App.projectData.sprites[this.currentSprite];
+
+        // 配列の存在を確認（32x32への拡張が正しく行われていない場合のフォールバック）
+        if (!sprite.data[pixel.y] || typeof sprite.data[pixel.y][pixel.x] === 'undefined') {
+            console.warn('Sprite data access out of bounds:', pixel.x, pixel.y, 'data size:', sprite.data.length);
+            // データ配列を自動拡張
+            const dimension = this.getCurrentSpriteDimension();
+            while (sprite.data.length < dimension) {
+                sprite.data.push(Array(dimension).fill(-1));
+            }
+            for (let row of sprite.data) {
+                while (row.length < dimension) {
+                    row.push(-1);
+                }
+            }
+        }
+
         const currentVal = sprite.data[pixel.y][pixel.x];
 
         if (this.currentTool === 'pen') {
@@ -1193,6 +1209,12 @@ const SpriteEditor = {
 
         const sprite = App.projectData.sprites[this.currentSprite];
         if (!sprite) return;
+
+        // 配列の存在を確認
+        if (!sprite.data[y] || typeof sprite.data[y][x] === 'undefined') {
+            console.warn('processPixel: data access out of bounds');
+            return;
+        }
 
         this.lastPixel = { x, y };
 
