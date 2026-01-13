@@ -1133,9 +1133,10 @@ const SpriteEditor = {
 
         // 範囲選択モード
         if (this.selectionMode) {
+            const dimension = this.getCurrentSpriteDimension();
             this.selectionEnd = {
-                x: Math.max(0, Math.min(15, pixel.x)),
-                y: Math.max(0, Math.min(15, pixel.y))
+                x: Math.max(0, Math.min(dimension - 1, pixel.x)),
+                y: Math.max(0, Math.min(dimension - 1, pixel.y))
             };
             this.render();
             return;
@@ -1180,7 +1181,8 @@ const SpriteEditor = {
     },
 
     processPixel(x, y) {
-        if (x < 0 || x >= 16 || y < 0 || y >= 16) return;
+        const dimension = this.getCurrentSpriteDimension();
+        if (x < 0 || x >= dimension || y < 0 || y >= dimension) return;
 
         const sprite = App.projectData.sprites[this.currentSprite];
         if (!sprite) return;
@@ -1216,6 +1218,7 @@ const SpriteEditor = {
         if (targetColor === newColor) return;
 
         const sprite = App.projectData.sprites[this.currentSprite];
+        const dimension = this.getCurrentSpriteDimension();
         const q = [[x, y]];
         let iterations = 0;
 
@@ -1223,7 +1226,7 @@ const SpriteEditor = {
             iterations++;
             const [cx, cy] = q.pop();
 
-            if (cx >= 0 && cx < 16 && cy >= 0 && cy < 16) {
+            if (cx >= 0 && cx < dimension && cy >= 0 && cy < dimension) {
                 if (sprite.data[cy][cx] === targetColor) {
                     sprite.data[cy][cx] = newColor;
                     q.push([cx + 1, cy]);
@@ -1240,8 +1243,9 @@ const SpriteEditor = {
 
         this.saveHistory();
         const sprite = App.projectData.sprites[this.currentSprite];
-        for (let y = 0; y < 16; y++) {
-            for (let x = 0; x < 16; x++) {
+        const dimension = this.getCurrentSpriteDimension();
+        for (let y = 0; y < dimension; y++) {
+            for (let x = 0; x < dimension; x++) {
                 sprite.data[y][x] = -1;
             }
         }
@@ -1328,7 +1332,8 @@ const SpriteEditor = {
             for (let dx = 0; dx < dataW; dx++) {
                 const tx = this.pasteOffset.x + dx;
                 const ty = this.pasteOffset.y + dy;
-                if (tx >= 0 && tx < 16 && ty >= 0 && ty < 16) {
+                const dimension = this.getCurrentSpriteDimension();
+                if (tx >= 0 && tx < dimension && ty >= 0 && ty < dimension) {
                     const val = this.pasteData[dy][dx];
                     if (val >= 0) { // 透明以外を上書き
                         sprite.data[ty][tx] = val;
