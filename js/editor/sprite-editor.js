@@ -1045,6 +1045,9 @@ const SpriteEditor = {
         this.canvas.addEventListener('touchstart', (e) => {
             e.preventDefault();
 
+            // デバッグ: タッチイベント発火確認
+            alert(`touchstart: touches=${e.touches.length}, isPanning=${this.isPanning}, spriteSize=${this.getCurrentSpriteSize()}`);
+
             // 2本指の場合はパン開始
             if (e.touches.length === 2 && this.getCurrentSpriteSize() === 2) {
                 this.isPanning = true;
