@@ -172,6 +172,7 @@ const App = {
                     'bgm-canvas',
                     'sprite-list',
                     'tile-list',
+                    'paint-canvas', // 追加
                     'tile-config-panel',
                     'stage-settings-content',
                     'paint-tools',
