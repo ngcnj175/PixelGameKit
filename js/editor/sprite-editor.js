@@ -1004,9 +1004,43 @@ const SpriteEditor = {
         this.canvas = newCanvas;
         this.ctx = this.canvas.getContext('2d');
 
+        // PC用キーボードショートカット: Shift + 矢印キーでビューポートをパン
+        document.addEventListener('keydown', (e) => {
+            if (App.currentScreen !== 'paint') return;
+            if (this.getCurrentSpriteSize() !== 2) return;  // 32x32のみ
+            if (!e.shiftKey) return;
+
+            const step = this.pixelSize;  // 1タイル分 = 20px
+            const maxScroll = 16 * this.pixelSize;  // 最大320px
+
+            switch (e.key) {
+                case 'ArrowRight':
+                    this.viewportOffsetX = Math.min(maxScroll, this.viewportOffsetX + step);
+                    e.preventDefault();
+                    this.render();
+                    break;
+                case 'ArrowLeft':
+                    this.viewportOffsetX = Math.max(0, this.viewportOffsetX - step);
+                    e.preventDefault();
+                    this.render();
+                    break;
+                case 'ArrowDown':
+                    this.viewportOffsetY = Math.min(maxScroll, this.viewportOffsetY + step);
+                    e.preventDefault();
+                    this.render();
+                    break;
+                case 'ArrowUp':
+                    this.viewportOffsetY = Math.max(0, this.viewportOffsetY - step);
+                    e.preventDefault();
+                    this.render();
+                    break;
+            }
+        });
+
         this.canvas.addEventListener('mousedown', (e) => this.onPointerDown(e));
         this.canvas.addEventListener('mousemove', (e) => this.onPointerMove(e));
         document.addEventListener('mouseup', () => this.onPointerUp());
+
 
         this.canvas.addEventListener('touchstart', (e) => {
             e.preventDefault();
@@ -1092,7 +1126,17 @@ const SpriteEditor = {
         const pixel = this.getPixelFromEvent(e);
         const dimension = this.getCurrentSpriteDimension();
 
+        // デバッグ: タップ座標を表示（iPhone問題調査用）
+        const debugInfo = `pixel: (${pixel.x}, ${pixel.y})\n` +
+            `dimension: ${dimension}\n` +
+            `offsetX: ${Math.floor(this.viewportOffsetX / this.pixelSize)}\n` +
+            `offsetY: ${Math.floor(this.viewportOffsetY / this.pixelSize)}\n` +
+            `viewportOffset: (${this.viewportOffsetX}, ${this.viewportOffsetY})`;
+        console.log('onPointerDown:', debugInfo);
+        alert(debugInfo);  // iPhone問題調査用
+
         if (pixel.x < 0 || pixel.x >= dimension || pixel.y < 0 || pixel.y >= dimension) {
+            console.warn('Out of bounds:', pixel.x, pixel.y, 'dimension:', dimension);
             return;
         }
 
