@@ -793,9 +793,9 @@ const SpriteEditor = {
 
         const dimension = this.getCurrentSpriteDimension();
 
-        // オフセットを整数化
-        const offsetX = Math.floor(this.viewportOffsetX);
-        const offsetY = Math.floor(this.viewportOffsetY);
+        // オフセットをピクセル単位からタイル単位に変換
+        const offsetX = Math.floor(this.viewportOffsetX / this.pixelSize);
+        const offsetY = Math.floor(this.viewportOffsetY / this.pixelSize);
 
         // 表示範囲（ビューポート）は常に16x16ピクセル分
         for (let vy = 0; vy < 16; vy++) {
@@ -1021,16 +1021,14 @@ const SpriteEditor = {
                 const centerX = (touch1.clientX + touch2.clientX) / 2;
                 const centerY = (touch1.clientY + touch2.clientY) / 2;
 
-                // ピアノロールと同じ方式: スワイプ方向と逆にスクロール
+                // ピアノロールと同じ方式: ピクセル単位でスクロール
                 const deltaX = this.panStartX - centerX;
                 const deltaY = this.panStartY - centerY;
 
-                // ピクセル単位でオフセットを更新
-                const pixelDeltaX = deltaX / this.pixelSize;
-                const pixelDeltaY = deltaY / this.pixelSize;
-
-                this.viewportOffsetX = Math.max(0, Math.min(16, this.viewportOffsetX + pixelDeltaX));
-                this.viewportOffsetY = Math.max(0, Math.min(16, this.viewportOffsetY + pixelDeltaY));
+                // ピクセル単位でオフセットを更新（16ピクセル分 = 16タイル分 = 320pxが最大）
+                const maxScroll = 16 * this.pixelSize;  // 320px
+                this.viewportOffsetX = Math.max(0, Math.min(maxScroll, this.viewportOffsetX + deltaX));
+                this.viewportOffsetY = Math.max(0, Math.min(maxScroll, this.viewportOffsetY + deltaY));
 
                 this.panStartX = centerX;
                 this.panStartY = centerY;
@@ -1049,8 +1047,9 @@ const SpriteEditor = {
 
     getPixelFromEvent(e) {
         const rect = this.canvas.getBoundingClientRect();
-        const offsetX = Math.floor(this.viewportOffsetX);
-        const offsetY = Math.floor(this.viewportOffsetY);
+        // オフセットをピクセル単位からタイル単位に変換
+        const offsetX = Math.floor(this.viewportOffsetX / this.pixelSize);
+        const offsetY = Math.floor(this.viewportOffsetY / this.pixelSize);
         const x = Math.floor((e.clientX - rect.left) / this.pixelSize) + offsetX;
         const y = Math.floor((e.clientY - rect.top) / this.pixelSize) + offsetY;
         return { x, y };
