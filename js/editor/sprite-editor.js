@@ -886,24 +886,27 @@ const SpriteEditor = {
     },
 
     renderSpriteToMiniCanvas(sprite, canvas) {
+        const spriteSize = sprite.size || 1;
+        const dimension = spriteSize === 2 ? 32 : 16;
+
+        // スプライトサイズに合わせてキャンバスサイズを設定（CSSでスケーリング）
+        canvas.width = dimension;
+        canvas.height = dimension;
+
         const ctx = canvas.getContext('2d');
         const palette = App.nesPalette;
 
         // 背景色を動的に取得
         const bgColor = App.projectData.stage?.bgColor || App.projectData.stage?.backgroundColor || '#3CBCFC';
         canvas.style.backgroundColor = bgColor;
-        ctx.clearRect(0, 0, 16, 16);
-
-        const spriteSize = sprite.size || 1;
-        const dimension = spriteSize === 2 ? 32 : 16;
-        const scale = 16 / dimension;  // 32x32の場合は0.5倍に縮小
+        ctx.clearRect(0, 0, dimension, dimension);
 
         for (let y = 0; y < dimension; y++) {
             for (let x = 0; x < dimension; x++) {
                 const colorIndex = sprite.data[y][x];
                 if (colorIndex >= 0) {
                     ctx.fillStyle = palette[colorIndex];
-                    ctx.fillRect(x * scale, y * scale, scale, scale);
+                    ctx.fillRect(x, y, 1, 1);
                 }
             }
         }
@@ -1014,16 +1017,16 @@ const SpriteEditor = {
                 const centerX = (touch1.clientX + touch2.clientX) / 2;
                 const centerY = (touch1.clientY + touch2.clientY) / 2;
 
-                const deltaX = centerX - this.panStartX;
-                const deltaY = centerY - this.panStartY;
+                // ピアノロールと同じ方式: スワイプ方向と逆にスクロール
+                const deltaX = this.panStartX - centerX;
+                const deltaY = this.panStartY - centerY;
 
-                // オフセットを更新（ピクセル単位で移動）
-                this.viewportOffsetX -= Math.floor(deltaX / this.pixelSize);
-                this.viewportOffsetY -= Math.floor(deltaY / this.pixelSize);
+                // ピクセル単位でオフセットを更新
+                const pixelDeltaX = deltaX / this.pixelSize;
+                const pixelDeltaY = deltaY / this.pixelSize;
 
-                // 範囲制限（0〜16の範囲内）
-                this.viewportOffsetX = Math.max(0, Math.min(16, this.viewportOffsetX));
-                this.viewportOffsetY = Math.max(0, Math.min(16, this.viewportOffsetY));
+                this.viewportOffsetX = Math.max(0, Math.min(16, this.viewportOffsetX + pixelDeltaX));
+                this.viewportOffsetY = Math.max(0, Math.min(16, this.viewportOffsetY + pixelDeltaY));
 
                 this.panStartX = centerX;
                 this.panStartY = centerY;
