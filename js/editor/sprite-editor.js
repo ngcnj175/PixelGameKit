@@ -793,24 +793,36 @@ const SpriteEditor = {
 
         const dimension = this.getCurrentSpriteDimension();
 
-        // オフセットをピクセル単位からタイル単位に変換
-        const offsetX = Math.floor(this.viewportOffsetX / this.pixelSize);
-        const offsetY = Math.floor(this.viewportOffsetY / this.pixelSize);
-
         // 表示範囲（ビューポート）は常に16x16ピクセル分
-        for (let vy = 0; vy < 16; vy++) {
-            for (let vx = 0; vx < 16; vx++) {
-                const sx = vx + offsetX;  // スプライト内の実座標
-                const sy = vy + offsetY;
+        try {
+            // オフセットが不正な値の場合はリセット
+            if (!Number.isFinite(this.viewportOffsetX)) this.viewportOffsetX = 0;
+            if (!Number.isFinite(this.viewportOffsetY)) this.viewportOffsetY = 0;
 
-                if (sx >= 0 && sx < dimension && sy >= 0 && sy < dimension) {
-                    const colorIndex = sprite.data[sy][sx];
-                    if (colorIndex >= 0) {
-                        this.ctx.fillStyle = palette[colorIndex];
-                        this.ctx.fillRect(vx * this.pixelSize, vy * this.pixelSize, this.pixelSize, this.pixelSize);
+            // オフセットをピクセル単位からタイル単位に変換
+            const offsetX = Math.floor(this.viewportOffsetX / this.pixelSize);
+            const offsetY = Math.floor(this.viewportOffsetY / this.pixelSize);
+
+            for (let vy = 0; vy < 16; vy++) {
+                for (let vx = 0; vx < 16; vx++) {
+                    const sx = vx + offsetX;  // スプライト内の実座標
+                    const sy = vy + offsetY;
+
+                    // 範囲チェックと配列の存在チェックを厳密に行う
+                    if (sx >= 0 && sx < dimension && sy >= 0 && sy < dimension) {
+                        // 行データが存在するか確認
+                        if (sprite.data[sy] && typeof sprite.data[sy][sx] !== 'undefined') {
+                            const colorIndex = sprite.data[sy][sx];
+                            if (colorIndex >= 0) {
+                                this.ctx.fillStyle = palette[colorIndex];
+                                this.ctx.fillRect(vx * this.pixelSize, vy * this.pixelSize, this.pixelSize, this.pixelSize);
+                            }
+                        }
                     }
                 }
             }
+        } catch (e) {
+            console.error('Render error:', e);
         }
 
         // ペーストプレビュー（確定前）
@@ -1022,11 +1034,23 @@ const SpriteEditor = {
                 const centerY = (touch1.clientY + touch2.clientY) / 2;
 
                 // ピアノロールと同じ方式: ピクセル単位でスクロール
+                // 開始位置が不正ならリセット
+                if (!Number.isFinite(this.panStartX) || !Number.isFinite(this.panStartY)) {
+                    this.panStartX = centerX;
+                    this.panStartY = centerY;
+                    return;
+                }
+
                 const deltaX = this.panStartX - centerX;
                 const deltaY = this.panStartY - centerY;
 
                 // ピクセル単位でオフセットを更新（16ピクセル分 = 16タイル分 = 320pxが最大）
                 const maxScroll = 16 * this.pixelSize;  // 320px
+
+                // 現在のオフセットの正当性チェック
+                if (!Number.isFinite(this.viewportOffsetX)) this.viewportOffsetX = 0;
+                if (!Number.isFinite(this.viewportOffsetY)) this.viewportOffsetY = 0;
+
                 this.viewportOffsetX = Math.max(0, Math.min(maxScroll, this.viewportOffsetX + deltaX));
                 this.viewportOffsetY = Math.max(0, Math.min(maxScroll, this.viewportOffsetY + deltaY));
 
