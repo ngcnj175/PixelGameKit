@@ -793,11 +793,15 @@ const SpriteEditor = {
 
         const dimension = this.getCurrentSpriteDimension();
 
+        // オフセットを整数化
+        const offsetX = Math.floor(this.viewportOffsetX);
+        const offsetY = Math.floor(this.viewportOffsetY);
+
         // 表示範囲（ビューポート）は常に16x16ピクセル分
         for (let vy = 0; vy < 16; vy++) {
             for (let vx = 0; vx < 16; vx++) {
-                const sx = vx + this.viewportOffsetX;  // スプライト内の実座標
-                const sy = vy + this.viewportOffsetY;
+                const sx = vx + offsetX;  // スプライト内の実座標
+                const sy = vy + offsetY;
 
                 if (sx >= 0 && sx < dimension && sy >= 0 && sy < dimension) {
                     const colorIndex = sprite.data[sy][sx];
@@ -1045,8 +1049,10 @@ const SpriteEditor = {
 
     getPixelFromEvent(e) {
         const rect = this.canvas.getBoundingClientRect();
-        const x = Math.floor((e.clientX - rect.left) / this.pixelSize) + this.viewportOffsetX;
-        const y = Math.floor((e.clientY - rect.top) / this.pixelSize) + this.viewportOffsetY;
+        const offsetX = Math.floor(this.viewportOffsetX);
+        const offsetY = Math.floor(this.viewportOffsetY);
+        const x = Math.floor((e.clientX - rect.left) / this.pixelSize) + offsetX;
+        const y = Math.floor((e.clientY - rect.top) / this.pixelSize) + offsetY;
         return { x, y };
     },
 
