@@ -668,10 +668,36 @@ const SpriteEditor = {
             div.addEventListener('mouseup', cancelLongPress);
             div.addEventListener('mouseleave', cancelLongPress);
             div.addEventListener('touchstart', startLongPress, { passive: true });
-            div.addEventListener('touchend', cancelLongPress);
+            div.addEventListener('touchend', (e) => {
+                cancelLongPress();
+                // タッチ用ダブルタップ検出
+                if (!isLongPress) {
+                    const now = Date.now();
+                    if (now - this.lastSpriteClickTime < 300 && this.lastSpriteClickIndex === index) {
+                        // ダブルタップ → サイズ切り替え
+                        e.preventDefault();
+                        this.toggleSpriteSize(index);
+                        this.lastSpriteClickTime = 0;
+                        this.lastSpriteClickIndex = -1;
+                    } else {
+                        // シングルタップ → 選択
+                        this.currentSprite = index;
+                        this.history = [];
+                        this.viewportOffsetX = 0;
+                        this.viewportOffsetY = 0;
+                        this.lastSpriteClickTime = now;
+                        this.lastSpriteClickIndex = index;
+                        this.initSpriteGallery();
+                        this.render();
+                    }
+                }
+            });
 
-            // ダブルクリックでサイズ切り替え
+            // PC用クリック（マウス）
             div.addEventListener('click', (e) => {
+                // タッチデバイスでは touchend で処理するのでスキップ
+                if (e.pointerType === 'touch' || 'ontouchstart' in window) return;
+
                 if (!isLongPress) {
                     const now = Date.now();
                     if (now - this.lastSpriteClickTime < 300 && this.lastSpriteClickIndex === index) {
@@ -682,8 +708,8 @@ const SpriteEditor = {
                     } else {
                         // シングルクリック → 選択
                         this.currentSprite = index;
-                        this.history = []; // スプライト変更時は履歴クリア
-                        this.viewportOffsetX = 0;  // オフセットリセット
+                        this.history = [];
+                        this.viewportOffsetX = 0;
                         this.viewportOffsetY = 0;
                         this.lastSpriteClickTime = now;
                         this.lastSpriteClickIndex = index;
