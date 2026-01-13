@@ -1071,11 +1071,18 @@ const SpriteEditor = {
 
     getPixelFromEvent(e) {
         const rect = this.canvas.getBoundingClientRect();
+
+        // CSSによる拡大縮小を考慮してスケールを計算
+        const scaleX = this.canvas.width / rect.width;
+        const scaleY = this.canvas.height / rect.height;
+
         // オフセットをピクセル単位からタイル単位に変換
         const offsetX = Math.floor(this.viewportOffsetX / this.pixelSize);
         const offsetY = Math.floor(this.viewportOffsetY / this.pixelSize);
-        const x = Math.floor((e.clientX - rect.left) / this.pixelSize) + offsetX;
-        const y = Math.floor((e.clientY - rect.top) / this.pixelSize) + offsetY;
+
+        // クライアント座標 → 内部キャンバス座標に変換してタイル計算
+        const x = Math.floor((e.clientX - rect.left) * scaleX / this.pixelSize) + offsetX;
+        const y = Math.floor((e.clientY - rect.top) * scaleY / this.pixelSize) + offsetY;
         return { x, y };
     },
 
