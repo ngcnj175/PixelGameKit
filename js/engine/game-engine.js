@@ -1032,6 +1032,7 @@ const GameEngine = {
         for (let y = 0; y < stage.height; y++) {
             for (let x = 0; x < stage.width; x++) {
                 const tileId = layer[y][x];
+                // 空タイル(-1)および2x2マーカータイル(-1000以下)はスキップ
                 if (tileId < 0) continue;
 
                 const { template, sprite } = getTileInfo(tileId);
@@ -1048,19 +1049,25 @@ const GameEngine = {
     },
 
     renderSprite(sprite, tileX, tileY, palette) {
-        const pixelSize = this.TILE_SIZE / 16;
+        // スプライトサイズを判定
+        const spriteSize = sprite.size || 1;
+        const dimension = spriteSize === 2 ? 32 : 16;
+        const tileCount = spriteSize === 2 ? 2 : 1;  // 占有するタイル数
+        const renderSize = this.TILE_SIZE * tileCount;
+        const pixelSize = renderSize / dimension;
+
         const screenX = (tileX - this.camera.x) * this.TILE_SIZE;
         const screenY = (tileY - this.camera.y) * this.TILE_SIZE;
 
-        // 画面外スキップ
-        if (screenX + this.TILE_SIZE < 0 || screenX > this.canvas.width ||
-            screenY + this.TILE_SIZE < 0 || screenY > this.canvas.height) {
+        // 画面外スキップ（2x2の場合は拡大領域を考慮）
+        if (screenX + renderSize < 0 || screenX > this.canvas.width ||
+            screenY + renderSize < 0 || screenY > this.canvas.height) {
             return;
         }
 
-        for (let y = 0; y < 16; y++) {
-            for (let x = 0; x < 16; x++) {
-                const colorIndex = sprite.data[y][x];
+        for (let y = 0; y < dimension; y++) {
+            for (let x = 0; x < dimension; x++) {
+                const colorIndex = sprite.data[y]?.[x];
                 if (colorIndex >= 0) {
                     this.ctx.fillStyle = palette[colorIndex];
                     this.ctx.fillRect(

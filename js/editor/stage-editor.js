@@ -1317,16 +1317,32 @@ const StageEditor = {
         const ctx = canvas.getContext('2d');
         const palette = App.nesPalette;
 
+        // スプライトサイズを判定
+        const spriteSize = sprite.size || 1;
+        const dimension = spriteSize === 2 ? 32 : 16;
+
+        // キャンバスサイズを固定（16x16表示）
+        canvas.width = 16;
+        canvas.height = 16;
+
         // 背景色を描画（動的に設定可能）
         ctx.fillStyle = bgColor;
         ctx.fillRect(0, 0, 16, 16);
 
-        for (let y = 0; y < 16; y++) {
-            for (let x = 0; x < 16; x++) {
-                const colorIndex = sprite.data[y][x];
+        // スケール係数（32x32は0.5に縮小）
+        const scale = 16 / dimension;
+
+        for (let y = 0; y < dimension; y++) {
+            for (let x = 0; x < dimension; x++) {
+                const colorIndex = sprite.data[y]?.[x];
                 if (colorIndex >= 0) {
                     ctx.fillStyle = palette[colorIndex];
-                    ctx.fillRect(x, y, 1, 1);
+                    ctx.fillRect(
+                        x * scale,
+                        y * scale,
+                        scale + 0.1,
+                        scale + 0.1
+                    );
                 }
             }
         }
