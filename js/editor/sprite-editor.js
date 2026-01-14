@@ -829,17 +829,26 @@ const SpriteEditor = {
         if (this.pasteMode && this.pasteData) {
             const dataH = this.pasteData.length;
             const dataW = this.pasteData[0].length;
+            const dimension = this.getCurrentSpriteDimension();
+            const offsetX = Math.floor(this.viewportOffsetX / this.pixelSize);
+            const offsetY = Math.floor(this.viewportOffsetY / this.pixelSize);
+
             for (let dy = 0; dy < dataH; dy++) {
                 for (let dx = 0; dx < dataW; dx++) {
                     const tx = this.pasteOffset.x + dx;
                     const ty = this.pasteOffset.y + dy;
-                    if (tx >= 0 && tx < 16 && ty >= 0 && ty < 16) {
-                        const val = this.pasteData[dy][dx];
-                        if (val >= 0) {
-                            this.ctx.fillStyle = palette[val];
-                            this.ctx.globalAlpha = 0.7;
-                            this.ctx.fillRect(tx * this.pixelSize, ty * this.pixelSize, this.pixelSize, this.pixelSize);
-                            this.ctx.globalAlpha = 1.0;
+                    if (tx >= 0 && tx < dimension && ty >= 0 && ty < dimension) {
+                        // ビューポート内に表示されるか確認
+                        const screenX = tx - offsetX;
+                        const screenY = ty - offsetY;
+                        if (screenX >= 0 && screenX < 16 && screenY >= 0 && screenY < 16) {
+                            const val = this.pasteData[dy][dx];
+                            if (val >= 0) {
+                                this.ctx.fillStyle = palette[val];
+                                this.ctx.globalAlpha = 0.7;
+                                this.ctx.fillRect(screenX * this.pixelSize, screenY * this.pixelSize, this.pixelSize, this.pixelSize);
+                                this.ctx.globalAlpha = 1.0;
+                            }
                         }
                     }
                 }
