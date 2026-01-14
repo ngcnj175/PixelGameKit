@@ -24,42 +24,103 @@ const GameController = {
     },
 
     initDpad() {
-        const directions = ['up', 'down', 'left', 'right'];
+        const container = document.getElementById('dpad-container');
+        if (!container) return;
 
-        directions.forEach(dir => {
-            const btn = document.getElementById('btn-' + dir);
-            if (!btn) {
-                console.log('D-pad button not found:', dir);
+        // タッチ操作（仮想D-Pad）
+        const handleTouch = (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            if (!touch) return;
+
+            const rect = container.getBoundingClientRect();
+            const centerX = rect.width / 2;
+            const centerY = rect.height / 2;
+            const x = touch.clientX - rect.left - centerX;
+            const y = touch.clientY - rect.top - centerY;
+
+            // デッドゾーン判定（中心から10px以内は入力なし）
+            const distance = Math.sqrt(x * x + y * y);
+            if (distance < 10) {
+                this.releaseAllDpad();
                 return;
             }
 
-            // マウス
-            btn.addEventListener('mousedown', (e) => {
-                e.preventDefault();
-                console.log('D-pad mousedown:', dir);
-                this.press(dir);
-            });
-            btn.addEventListener('mouseup', () => {
-                console.log('D-pad mouseup:', dir);
-                this.release(dir);
-            });
-            btn.addEventListener('mouseleave', () => this.release(dir));
+            // 角度計算 (-PI ~ PI)
+            const angle = Math.atan2(y, x);
+            // 度数法に変換 (-180 ~ 180)
+            const deg = angle * (180 / Math.PI);
 
-            // タッチ
-            btn.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                console.log('D-pad touchstart:', dir);
-                this.press(dir);
-            }, { passive: false });
+            // 全方向リセット
+            this.releaseAllDpad();
 
-            btn.addEventListener('touchend', (e) => {
-                e.preventDefault();
-                console.log('D-pad touchend:', dir);
-                this.release(dir);
-            }, { passive: false });
+            // 8方向判定 (22.5度ずつずらして45度刻み)
+            // 右: -22.5 ~ 22.5
+            // 右下: 22.5 ~ 67.5
+            // 下: 67.5 ~ 112.5
+            // 左下: 112.5 ~ 157.5
+            // 左: 157.5 ~ 180, -180 ~ -157.5
+            // 左上: -157.5 ~ -112.5
+            // 上: -112.5 ~ -67.5
+            // 右上: -67.5 ~ -22.5
 
-            btn.addEventListener('touchcancel', () => this.release(dir));
+            if (deg > -67.5 && deg <= -22.5) { // 右上
+                this.press('up');
+                this.press('right');
+            } else if (deg > -112.5 && deg <= -67.5) { // 上
+                this.press('up');
+            } else if (deg > -157.5 && deg <= -112.5) { // 左上
+                this.press('up');
+                this.press('left');
+            } else if (deg > 157.5 || deg <= -157.5) { // 左
+                this.press('left');
+            } else if (deg > 112.5 && deg <= 157.5) { // 左下
+                this.press('down');
+                this.press('left');
+            } else if (deg > 67.5 && deg <= 112.5) { // 下
+                this.press('down');
+            } else if (deg > 22.5 && deg <= 67.5) { // 右下
+                this.press('down');
+                this.press('right');
+            } else { // 右
+                this.press('right');
+            }
+        };
+
+        container.addEventListener('touchstart', handleTouch, { passive: false });
+        container.addEventListener('touchmove', handleTouch, { passive: false });
+
+        const stopTouch = (e) => {
+            e.preventDefault();
+            this.releaseAllDpad();
+        };
+
+        container.addEventListener('touchend', stopTouch, { passive: false });
+        container.addEventListener('touchcancel', stopTouch, { passive: false });
+        container.addEventListener('mouseleave', stopTouch);
+
+        // PCでのデバッグ用（マウス操作）: マウスダウン中のみ追従
+        let isMouseDown = false;
+        container.addEventListener('mousedown', (e) => {
+            isMouseDown = true;
+            handleTouch({ padding: true, preventDefault: () => { }, touches: [{ clientX: e.clientX, clientY: e.clientY }] });
         });
+        container.addEventListener('mousemove', (e) => {
+            if (isMouseDown) {
+                handleTouch({ padding: true, preventDefault: () => { }, touches: [{ clientX: e.clientX, clientY: e.clientY }] });
+            }
+        });
+        container.addEventListener('mouseup', () => {
+            isMouseDown = false;
+            this.releaseAllDpad();
+        });
+    },
+
+    releaseAllDpad() {
+        this.release('up');
+        this.release('down');
+        this.release('left');
+        this.release('right');
     },
 
     initActionButtons() {

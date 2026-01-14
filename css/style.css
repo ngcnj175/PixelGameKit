@@ -256,6 +256,8 @@ body {
     -webkit-user-select: none;
     user-select: none;
     touch-action: manipulation;
+    pointer-events: none;
+    /* タッチイベントを透過 */
 }
 
 .dpad-btn:active {
