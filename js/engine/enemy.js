@@ -268,23 +268,28 @@ class Enemy {
 
         if (sprite) {
             const palette = App.nesPalette;
-            const pixelSize = tileSize / 16;
+            // スプライトサイズを判定
+            const spriteSize = sprite.size || 1;
+            const dimension = spriteSize === 2 ? 32 : 16;
+            const tileCount = spriteSize === 2 ? 2 : 1;
+            const renderSize = tileSize * tileCount;
+            const pixelSize = renderSize / dimension;
 
             if (this.isDying) {
                 ctx.save();
-                ctx.translate(screenX + tileSize / 2, screenY + tileSize / 2);
+                ctx.translate(screenX + renderSize / 2, screenY + renderSize / 2);
                 ctx.scale(1, -1);
-                ctx.translate(-(screenX + tileSize / 2), -(screenY + tileSize / 2));
+                ctx.translate(-(screenX + renderSize / 2), -(screenY + renderSize / 2));
             }
 
             const flipX = !this.facingRight;
 
-            for (let y = 0; y < 16; y++) {
-                for (let x = 0; x < 16; x++) {
-                    const colorIndex = sprite.data[y][x];
+            for (let y = 0; y < dimension; y++) {
+                for (let x = 0; x < dimension; x++) {
+                    const colorIndex = sprite.data[y]?.[x];
                     if (colorIndex >= 0) {
                         ctx.fillStyle = palette[colorIndex];
-                        const drawX = flipX ? screenX + (15 - x) * pixelSize : screenX + x * pixelSize;
+                        const drawX = flipX ? screenX + (dimension - 1 - x) * pixelSize : screenX + x * pixelSize;
                         ctx.fillRect(drawX, screenY + y * pixelSize, pixelSize + 0.5, pixelSize + 0.5);
                     }
                 }
