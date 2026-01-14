@@ -1089,15 +1089,88 @@ const StageEditor = {
 
         const layer = stage.layers[this.currentLayer];
 
+        // 選択中のテンプレートのスプライトサイズを取得
+        const getTemplateSize = (templateIdx) => {
+            const templates = App.projectData.templates || [];
+            const template = templates[templateIdx];
+            if (!template) return 1;
+            const spriteIdx = template.sprites?.idle?.frames?.[0] ?? template.sprites?.main?.frames?.[0];
+            const sprite = App.projectData.sprites[spriteIdx];
+            return sprite?.size || 1;
+        };
+
         switch (this.currentTool) {
             case 'pen':
                 if (this.selectedTemplate !== null) {
-                    // テンプレートID + 100 を保存
-                    layer[y][x] = this.selectedTemplate + 100;
+                    const tileValue = this.selectedTemplate + 100;
+                    const spriteSize = getTemplateSize(this.selectedTemplate);
+
+                    if (spriteSize === 2) {
+                        // 32x32スプライト：2x2タイルを配置
+                        // タップ位置を2x2グリッドにスナップ
+                        const snapX = Math.floor(x / 2) * 2;
+                        const snapY = Math.floor(y / 2) * 2;
+
+                        for (let dy = 0; dy < 2; dy++) {
+                            for (let dx = 0; dx < 2; dx++) {
+                                const tx = snapX + dx;
+                                const ty = snapY + dy;
+                                if (tx >= 0 && tx < stage.width && ty >= 0 && ty < stage.height) {
+                                    // 左上(0,0)は正のtileValue、それ以外は負のマーカー
+                                    if (dx === 0 && dy === 0) {
+                                        layer[ty][tx] = tileValue;
+                                    } else {
+                                        // 2x2の一部であることを示すマーカー（-1000 - offset）
+                                        layer[ty][tx] = -1000 - (dy * 2 + dx);
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        // 16x16スプライト：通常配置
+                        layer[y][x] = tileValue;
+                    }
                 }
                 break;
             case 'eraser':
-                layer[y][x] = -1;
+                // 消しゴム：2x2タイルの一部をクリックした場合は全体を消す
+                const currentTile = layer[y][x];
+                if (currentTile <= -1000) {
+                    // 2x2マーカーの場合、左上を探して全体を消す
+                    const offset = -(currentTile + 1000);
+                    const dx = offset % 2;
+                    const dy = Math.floor(offset / 2);
+                    const originX = x - dx;
+                    const originY = y - dy;
+                    for (let iy = 0; iy < 2; iy++) {
+                        for (let ix = 0; ix < 2; ix++) {
+                            const tx = originX + ix;
+                            const ty = originY + iy;
+                            if (tx >= 0 && tx < stage.width && ty >= 0 && ty < stage.height) {
+                                layer[ty][tx] = -1;
+                            }
+                        }
+                    }
+                } else if (currentTile >= 100) {
+                    // 左上タイルをクリックした場合、2x2かどうか確認
+                    const templateIdx = currentTile - 100;
+                    const spriteSize = getTemplateSize(templateIdx);
+                    if (spriteSize === 2) {
+                        for (let iy = 0; iy < 2; iy++) {
+                            for (let ix = 0; ix < 2; ix++) {
+                                const tx = x + ix;
+                                const ty = y + iy;
+                                if (tx >= 0 && tx < stage.width && ty >= 0 && ty < stage.height) {
+                                    layer[ty][tx] = -1;
+                                }
+                            }
+                        }
+                    } else {
+                        layer[y][x] = -1;
+                    }
+                } else {
+                    layer[y][x] = -1;
+                }
                 break;
             case 'fill':
                 if (this.selectedTemplate !== null) {
@@ -1191,6 +1264,10 @@ const StageEditor = {
         for (let y = 0; y < stage.height; y++) {
             for (let x = 0; x < stage.width; x++) {
                 const tileId = layer[y][x];
+
+                // 2x2マーカータイルはスキップ（左上タイルのみ描画）
+                if (tileId <= -1000) continue;
+
                 let sprite;
                 if (tileId >= 100) {
                     // テンプレートIDベース（新形式）
@@ -1211,13 +1288,18 @@ const StageEditor = {
     },
 
     renderSprite(sprite, tileX, tileY, palette) {
-        const pixelSize = this.tileSize / 16;
         const scrollX = this.canvasScrollX || 0;
         const scrollY = this.canvasScrollY || 0;
 
-        for (let y = 0; y < 16; y++) {
-            for (let x = 0; x < 16; x++) {
-                const colorIndex = sprite.data[y][x];
+        // スプライトサイズを判定
+        const spriteSize = sprite.size || 1;
+        const dimension = spriteSize === 2 ? 32 : 16;
+        const tileCount = spriteSize === 2 ? 2 : 1;  // 占有するタイル数
+        const pixelSize = (this.tileSize * tileCount) / dimension;
+
+        for (let y = 0; y < dimension; y++) {
+            for (let x = 0; x < dimension; x++) {
+                const colorIndex = sprite.data[y]?.[x];
                 if (colorIndex >= 0) {
                     this.ctx.fillStyle = palette[colorIndex];
                     this.ctx.fillRect(

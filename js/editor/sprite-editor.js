@@ -873,34 +873,47 @@ const SpriteEditor = {
 
         // 範囲選択表示（点線）
         if (this.selectionMode && this.selectionStart && this.selectionEnd) {
-            const x1 = Math.min(this.selectionStart.x, this.selectionEnd.x);
-            const y1 = Math.min(this.selectionStart.y, this.selectionEnd.y);
-            const x2 = Math.max(this.selectionStart.x, this.selectionEnd.x);
-            const y2 = Math.max(this.selectionStart.y, this.selectionEnd.y);
+            const offsetX = Math.floor(this.viewportOffsetX / this.pixelSize);
+            const offsetY = Math.floor(this.viewportOffsetY / this.pixelSize);
 
-            this.ctx.strokeStyle = '#ffffff';
-            this.ctx.lineWidth = 2;
-            this.ctx.setLineDash([4, 4]);
-            this.ctx.strokeRect(
-                x1 * this.pixelSize,
-                y1 * this.pixelSize,
-                (x2 - x1 + 1) * this.pixelSize,
-                (y2 - y1 + 1) * this.pixelSize
-            );
-            this.ctx.setLineDash([]);
+            const x1 = Math.min(this.selectionStart.x, this.selectionEnd.x) - offsetX;
+            const y1 = Math.min(this.selectionStart.y, this.selectionEnd.y) - offsetY;
+            const x2 = Math.max(this.selectionStart.x, this.selectionEnd.x) - offsetX;
+            const y2 = Math.max(this.selectionStart.y, this.selectionEnd.y) - offsetY;
+
+            // ビューポート内に表示される部分のみ描画
+            if (x2 >= 0 && x1 < 16 && y2 >= 0 && y1 < 16) {
+                this.ctx.strokeStyle = '#ffffff';
+                this.ctx.lineWidth = 2;
+                this.ctx.setLineDash([4, 4]);
+                this.ctx.strokeRect(
+                    x1 * this.pixelSize,
+                    y1 * this.pixelSize,
+                    (x2 - x1 + 1) * this.pixelSize,
+                    (y2 - y1 + 1) * this.pixelSize
+                );
+                this.ctx.setLineDash([]);
+            }
         }
 
         // ペースト範囲表示（点線）
         if (this.pasteMode && this.pasteData) {
+            const offsetX = Math.floor(this.viewportOffsetX / this.pixelSize);
+            const offsetY = Math.floor(this.viewportOffsetY / this.pixelSize);
+
             const dataH = this.pasteData.length;
             const dataW = this.pasteData[0].length;
+
+            // スクリーン座標で描画
+            const screenX = this.pasteOffset.x - offsetX;
+            const screenY = this.pasteOffset.y - offsetY;
 
             this.ctx.strokeStyle = '#00ff00';
             this.ctx.lineWidth = 2;
             this.ctx.setLineDash([4, 4]);
             this.ctx.strokeRect(
-                this.pasteOffset.x * this.pixelSize,
-                this.pasteOffset.y * this.pixelSize,
+                screenX * this.pixelSize,
+                screenY * this.pixelSize,
                 dataW * this.pixelSize,
                 dataH * this.pixelSize
             );
