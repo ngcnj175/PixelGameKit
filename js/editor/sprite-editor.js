@@ -1045,9 +1045,6 @@ const SpriteEditor = {
         this.canvas.addEventListener('touchstart', (e) => {
             e.preventDefault();
 
-            // デバッグ: タッチイベント発火確認
-            alert(`touchstart: touches=${e.touches.length}, isPanning=${this.isPanning}, spriteSize=${this.getCurrentSpriteSize()}`);
-
             // 2本指の場合はパン開始
             if (e.touches.length === 2 && this.getCurrentSpriteSize() === 2) {
                 this.isPanning = true;
@@ -1129,17 +1126,7 @@ const SpriteEditor = {
         const pixel = this.getPixelFromEvent(e);
         const dimension = this.getCurrentSpriteDimension();
 
-        // デバッグ: タップ座標を表示（iPhone問題調査用）
-        const debugInfo = `pixel: (${pixel.x}, ${pixel.y})\n` +
-            `dimension: ${dimension}\n` +
-            `offsetX: ${Math.floor(this.viewportOffsetX / this.pixelSize)}\n` +
-            `offsetY: ${Math.floor(this.viewportOffsetY / this.pixelSize)}\n` +
-            `viewportOffset: (${this.viewportOffsetX}, ${this.viewportOffsetY})`;
-        console.log('onPointerDown:', debugInfo);
-        alert(debugInfo);  // iPhone問題調査用
-
         if (pixel.x < 0 || pixel.x >= dimension || pixel.y < 0 || pixel.y >= dimension) {
-            console.warn('Out of bounds:', pixel.x, pixel.y, 'dimension:', dimension);
             return;
         }
 
