@@ -30,7 +30,8 @@ const GameController = {
         // タッチ操作（仮想D-Pad）
         const handleTouch = (e) => {
             e.preventDefault();
-            const touch = e.touches[0];
+            // targetTouchesを使用して、この要素上のタッチのみを取得（マルチタッチ対策）
+            const touch = e.targetTouches[0];
             if (!touch) return;
 
             const rect = container.getBoundingClientRect();
