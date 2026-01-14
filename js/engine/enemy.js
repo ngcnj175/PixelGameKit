@@ -275,11 +275,15 @@ class Enemy {
             const renderSize = tileSize * tileCount;
             const pixelSize = renderSize / dimension;
 
+            // 32x32スプライトは足元を基準に描画（1タイル分上にオフセット）
+            const yOffset = spriteSize === 2 ? -tileSize : 0;
+            const adjustedScreenY = screenY + yOffset;
+
             if (this.isDying) {
                 ctx.save();
-                ctx.translate(screenX + renderSize / 2, screenY + renderSize / 2);
+                ctx.translate(screenX + renderSize / 2, adjustedScreenY + renderSize / 2);
                 ctx.scale(1, -1);
-                ctx.translate(-(screenX + renderSize / 2), -(screenY + renderSize / 2));
+                ctx.translate(-(screenX + renderSize / 2), -(adjustedScreenY + renderSize / 2));
             }
 
             const flipX = !this.facingRight;
@@ -290,7 +294,7 @@ class Enemy {
                     if (colorIndex >= 0) {
                         ctx.fillStyle = palette[colorIndex];
                         const drawX = flipX ? screenX + (dimension - 1 - x) * pixelSize : screenX + x * pixelSize;
-                        ctx.fillRect(drawX, screenY + y * pixelSize, pixelSize + 0.5, pixelSize + 0.5);
+                        ctx.fillRect(drawX, adjustedScreenY + y * pixelSize, pixelSize + 0.5, pixelSize + 0.5);
                     }
                 }
             }

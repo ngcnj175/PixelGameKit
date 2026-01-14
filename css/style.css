@@ -223,8 +223,19 @@ body {
 /* 十字キー */
 #dpad-container {
     position: relative;
-    width: 100px;
-    height: 100px;
+    width: 120px;
+    height: 120px;
+    /* 円形の浅い窪み背景（斜めからの光） */
+    background: radial-gradient(circle at 35% 35%,
+            rgba(255, 255, 255, 0.8) 0%,
+            rgba(230, 230, 230, 0.6) 30%,
+            rgba(200, 200, 200, 0.4) 60%,
+            rgba(180, 180, 180, 0.3) 100%);
+    border-radius: 50%;
+    box-shadow:
+        inset 2px 2px 6px rgba(255, 255, 255, 0.5),
+        inset -2px -2px 8px rgba(0, 0, 0, 0.15),
+        0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 #dpad {
@@ -253,38 +264,38 @@ body {
 }
 
 #btn-up {
-    top: 0;
+    top: 6px;
     left: 50%;
     transform: translateX(-50%);
-    width: 34px;
-    height: 34px;
+    width: 40px;
+    height: 40px;
     border-radius: 6px 6px 0 0;
 }
 
 #btn-down {
-    bottom: 0;
+    bottom: 6px;
     left: 50%;
     transform: translateX(-50%);
-    width: 34px;
-    height: 34px;
+    width: 40px;
+    height: 40px;
     border-radius: 0 0 6px 6px;
 }
 
 #btn-left {
-    left: 0;
+    left: 6px;
     top: 50%;
     transform: translateY(-50%);
-    width: 34px;
-    height: 34px;
+    width: 40px;
+    height: 40px;
     border-radius: 6px 0 0 6px;
 }
 
 #btn-right {
-    right: 0;
+    right: 6px;
     top: 50%;
     transform: translateY(-50%);
-    width: 34px;
-    height: 34px;
+    width: 40px;
+    height: 40px;
     border-radius: 0 6px 6px 0;
 }
 
@@ -295,8 +306,8 @@ body {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 34px;
-    height: 100%;
+    width: 40px;
+    height: calc(100% - 12px);
     background: var(--color-dark);
     border-radius: 6px;
     pointer-events: none;
@@ -309,8 +320,8 @@ body {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 100%;
-    height: 34px;
+    width: calc(100% - 12px);
+    height: 40px;
     background: var(--color-dark);
     border-radius: 6px;
     pointer-events: none;
@@ -353,13 +364,13 @@ body {
 }
 
 .action-btn {
-    width: 56px;
-    height: 56px;
+    width: 67px;
+    height: 67px;
     border: none;
     border-radius: 50%;
     background: var(--color-dark);
     color: var(--text-light);
-    font-size: 20px;
+    font-size: 24px;
     font-weight: 700;
     cursor: pointer;
     display: flex;
