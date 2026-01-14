@@ -1090,11 +1090,19 @@ const StageEditor = {
         const layer = stage.layers[this.currentLayer];
 
         // 選択中のテンプレートのスプライトサイズを取得
+        // エンティティ配列の確保
+        if (!stage.entities) stage.entities = [];
+
+        // テンプレート取得ヘルパー
+        const getTemplate = (idx) => {
+            return (App.projectData.templates && App.projectData.templates[idx]) || null;
+        };
+
+        // スプライトサイズ取得ヘルパー
         const getTemplateSize = (templateIdx) => {
-            const templates = App.projectData.templates || [];
-            const template = templates[templateIdx];
-            if (!template) return 1;
-            const spriteIdx = template.sprites?.idle?.frames?.[0] ?? template.sprites?.main?.frames?.[0];
+            const tmpl = getTemplate(templateIdx);
+            if (!tmpl) return 1;
+            const spriteIdx = tmpl.sprites?.idle?.frames?.[0] ?? tmpl.sprites?.main?.frames?.[0];
             const sprite = App.projectData.sprites[spriteIdx];
             return sprite?.size || 1;
         };
@@ -1102,41 +1110,87 @@ const StageEditor = {
         switch (this.currentTool) {
             case 'pen':
                 if (this.selectedTemplate !== null) {
-                    const tileValue = this.selectedTemplate + 100;
+                    const tmpl = getTemplate(this.selectedTemplate);
                     const spriteSize = getTemplateSize(this.selectedTemplate);
 
-                    if (spriteSize === 2) {
-                        // 32x32スプライト：2x2タイルを配置
-                        // タップ位置を2x2グリッドにスナップ
-                        const snapX = Math.floor(x / 2) * 2;
-                        const snapY = Math.floor(y / 2) * 2;
+                    // エンティティタイプの場合（Entities配列へ追加）
+                    if (tmpl && ['player', 'enemy', 'item'].includes(tmpl.type)) {
+                        // 既存の同座標エンティティを削除（上書き）
+                        // 32x32の場合は2x2領域の重複を考慮すべきだが、シンプルに原点一致で判定
+                        // または「その座標にあるもの」を消す
+                        const removeIdx = stage.entities.findIndex(e => {
+                            // 同じ座標にあるエンティティを探す
+                            // 厳密には矩形判定すべきだが、エディタ操作としては原点クリックで上書きが自然
+                            return e.x === x && e.y === y;
+                        });
+                        if (removeIdx >= 0) {
+                            stage.entities.splice(removeIdx, 1);
+                        }
 
-                        for (let dy = 0; dy < 2; dy++) {
-                            for (let dx = 0; dx < 2; dx++) {
-                                const tx = snapX + dx;
-                                const ty = snapY + dy;
-                                if (tx >= 0 && tx < stage.width && ty >= 0 && ty < stage.height) {
-                                    // 左上(0,0)は正のtileValue、それ以外は負のマーカー
-                                    if (dx === 0 && dy === 0) {
-                                        layer[ty][tx] = tileValue;
-                                    } else {
-                                        // 2x2の一部であることを示すマーカー（-1000 - offset）
-                                        layer[ty][tx] = -1000 - (dy * 2 + dx);
+                        // 新規追加
+                        stage.entities.push({
+                            x: x,
+                            y: y,
+                            templateId: this.selectedTemplate
+                        });
+
+                        // マップタイルの書き込みはスキップ（背景維持）
+                    } else {
+                        // 通常タイル（Map配列へ書き込み）
+                        const tileValue = this.selectedTemplate + 100;
+
+                        if (spriteSize === 2) {
+                            // 32x32スプライト
+                            const snapX = Math.floor(x / 2) * 2;
+                            const snapY = Math.floor(y / 2) * 2;
+
+                            for (let dy = 0; dy < 2; dy++) {
+                                for (let dx = 0; dx < 2; dx++) {
+                                    const tx = snapX + dx;
+                                    const ty = snapY + dy;
+                                    if (tx >= 0 && tx < stage.width && ty >= 0 && ty < stage.height) {
+                                        if (dx === 0 && dy === 0) {
+                                            layer[ty][tx] = tileValue;
+                                        } else {
+                                            layer[ty][tx] = -1000 - (dy * 2 + dx);
+                                        }
                                     }
                                 }
                             }
+                        } else {
+                            // 16x16スプライト
+                            layer[y][x] = tileValue;
                         }
-                    } else {
-                        // 16x16スプライト：通常配置
-                        layer[y][x] = tileValue;
                     }
                 }
                 break;
+
             case 'eraser':
-                // 消しゴム：2x2タイルの一部をクリックした場合は全体を消す
+                // まずエンティティを削除
+                let entityDeleted = false;
+                for (let i = stage.entities.length - 1; i >= 0; i--) {
+                    const e = stage.entities[i];
+                    // エンティティの占有領域を計算
+                    const tmpl = getTemplate(e.templateId);
+                    const size = getTemplateSize(e.templateId);
+                    const w = (size === 2) ? 2 : 1;
+                    const h = (size === 2) ? 2 : 1;
+
+                    // クリック座標がエンティティ内にあるか
+                    if (x >= e.x && x < e.x + w && y >= e.y && y < e.y + h) {
+                        stage.entities.splice(i, 1);
+                        entityDeleted = true;
+                        // 重なっている場合すべて消すか、一番上だけ消すか。ここでは全て消す。
+                    }
+                }
+
+                // エンティティが削除された場合、マップタイルは消さない（誤操作防止）
+                // ただし、ユーザーが明示的に背景も消したい場合は再クリックが必要
+                if (entityDeleted) break;
+
+                // マップタイルの削除処理（既存ロジック）
                 const currentTile = layer[y][x];
                 if (currentTile <= -1000) {
-                    // 2x2マーカーの場合、左上を探して全体を消す
                     const offset = -(currentTile + 1000);
                     const dx = offset % 2;
                     const dy = Math.floor(offset / 2);
@@ -1152,7 +1206,6 @@ const StageEditor = {
                         }
                     }
                 } else if (currentTile >= 100) {
-                    // 左上タイルをクリックした場合、2x2かどうか確認
                     const templateIdx = currentTile - 100;
                     const spriteSize = getTemplateSize(templateIdx);
                     if (spriteSize === 2) {
@@ -1172,30 +1225,60 @@ const StageEditor = {
                     layer[y][x] = -1;
                 }
                 break;
+
             case 'fill':
                 if (this.selectedTemplate !== null) {
-                    // テンプレートID + 100 を保存
+                    const tmpl = getTemplate(this.selectedTemplate);
+                    // エンティティの塗りつぶしはサポートしない（マップのみ）
+                    if (tmpl && ['player', 'enemy', 'item'].includes(tmpl.type)) {
+                        alert('キャラクターやアイテムで塗りつぶしはできません');
+                        return;
+                    }
+
                     const newValue = this.selectedTemplate + 100;
                     this.floodFill(x, y, layer[y][x], newValue);
                 }
                 break;
+
             case 'eyedropper':
-                const tileId = layer[y][x];
-                if (tileId >= 100) {
-                    // テンプレートIDベース（新形式）
-                    const templateIdx = tileId - 100;
-                    if (templateIdx >= 0 && templateIdx < this.templates.length) {
-                        this.selectedTemplate = templateIdx;
-                        this.initTemplateList();
+                // 最前面（エンティティ）を優先取得
+                let foundEntity = null;
+                for (const e of stage.entities) {
+                    const tmpl = getTemplate(e.templateId);
+                    const size = getTemplateSize(e.templateId);
+                    const w = (size === 2) ? 2 : 1;
+                    const h = (size === 2) ? 2 : 1;
+                    if (x >= e.x && x < e.x + w && y >= e.y && y < e.y + h) {
+                        foundEntity = e;
+                        break; // 最初に見つかったものを採用
                     }
-                } else if (tileId >= 0) {
-                    // スプライトIDベース（旧形式）- 互換性
-                    const idx = this.templates.findIndex(t =>
-                        (t.sprites?.idle?.frames?.[0] === tileId) || (t.sprites?.main?.frames?.[0] === tileId)
-                    );
-                    if (idx >= 0) {
-                        this.selectedTemplate = idx;
-                        this.initTemplateList();
+                }
+
+                if (foundEntity) {
+                    this.selectedTemplate = foundEntity.templateId;
+                    this.initTemplateList();
+                    // ツールをペンに戻す
+                    this.currentTool = 'pen';
+                    // ツールバーの見た目更新は省略（再描画で反映されるか要確認）
+                } else {
+                    // マップタイルから取得
+                    const tileId = layer[y][x];
+                    if (tileId >= 100) {
+                        const templateIdx = tileId - 100;
+                        if (templateIdx >= 0 && templateIdx < this.templates.length) {
+                            this.selectedTemplate = templateIdx;
+                            this.initTemplateList();
+                            this.currentTool = 'pen';
+                        }
+                    } else if (tileId >= 0) {
+                        const idx = this.templates.findIndex(t =>
+                            (t.sprites?.idle?.frames?.[0] === tileId) || (t.sprites?.main?.frames?.[0] === tileId)
+                        );
+                        if (idx >= 0) {
+                            this.selectedTemplate = idx;
+                            this.initTemplateList();
+                            this.currentTool = 'pen';
+                        }
                     }
                 }
                 break;
@@ -1249,7 +1332,31 @@ const StageEditor = {
         // FGレイヤーのみ描画
         this.renderLayer('fg', 1);
 
+        // エンティティ描画（新規追加）
+        this.renderEntities();
+
         this.renderGrid();
+    },
+
+    renderEntities() {
+        const stage = App.projectData.stage;
+        if (!stage.entities) return;
+
+        const templates = App.projectData.templates || [];
+        const sprites = App.projectData.sprites;
+        const palette = App.nesPalette;
+
+        stage.entities.forEach(entity => {
+            const template = templates[entity.templateId];
+            if (!template) return;
+
+            const spriteIdx = template.sprites?.idle?.frames?.[0] ?? template.sprites?.main?.frames?.[0];
+            const sprite = sprites[spriteIdx];
+            if (sprite) {
+                // 座標はentity.x, entity.yを使用
+                this.renderSprite(sprite, entity.x, entity.y, palette);
+            }
+        });
     },
 
     renderLayer(layerName, alpha) {

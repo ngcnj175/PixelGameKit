@@ -217,6 +217,7 @@ const App = {
         const saved = Storage.load('currentProject');
         if (saved) {
             this.projectData = saved;
+            this.migrateProjectData(); // データ移行
             console.log('Project loaded from storage');
             // パレットを復元
             if (this.projectData.palette) {
@@ -238,6 +239,7 @@ const App = {
             const data = await Share.loadGame(gameId);
             if (data) {
                 this.projectData = data;
+                this.migrateProjectData(); // データ移行
                 this.isPlayOnlyMode = true;
                 console.log('Project loaded from Firebase (play-only mode)');
                 if (this.projectData.palette) {
@@ -271,6 +273,47 @@ const App = {
                 }
             } catch (e) {
                 console.warn('Failed to load from URL hash:', e);
+            }
+        }
+    },
+
+    // データ構造のマイグレーション（エンティティ分離）
+    migrateProjectData() {
+        const stage = this.projectData.stage;
+        if (!stage) return;
+
+        // entities配列がなければ作成
+        if (!stage.entities) {
+            stage.entities = [];
+        }
+
+        const map = stage.map;
+        const width = stage.width;
+        const height = stage.height;
+
+        // map配列からエンティティを探して移動
+        for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+                const tileId = map[y][x];
+                // テンプレートID (100+)
+                if (tileId >= 100) {
+                    const tmplIdx = tileId - 100;
+                    const tmpl = this.projectData.templates[tmplIdx];
+                    if (tmpl && (tmpl.type === 'player' || tmpl.type === 'enemy' || tmpl.type === 'item')) {
+                        // entitiesに追加
+                        // 重複チェック（念のため）
+                        const exists = stage.entities.some(e => e.x === x && e.y === y);
+                        if (!exists) {
+                            stage.entities.push({
+                                x: x,
+                                y: y,
+                                templateId: tmplIdx
+                            });
+                        }
+                        // mapからは消去（空気=0）
+                        map[y][x] = 0;
+                    }
+                }
             }
         }
     },

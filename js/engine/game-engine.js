@@ -232,6 +232,20 @@ const GameEngine = {
         };
 
         // ステージ上のタイルからプレイヤー・エネミーを検索
+        // 1. Entities配列から検索（推奨）
+        if (stage.entities) {
+            stage.entities.forEach(ent => {
+                const template = templates[ent.templateId];
+                if (template) {
+                    if (template.type === 'player' && !playerPos) {
+                        playerPos = { x: ent.x, y: ent.y, template, templateIdx: ent.templateId };
+                    } else if (template.type === 'enemy') {
+                        enemyPositions.push({ x: ent.x, y: ent.y, template, templateIdx: ent.templateId, behavior: template.config?.move || 'idle' });
+                    }
+                }
+            });
+        }
+
         if (stage && stage.layers && stage.layers.fg) {
             for (let y = 0; y < stage.height; y++) {
                 for (let x = 0; x < stage.width; x++) {
@@ -286,6 +300,31 @@ const GameEngine = {
         this.hasTimeLimit = timeLimit > 0;
 
         // ステージ上のアイテムを検索
+        // 1. Entities配列から
+        if (stage.entities) {
+            stage.entities.forEach(ent => {
+                const template = templates[ent.templateId];
+                if (template && template.type === 'item') {
+                    const spriteIdx = template.sprites?.idle?.frames?.[0] ?? template.sprites?.main?.frames?.[0];
+                    const itemType = template.config?.itemType || 'star';
+                    this.items.push({
+                        x: ent.x,
+                        y: ent.y,
+                        width: 1, // アイテムサイズは1固定？
+                        height: 1,
+                        spriteIdx: spriteIdx,
+                        itemType: itemType,
+                        collected: false
+                    });
+                    // クリア条件アイテムカウント
+                    if (itemType === 'clear' || stage.clearCondition === 'item') {
+                        // CLEARタイプまたは条件がitemの場合
+                        // TODO: 条件判定ロジックの詳細確認
+                    }
+                }
+            });
+        }
+
         if (stage && stage.layers && stage.layers.fg) {
             for (let y = 0; y < stage.height; y++) {
                 for (let x = 0; x < stage.width; x++) {
