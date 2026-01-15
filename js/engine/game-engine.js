@@ -379,11 +379,14 @@ const GameEngine = {
         }
 
         // デバッグログ
-        console.log('Game Initialized:', {
-            totalClearItems: this.totalClearItems,
-            entities: stage.entities?.length,
-            itemsArray: this.items.length
+        console.log('=== Game Initialized ===');
+        console.log('totalClearItems:', this.totalClearItems);
+        console.log('items array length:', this.items.length);
+        console.log('Clear items detail:');
+        this.items.filter(i => i.itemType === 'clear').forEach((item, idx) => {
+            console.log(`  [${idx}] x=${item.x}, y=${item.y}, type=${item.itemType}`);
         });
+        console.log('processedItemPositions:', [...processedItemPositions]);
     },
 
     gameLoop() {
@@ -797,10 +800,11 @@ const GameEngine = {
     checkItemCollisions() {
         if (!this.player || this.player.isDead) return;
 
-        this.items.forEach(item => {
+        this.items.forEach((item, idx) => {
             if (item.collected) return;
 
             if (this.player.collidesWith(item)) {
+                console.log(`>>> Collecting item[${idx}] at (${item.x}, ${item.y}), type=${item.itemType}, player at (${this.player.x.toFixed(2)}, ${this.player.y.toFixed(2)})`);
                 item.collected = true;
                 this.player.collectItem(item.itemType);
 

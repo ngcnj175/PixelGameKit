@@ -326,18 +326,8 @@ class Player {
                 this.playSE('itemGet');
                 break;
             case 'clear':
-                // クリアアイテム取得
+                // クリアアイテム取得（カウントはgame-engine.js側で行う）
                 this.playSE('itemGet');
-                // クリア条件がitemの場合、カウントして全取得でクリア
-                if (App.projectData.stage.clearCondition === 'item') {
-                    if (typeof GameEngine !== 'undefined') {
-                        GameEngine.collectedClearItems++;
-                        // 全てのクリアアイテムを取得したらクリア
-                        if (GameEngine.collectedClearItems >= GameEngine.totalClearItems) {
-                            GameEngine.triggerClear();
-                        }
-                    }
-                }
                 break;
         }
     }

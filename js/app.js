@@ -295,8 +295,12 @@ const App = {
         const width = stage.width;
         const height = stage.height;
 
+        // map配列が存在しない場合はスキップ
+        if (!map || !Array.isArray(map)) return;
+
         // map配列からエンティティを探して移動
         for (let y = 0; y < height; y++) {
+            if (!map[y]) continue; // 行が存在しない場合スキップ
             for (let x = 0; x < width; x++) {
                 const tileId = map[y][x];
                 // テンプレートID (100+)
