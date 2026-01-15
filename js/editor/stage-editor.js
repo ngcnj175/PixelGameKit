@@ -1755,6 +1755,13 @@ const StageEditor = {
                 if (newWidth !== App.projectData.stage.width || newHeight !== App.projectData.stage.height) {
                     this.resizeStage(newWidth, newHeight);
                 }
+
+                // スコア表示設定
+                const showScoreCheck = document.getElementById('stage-show-score');
+                if (showScoreCheck) {
+                    App.projectData.stage.showScore = showScoreCheck.checked;
+                }
+
                 // 設定パネルを閉じる
                 panel.classList.add('collapsed');
             });
@@ -1804,9 +1811,15 @@ const StageEditor = {
             }
         }
 
+        // スコア表示設定
+        const showScoreCheck = document.getElementById('stage-show-score');
+        if (showScoreCheck) {
+            // デフォルトはtrue（undefinedの場合もtrue）
+            showScoreCheck.checked = stage.showScore !== false;
+        }
+
         // 制限時間（分秒）
         const totalSec = stage.timeLimit || 0;
-        if (timeMin) timeMin.value = Math.floor(totalSec / 60);
         if (timeSec) timeSec.value = totalSec % 60;
 
         // BGM選択肢を動的生成

@@ -2780,3 +2780,211 @@ body {
     flex: 1;
     max-width: 100px;
 }
+
+/* ========================================
+   リザルト画面オーバーレイ
+   ======================================== */
+#result-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    animation: fadeIn 0.3s forwards;
+    pointer-events: auto;
+}
+
+#result-overlay.hidden {
+    display: none;
+    pointer-events: none;
+}
+
+.result-container {
+    background: var(--bg-device);
+    padding: 24px;
+    border-radius: 16px;
+    width: 85%;
+    max-width: 300px;
+    text-align: center;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    animation: slideUp 0.3s forwards;
+}
+
+#result-title {
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--text-dark);
+    letter-spacing: 2px;
+}
+
+#result-score-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+#result-score-container.hidden {
+    display: none;
+}
+
+.result-score-row {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.result-score-row.small {
+    opacity: 0.7;
+    transform: scale(0.9);
+}
+
+.result-label {
+    font-size: 11px;
+    font-weight: bold;
+    color: var(--color-medium);
+    letter-spacing: 1px;
+}
+
+#result-score-value {
+    font-size: 36px;
+    font-weight: 800;
+    color: var(--text-dark);
+    line-height: 1;
+    font-family: monospace;
+    /* 数字の幅を揃える */
+}
+
+#result-highscore-value {
+    font-size: 20px;
+    font-weight: bold;
+    color: var(--text-dark);
+    font-family: monospace;
+}
+
+.result-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.result-btn {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: transform 0.1s, opacity 0.1s;
+}
+
+.result-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+.result-btn:active {
+    transform: scale(0.96);
+}
+
+.share-btn {
+    background: var(--color-dark);
+    color: var(--text-light);
+}
+
+.share-btn.hidden {
+    display: none;
+}
+
+.retry-btn {
+    background: var(--border-color);
+    color: var(--text-dark);
+}
+
+.edit-btn {
+    background: transparent;
+    color: var(--color-medium);
+    border: 1px solid var(--border-color);
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* ========================================
+   Discordボタン & 共有ボタン拡張
+   ======================================== */
+.discord-btn {
+    background-color: #5865F2 !important;
+    color: white !important;
+}
+
+.discord-btn:active {
+    background-color: #4752C4 !important;
+}
+
+.share-sns-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+    margin-bottom: 12px;
+}
+
+.share-sns-btn {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 13px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: #000;
+    color: #fff;
+    transition: background 0.2s;
+}
+
+.share-sns-btn:hover {
+    background: #1a1a1a;
+}
+
+.share-sns-btn svg {
+    width: 20px;
+    height: 20px;
+}

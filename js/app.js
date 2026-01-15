@@ -69,6 +69,7 @@ const App = {
                 },
                 clearCondition: 'none', // none, item, enemies, survival
                 timeLimit: 0,
+                showScore: true, // スコア表示（デフォルトON）
                 layers: {
                     bg: this.create2DArray(16, 16, -1),
                     fg: this.create2DArray(16, 16, -1),
@@ -131,7 +132,10 @@ const App = {
         if (typeof SpriteEditor !== 'undefined') SpriteEditor.init();
         if (typeof StageEditor !== 'undefined') StageEditor.init();
         if (typeof SoundEditor !== 'undefined') SoundEditor.init();
-        if (typeof GameEngine !== 'undefined') GameEngine.init();
+        if (typeof GameEngine !== 'undefined') {
+            GameEngine.init();
+            GameEngine.initResultEvents(); // リザルト画面イベント初期化
+        }
         if (typeof GameController !== 'undefined') GameController.init();
 
         // 初期画面表示

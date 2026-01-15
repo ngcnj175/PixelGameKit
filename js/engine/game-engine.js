@@ -284,7 +284,13 @@ const GameEngine = {
         this.items = [];
         this.particles = []; // パーティクルシステム
         this.breakableTiles = new Map(); // 耐久度管理 (key: "x,y", value: life)
+        this.breakableTiles = new Map(); // 耐久度管理 (key: "x,y", value: life)
         this.destroyedTiles = new Set(); // 破壊されたタイルの一時管理 (key: "x,y")
+
+        // スコア初期化
+        this.score = 0;
+        this.highScore = parseInt(localStorage.getItem('pgk_highscore') || '0', 10);
+        this.newHighScore = false; // 今回のプレイで更新したか
 
         // ゲームオーバー待機状態をリセット
         this.gameOverPending = false;
@@ -444,6 +450,7 @@ const GameEngine = {
                         this.remainingTime = 0;
                         const clearCondition = App.projectData.stage.clearCondition || 'none';
                         if (clearCondition === 'survival') {
+                            // サバイバルモード: 時間経過でクリア
                             // サバイバルモード: 時間経過でクリア
                             this.triggerClear();
                         } else {
@@ -761,6 +768,11 @@ const GameEngine = {
             if (this.player.collidesWith(item)) {
                 item.collected = true;
                 this.player.collectItem(item.itemType);
+                // スコア加算（アイテムタイプに応じて変えることも可能）
+                let pts = 100;
+                if (item.itemType === 'star') pts = 500;
+                if (item.itemType === 'weapon') pts = 200;
+                this.addScore(pts);
             }
         });
     },
@@ -778,8 +790,11 @@ const GameEngine = {
                     enemy.takeDamage(fromRight);
                     enemy.lives = 0;
                     enemy.die(fromRight);
+                    enemy.die(fromRight);
                     // SE再生
                     this.player.playSE('enemyDefeat');
+                    // スコア加算
+                    this.addScore(100);
                     return;
                 }
 
@@ -795,6 +810,11 @@ const GameEngine = {
                     this.player.vy = -0.25;
                     // SE再生（敵がダメージを受けた時）
                     this.player.playSE('enemyDefeat');
+                    // スコア加算（倒した時のみにすべきか？とりあえず踏み成功で加算、倒したらさらに加算も検討だが、ここでは倒した判定はenemy側で管理）
+                    // 敵のHPが0になったら加算すべき。enemy.livesを確認
+                    if (enemy.lives <= 0) {
+                        this.addScore(100);
+                    }
                 } else if (!this.player.invincible) {
                     const fromRight = enemy.x > this.player.x;
                     this.player.takeDamage(fromRight);
@@ -857,6 +877,12 @@ const GameEngine = {
         this.clearTimer = 0;
         this.titleState = 'clear';
         this.playBgm('clear', false); // クリアBGM開始（ループなし）
+
+        // タイムボーナス
+        const timeBonus = Math.floor(this.remainingTime) * 10;
+        if (timeBonus > 0) {
+            this.addScore(timeBonus);
+        }
     },
 
     renderClearEffect() {
@@ -884,6 +910,42 @@ const GameEngine = {
             ctx.textBaseline = 'middle';
             ctx.fillStyle = '#ffffff';
             ctx.fillText('STAGE CLEAR', w / 2, h / 2);
+        }
+
+        // 3.5秒後にリザルトへ
+        if (this.clearTimer > 210) {
+            this.titleState = 'result';
+            this.renderResultScreen();
+        }
+    },
+
+    renderGameOver() {
+        const ctx = this.ctx;
+        const w = this.canvas.width;
+        const h = this.canvas.height;
+
+        this.gameOverTimer++;
+
+        // 暗転
+        ctx.fillStyle = `rgba(0, 0, 0, ${Math.min(this.gameOverTimer / 60, 0.6)})`;
+        ctx.fillRect(0, 0, w, h);
+
+        // テキスト表示
+        ctx.font = '24px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#ff4444';
+        ctx.shadowColor = 'black';
+        ctx.shadowBlur = 4;
+        ctx.fillText('GAME OVER', w / 2, h / 2);
+        ctx.shadowBlur = 0;
+
+        // 3秒後にリザルトへ
+        if (this.gameOverTimer > 180) {
+            this.titleState = 'result';
+            this.renderResultScreen(); // 初回描画（DOM表示）
+            // ループを止めるためにisRunningをfalseにするか、ステートで止めるか
+            // resultステートならgameLoop内で処理が止まるようにする
         }
     },
 
@@ -1004,9 +1066,13 @@ const GameEngine = {
         this.createTileParticles(tileX, tileY, tileId);
 
         // 破壊音（EnemyDefeat音などで代用、あるいは専用音が必要なら追加）
+        // 破壊音（EnemyDefeat音などで代用、あるいは専用音が必要なら追加）
         if (this.player) {
             this.player.playSE('enemyDefeat');
         }
+
+        // スコア加算
+        this.addScore(10);
     },
 
     createTileParticles(tileX, tileY, tileId) {
@@ -1172,7 +1238,30 @@ const GameEngine = {
             } else {
                 this.ctx.fillStyle = '#ffffff';
             }
+            if (this.remainingTime <= 10) {
+                this.ctx.fillStyle = '#ff4444';
+            } else {
+                this.ctx.fillStyle = '#ffffff';
+            }
             this.ctx.fillText(timeText, this.canvas.width - 10, 10);
+        }
+
+        // スコア表示（中央上）
+        if (App.projectData.stage.showScore) {
+            const scoreText = `SCORE: ${this.score.toString().padStart(6, '0')}`;
+            // const hiText = `HI: ${this.highScore.toString().padStart(6, '0')}`; // スペースがあれば表示
+
+            this.ctx.font = 'bold 16px Arial';
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'top';
+
+            // 影
+            this.ctx.fillStyle = '#000000';
+            this.ctx.fillText(scoreText, this.canvas.width / 2 + 1, 11);
+
+            // 本体
+            this.ctx.fillStyle = '#ffffff';
+            this.ctx.fillText(scoreText, this.canvas.width / 2, 10);
         }
     },
 
@@ -1457,5 +1546,90 @@ const GameEngine = {
             this.bgmPlayInterval = null;
         }
         this.currentBgmType = null;
+    },
+
+    // ========== スコア管理 ==========
+    addScore(points) {
+        if (!App.projectData.stage.showScore) return;
+
+        this.score += points;
+
+        // ハイスコア更新
+        if (this.score > this.highScore) {
+            this.highScore = this.score;
+            this.newHighScore = true;
+            localStorage.setItem('pgk_highscore', this.highScore);
+        }
+    },
+
+    // リザルト画面のイベント初期化（一度だけ呼ぶ）
+    initResultEvents() {
+        const shareBtn = document.getElementById('result-share-btn');
+        const retryBtn = document.getElementById('result-retry-btn');
+        const editBtn = document.getElementById('result-edit-btn');
+        const overlay = document.getElementById('result-overlay');
+
+        if (shareBtn) {
+            shareBtn.addEventListener('click', () => {
+                if (App.projectData) {
+                    Share.openDialog(App.projectData, {
+                        score: this.score,
+                        title: App.projectData.meta?.title || 'Game',
+                        isNewRecord: this.newHighScore
+                    });
+                }
+            });
+        }
+
+        if (retryBtn) {
+            retryBtn.addEventListener('click', () => {
+                if (overlay) overlay.classList.add('hidden');
+                this.restart();
+            });
+        }
+
+        if (editBtn) {
+            editBtn.addEventListener('click', () => {
+                if (overlay) overlay.classList.add('hidden');
+                this.stop();
+                App.switchScreen('stage');
+            });
+        }
+    },
+
+    // リザルト画面表示
+    renderResultScreen() {
+        // 背景は最後のゲーム画面のまま（再描画しない）
+
+        const overlay = document.getElementById('result-overlay');
+        const scoreContainer = document.getElementById('result-score-container');
+        const scoreVal = document.getElementById('result-score-value');
+        const highVal = document.getElementById('result-highscore-value');
+        const shareBtn = document.getElementById('result-share-btn');
+        const title = document.getElementById('result-title');
+
+        if (!overlay) return;
+
+        // タイトル設定
+        if (this.isCleared) {
+            title.textContent = 'STAGE CLEAR!';
+            title.style.color = '#ffd700'; // Gold
+        } else {
+            title.textContent = 'GAME OVER';
+            title.style.color = '#ff4444'; // Red
+        }
+
+        // スコア表示設定
+        if (App.projectData.stage.showScore && scoreContainer) {
+            scoreContainer.classList.remove('hidden');
+            if (scoreVal) scoreVal.textContent = this.score.toString().padStart(6, '0');
+            if (highVal) highVal.textContent = this.highScore.toString().padStart(6, '0');
+            if (shareBtn) shareBtn.classList.remove('hidden');
+        } else {
+            if (scoreContainer) scoreContainer.classList.add('hidden');
+            if (shareBtn) shareBtn.classList.add('hidden');
+        }
+
+        overlay.classList.remove('hidden');
     }
 };

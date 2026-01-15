@@ -132,8 +132,14 @@ const Share = {
         return `https://twitter.com/intent/tweet?text=${tweetText}&url=${encodedUrl}`;
     },
 
+    // 共有状態（スコア共有用）
+    currentShareData: null,
+
     // 共有ダイアログを開く（Firebase保存）
-    async openDialog(data) {
+    // scoreData: { score: number, title: string, isNewRecord: boolean }
+    async openDialog(data, scoreData = null) {
+        this.currentShareData = scoreData;
+
         const dialog = document.getElementById('share-dialog');
         const urlInput = document.getElementById('share-url-input');
         const copySuccess = document.getElementById('copy-success');
@@ -145,7 +151,8 @@ const Share = {
         copySuccess.classList.add('hidden');
         dialog.classList.remove('hidden');
 
-        // Firebaseに保存
+        // Firebaseに保存（すでにURLパラメータを持っていればそれを使うのが理想だが、ハイスコア更新などのプレイデータを含めたい場合は新規保存も手）
+        // ここでは常に新規保存して最新の状態（スコア等は含まれないがステージデータとして）を共有
         const id = await this.saveGame(data);
 
         if (!id) {
@@ -155,6 +162,10 @@ const Share = {
 
         const shareUrl = this.createShortUrl(id);
         urlInput.value = shareUrl;
+
+        if (this.currentShareData) {
+            this.currentShareData.url = shareUrl;
+        }
     },
 
     // 共有ダイアログを閉じる
@@ -163,12 +174,14 @@ const Share = {
         if (dialog) {
             dialog.classList.add('hidden');
         }
+        this.currentShareData = null;
     },
 
     // 共有ダイアログのイベントリスナー初期化
     initDialogEvents() {
         const copyBtn = document.getElementById('copy-url-btn');
         const shareXBtn = document.getElementById('share-x-btn');
+        const shareDiscordBtn = document.getElementById('share-discord-btn');
         const closeBtn = document.getElementById('share-close-btn');
         const urlInput = document.getElementById('share-url-input');
         const copySuccess = document.getElementById('copy-success');
@@ -179,6 +192,7 @@ const Share = {
                 if (urlInput.value.startsWith('http')) {
                     const success = await this.copyToClipboard(urlInput.value);
                     if (success && copySuccess) {
+                        copySuccess.textContent = '✓ URLをコピーしました';
                         copySuccess.classList.remove('hidden');
                         setTimeout(() => copySuccess.classList.add('hidden'), 2000);
                     }
@@ -189,8 +203,40 @@ const Share = {
         if (shareXBtn && urlInput) {
             shareXBtn.addEventListener('click', () => {
                 if (urlInput.value.startsWith('http')) {
-                    const twitterUrl = this.createTwitterUrl(urlInput.value);
+                    let text = 'PixelGameKitでゲームを作ったよ！🎮\nプレイしてみてね！';
+
+                    // スコア共有の場合
+                    if (this.currentShareData) {
+                        const { score, title, isNewRecord } = this.currentShareData;
+                        const newRecordText = isNewRecord ? ' [ハイスコア更新！]' : '';
+                        text = `「${title}」をクリア！\nスコア: ${score}点！${newRecordText} #PixelGameKit`;
+                    }
+
+                    const twitterUrl = this.createTwitterUrl(urlInput.value, text);
                     window.open(twitterUrl, '_blank');
+                }
+            });
+        }
+
+        // Discordボタン（クリップボードにテキスト+URLをコピー）
+        if (shareDiscordBtn && urlInput) {
+            shareDiscordBtn.addEventListener('click', async () => {
+                if (urlInput.value.startsWith('http')) {
+                    let text = `PixelGameKitでゲームを作ったよ！\n${urlInput.value}`;
+
+                    // スコア共有の場合
+                    if (this.currentShareData) {
+                        const { score, title, isNewRecord } = this.currentShareData;
+                        const newRecordText = isNewRecord ? ' [ハイスコア更新！]' : '';
+                        text = `「${title}」をクリア！ スコア: ${score}点！${newRecordText}\n${urlInput.value}`;
+                    }
+
+                    const success = await this.copyToClipboard(text);
+                    if (success && copySuccess) {
+                        copySuccess.textContent = '✓ Discord用にコピーしました！貼り付けて共有してね';
+                        copySuccess.classList.remove('hidden');
+                        setTimeout(() => copySuccess.classList.add('hidden'), 3000);
+                    }
                 }
             });
         }
