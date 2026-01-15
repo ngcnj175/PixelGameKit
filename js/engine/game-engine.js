@@ -282,6 +282,8 @@ const GameEngine = {
         // プロジェクタイルとアイテムをリセット
         this.projectiles = [];
         this.items = [];
+        this.particles = []; // パーティクルシステム
+        this.breakableTiles = new Map(); // 耐久度管理 (key: "x,y", value: life)
 
         // ゲームオーバー待機状態をリセット
         this.gameOverPending = false;
@@ -598,6 +600,9 @@ const GameEngine = {
             this.renderProjectileOrItem(proj);
         });
 
+        // パーティクル描画
+        this.renderParticles();
+
         this.renderUI();
     },
 
@@ -678,6 +683,9 @@ const GameEngine = {
         // プロジェクタイル更新
         this.updateProjectiles();
 
+        // パーティクル更新
+        this.updateParticles();
+
         // アイテム衝突判定
         this.checkItemCollisions();
 
@@ -697,8 +705,13 @@ const GameEngine = {
                 return false;
             }
 
+            const cx = 0.5;
+            const cy = 0.5;
+
             // 壁との衝突
-            if (this.getCollision(Math.floor(proj.x), Math.floor(proj.y)) === 1) {
+            if (this.getCollision(proj.x + cx, proj.y + cy)) {
+                // 壁にダメージを与える
+                this.damageTile(Math.floor(proj.x + cx), Math.floor(proj.y + cy));
                 return false;
             }
 
@@ -919,6 +932,148 @@ const GameEngine = {
         }
 
         return 0; // 衝突なし
+    },
+
+    damageTile(tileX, tileY) {
+        const stage = App.projectData.stage;
+        const templates = App.projectData.templates || [];
+
+        // 範囲チェック
+        if (tileX < 0 || tileX >= stage.width || tileY < 0 || tileY >= stage.height) {
+            return;
+        }
+
+        const tileId = stage.layers.fg?.[tileY]?.[tileX];
+        if (tileId === undefined || tileId < 0) return;
+
+        // テンプレート取得（ヘルパーがあればそれを使うが、ここでも簡易実装）
+        let template;
+        if (tileId >= 100) {
+            template = templates[tileId - 100];
+        } else {
+            template = templates.find(t => {
+                const idx = t?.sprites?.idle?.frames?.[0] ?? t?.sprites?.main?.frames?.[0];
+                return idx === tileId;
+            });
+        }
+
+        if (!template) return;
+
+        // LIFE設定確認
+        const maxLife = template.config?.life;
+        // lifeが未設定、または-1（無限）の場合は破壊不可
+        if (maxLife === undefined || maxLife === -1) return;
+
+        // 耐久度管理
+        const key = `${tileX},${tileY}`;
+        let currentLife = this.breakableTiles.get(key);
+
+        if (currentLife === undefined) {
+            currentLife = maxLife;
+        }
+
+        // ダメージ処理
+        currentLife--;
+        this.breakableTiles.set(key, currentLife);
+
+        if (currentLife <= 0) {
+            this.destroyTile(tileX, tileY, tileId);
+        } else {
+            // ダメージ音（SE設定があれば詳細化可、ここでは共通音）
+            // this.player.playSE('damage');
+        }
+    },
+
+    destroyTile(tileX, tileY, tileId) {
+        const stage = App.projectData.stage;
+        const key = `${tileX},${tileY}`;
+
+        // マップから削除
+        stage.layers.fg[tileY][tileX] = -1; // 空にする
+        this.breakableTiles.delete(key);
+
+        // パーティクル生成
+        this.createTileParticles(tileX, tileY, tileId);
+
+        // 破壊音（EnemyDefeat音などで代用、あるいは専用音が必要なら追加）
+        if (this.player) {
+            this.player.playSE('enemyDefeat');
+        }
+    },
+
+    createTileParticles(tileX, tileY, tileId) {
+        const templates = App.projectData.templates || [];
+        const sprites = App.projectData.sprites || [];
+
+        let spriteIdx;
+        if (tileId >= 100) {
+            const template = templates[tileId - 100];
+            spriteIdx = template?.sprites?.idle?.frames?.[0] ?? template?.sprites?.main?.frames?.[0];
+        } else {
+            spriteIdx = tileId;
+        }
+
+        const sprite = sprites[spriteIdx];
+        if (!sprite) return;
+
+        const palette = App.nesPalette;
+        const startX = tileX;
+        const startY = tileY;
+
+        // 4x4ピクセルごとにパーティクル化
+        for (let py = 0; py < 16; py += 4) {
+            for (let px = 0; px < 16; px += 4) {
+                let color = null;
+                // 4x4ブロック内の代表色を探す（あるいは平均色）
+                for (let dy = 0; dy < 4 && !color; dy++) {
+                    for (let dx = 0; dx < 4 && !color; dx++) {
+                        const ci = sprite.data[py + dy]?.[px + dx];
+                        if (ci !== undefined && ci >= 0) {
+                            color = palette[ci];
+                        }
+                    }
+                }
+
+                if (color) {
+                    this.particles.push({
+                        x: startX + px / 16 + 0.125, // 中心補正
+                        y: startY + py / 16 + 0.125,
+                        vx: (Math.random() - 0.5) * 0.15, // 飛び散り
+                        vy: -Math.random() * 0.2 - 0.1, // 上に跳ねる
+                        color: color,
+                        size: 4, // 4x4ピクセル
+                        life: 60 + Math.random() * 30
+                    });
+                }
+            }
+        }
+    },
+
+    updateParticles() {
+        this.particles.forEach(p => {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += 0.015; // 重力
+            p.life--;
+        });
+        this.particles = this.particles.filter(p => p.life > 0);
+    },
+
+    renderParticles() {
+        const ctx = this.ctx;
+        const camX = this.camera.x;
+        const camY = this.camera.y;
+        const tileSize = this.TILE_SIZE;
+        const pixelScale = tileSize / 16;
+
+        this.particles.forEach(p => {
+            const screenX = (p.x - camX) * tileSize;
+            const screenY = (p.y - camY) * tileSize;
+            const size = p.size * pixelScale;
+
+            ctx.fillStyle = p.color;
+            ctx.fillRect(screenX, screenY, size, size);
+        });
     },
 
     render() {

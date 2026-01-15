@@ -427,6 +427,10 @@ class Player {
 
         for (let tx = left; tx <= right; tx++) {
             if (this.vy < 0 && engine.getCollision(tx, top) === 1) {
+                // 頭突きでブロック破壊
+                if (typeof engine.damageTile === 'function') {
+                    engine.damageTile(tx, top);
+                }
                 this.y = top + 1;
                 this.vy = 0;
             }
