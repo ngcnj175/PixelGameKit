@@ -309,17 +309,25 @@ const GameEngine = {
         this.hasTimeLimit = timeLimit > 0;
 
         // ステージ上のアイテムを検索
-        // 1. Entities配列から
+        // 重複防止用のSet（座標をキーとして使用）
+        const processedItemPositions = new Set();
+
+        // 1. Entities配列から（優先）
         if (stage.entities) {
             stage.entities.forEach(ent => {
                 const template = templates[ent.templateId];
                 if (template && template.type === 'item') {
                     const spriteIdx = template.sprites?.idle?.frames?.[0] ?? template.sprites?.main?.frames?.[0];
                     const itemType = template.config?.itemType || 'star';
+
+                    // 座標をキーとして記録
+                    const posKey = `${Math.floor(ent.x)},${Math.floor(ent.y)}`;
+                    processedItemPositions.add(posKey);
+
                     this.items.push({
                         x: ent.x,
                         y: ent.y,
-                        width: 1, // アイテムサイズは1固定？
+                        width: 1,
                         height: 1,
                         spriteIdx: spriteIdx,
                         itemType: itemType,
@@ -333,9 +341,16 @@ const GameEngine = {
             });
         }
 
+        // 2. layers.fgから（エンティティで未処理の位置のみ）
         if (stage && stage.layers && stage.layers.fg) {
             for (let y = 0; y < stage.height; y++) {
                 for (let x = 0; x < stage.width; x++) {
+                    const posKey = `${x},${y}`;
+                    // 既にentitiesで処理済みならスキップ
+                    if (processedItemPositions.has(posKey)) {
+                        continue;
+                    }
+
                     const tileId = stage.layers.fg[y][x];
                     if (tileId >= 0) {
                         const { template, templateIdx } = getTemplateFromTileId(tileId);
@@ -348,7 +363,7 @@ const GameEngine = {
                                 width: 0.8,
                                 height: 0.8,
                                 template: template,
-                                templateIdx: templateIdx, // アニメーション用にtemplateIdxを追加
+                                templateIdx: templateIdx,
                                 spriteIdx: spriteIdx,
                                 itemType: itemType,
                                 collected: false
