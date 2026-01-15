@@ -410,12 +410,23 @@ const StageEditor = {
     },
 
     renderSlider(label, key, value, min, max) {
+        let sliderValue = value;
+        let sliderMax = max;
+
+        // MaterialのLIFE設定の場合、0をスキップするためのマッピング
+        // 実際: -1, 1, 2, 3...
+        // UI:   -1, 0, 1, 2...
+        if (key === 'life' && min === -1) {
+            if (value > 0) sliderValue = value - 1;
+            sliderMax = max - 1; // 最大値スライダー位置も調整
+        }
+
         const displayVal = value === -1 ? '∞' : value;
         return `
             <div class="param-row">
                 <span class="param-label">${label}:</span>
                 <span class="param-value" data-key="${key}">${displayVal}</span>
-                <input type="range" class="param-slider" min="${min}" max="${max}" value="${value}" data-key="${key}">
+                <input type="range" class="param-slider" min="${min}" max="${sliderMax}" value="${sliderValue}" data-key="${key}">
             </div>
         `;
     },
@@ -513,8 +524,14 @@ const StageEditor = {
         document.querySelectorAll('.param-slider').forEach(slider => {
             slider.addEventListener('input', (e) => {
                 const key = slider.dataset.key;
-                const value = parseInt(e.target.value);
+                let value = parseInt(e.target.value);
+
                 if (key && this.editingTemplate?.config) {
+                    // LIFE設定（Material）の0スキップ対応
+                    if (key === 'life' && this.editingTemplate.type === 'material') {
+                        if (value >= 0) value += 1; // 0以上は+1して保存（0をスキップ）
+                    }
+
                     this.editingTemplate.config[key] = value;
                     // 値表示を更新
                     const valueEl = document.querySelector(`.param-value[data-key="${key}"]`);

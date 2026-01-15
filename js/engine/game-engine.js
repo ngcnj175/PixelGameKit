@@ -284,6 +284,7 @@ const GameEngine = {
         this.items = [];
         this.particles = []; // パーティクルシステム
         this.breakableTiles = new Map(); // 耐久度管理 (key: "x,y", value: life)
+        this.destroyedTiles = new Set(); // 破壊されたタイルの一時管理 (key: "x,y")
 
         // ゲームオーバー待機状態をリセット
         this.gameOverPending = false;
@@ -892,6 +893,11 @@ const GameEngine = {
         const tileX = Math.floor(x);
         const tileY = Math.floor(y);
 
+        // 破壊されたタイルは衝突なし
+        if (this.destroyedTiles && this.destroyedTiles.has(`${tileX},${tileY}`)) {
+            return 0;
+        }
+
         // 左右と上は壁として扱う、下は衝突なし（落下可能）
         if (tileX < 0 || tileX >= stage.width) {
             return 1; // 左右は壁
@@ -988,8 +994,10 @@ const GameEngine = {
         const stage = App.projectData.stage;
         const key = `${tileX},${tileY}`;
 
-        // マップから削除
-        stage.layers.fg[tileY][tileX] = -1; // 空にする
+        // 元データは変更せず、破壊済みリストに追加
+        // stage.layers.fg[tileY][tileX] = -1; 
+        this.destroyedTiles.add(key);
+
         this.breakableTiles.delete(key);
 
         // パーティクル生成
@@ -1228,6 +1236,11 @@ const GameEngine = {
                 const tileId = layer[y][x];
                 // 空タイル(-1)および2x2マーカータイル(-1000以下)はスキップ
                 if (tileId < 0) continue;
+
+                // 破壊されたタイルは描画しない
+                if (this.destroyedTiles && this.destroyedTiles.has(`${x},${y}`)) {
+                    continue;
+                }
 
                 const { template, sprite } = getTileInfo(tileId);
                 if (!sprite) continue;
