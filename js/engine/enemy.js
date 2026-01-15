@@ -182,8 +182,11 @@ class Enemy {
         const checkX = this.facingRight ? Math.floor(this.x + this.width + 0.1) : Math.floor(this.x - 0.1);
         const footY = Math.floor(this.y + this.height + 0.1);
 
-        if (engine.getCollision(checkX, footY) === 0) {
-            this.facingRight = !this.facingRight;
+        // 接地している場合のみ崖判定を行う（ジャンプ中の高速振動防止）
+        if (this.onGround) {
+            if (engine.getCollision(checkX, footY) === 0) {
+                this.facingRight = !this.facingRight;
+            }
         }
 
         this.vx = this.facingRight ? this.moveSpeed : -this.moveSpeed;

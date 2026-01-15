@@ -400,9 +400,10 @@ const GameEngine = {
             // STAGE CLEARテキストと暗転エフェクト
             this.renderClearEffect();
 
-            // フェーズ終了: 210フレーム（2秒テキスト + 0.5秒暗転 + 1秒待機）後にタイトルへ
+            // フェーズ終了: 210フレーム（2秒テキスト + 0.5秒暗転 + 1秒待機）後にリザルトへ
             if (this.clearTimer >= 210) {
-                this.restart();
+                this.titleState = 'result';
+                this.renderResultScreen();
                 return;
             }
 
@@ -422,12 +423,25 @@ const GameEngine = {
             else if (this.gameOverTimer <= 150) {
                 this.renderGameOverText();
             }
-            // フェーズ3: タイトルに戻る
+            // フェーズ3: リザルトへ
             else {
-                this.restart();
+                this.titleState = 'result';
+                this.renderResultScreen(); // DOM表示
+                // リザルト中はループ停止（またはresultステートでループ継続して描画のみ？）
+                // ここではループを継続させて、resultステート処理に任せる
+                this.animationId = requestAnimationFrame(() => this.gameLoop());
                 return;
             }
 
+            this.animationId = requestAnimationFrame(() => this.gameLoop());
+            return;
+        }
+
+        // リザルト画面
+        if (this.titleState === 'result') {
+            // ゲーム画面は静止画として描画し続ける（背景）
+            this.render();
+            // 特に更新処理はなし（DOMオーバーレイ操作待ち）
             this.animationId = requestAnimationFrame(() => this.gameLoop());
             return;
         }
@@ -768,10 +782,21 @@ const GameEngine = {
             if (this.player.collidesWith(item)) {
                 item.collected = true;
                 this.player.collectItem(item.itemType);
+
+                // CLEARアイテムの場合、取得数をカウント
+                if (item.itemType === 'clear') {
+                    this.collectedClearItems++;
+                    // アイテムクリア条件チェック
+                    if (App.projectData.stage.clearCondition === 'item' || App.projectData.stage.clearCondition === 'none') {
+                        this.checkClearCondition();
+                    }
+                }
+
                 // スコア加算（アイテムタイプに応じて変えることも可能）
                 let pts = 100;
                 if (item.itemType === 'star') pts = 500;
                 if (item.itemType === 'weapon') pts = 200;
+                if (item.itemType === 'clear') pts = 1000;
                 this.addScore(pts);
             }
         });
@@ -840,8 +865,10 @@ const GameEngine = {
 
         switch (clearCondition) {
             case 'item':
-                // CLEARアイテムを取得したらクリア（collectItemで処理）
-                // ここでは何もしない
+                // CLEARアイテムを全て取得したらクリア
+                if (this.collectedClearItems >= this.totalClearItems && this.totalClearItems > 0) {
+                    this.triggerClear();
+                }
                 break;
 
             case 'enemies':
