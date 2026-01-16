@@ -3113,7 +3113,9 @@ body {
     padding: 0;
     gap: 0;
     min-height: 0;
-    overflow: hidden;
+    overflow-x: auto;
+    /* 幅が足りない場合はスクロール */
+    overflow-y: hidden;
 }
 
 /* ツールバー（左側縦列） - #paint-tools と同じ */
@@ -3184,7 +3186,10 @@ body {
 /* ピアノロールキャンバス - #paint-canvas と同じスタイル */
 #piano-roll-canvas {
     width: 320px;
+    min-width: 320px;
+    /* 強制的に320pxを確保 */
     max-width: calc(100% - 48px);
+    /* 一応残すがmin-widthが優先される */
     aspect-ratio: 1;
     flex-shrink: 0;
     /* 背景色: 薄グレー */
