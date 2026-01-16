@@ -65,7 +65,7 @@ const SoundEditor = {
         this.initPianoRoll();
         this.initSongJukebox(); // モーダル初期化
 
-        this.render();
+        this.resize(); // キャンバスサイズ設定
         this.updateConsoleDisplay();
         this.updateChannelStripUI();
     },
@@ -78,7 +78,7 @@ const SoundEditor = {
         if (this.songs.length === 0) {
             this.addSong();
         }
-        this.render();
+        this.resize(); // キャンバスサイズ設定
         this.updateConsoleDisplay();
         this.updateChannelStripUI();
     },
