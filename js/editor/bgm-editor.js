@@ -127,10 +127,14 @@ const SoundEditor = {
         // キャンバスは常に16x16タイル（320px）固定
         const canvasSize = 320;
 
+        // 内部解像度は固定
         this.canvas.width = canvasSize;
         this.canvas.height = canvasSize;
+
+        // CSS表示サイズ：幅は320px（max-widthで制限される可能性あり）
+        // 高さはCSSのaspect-ratio: 1で自動計算させる（style.heightを設定しない）
         this.canvas.style.width = canvasSize + 'px';
-        this.canvas.style.height = canvasSize + 'px';
+        // this.canvas.style.height は設定しない → CSSのaspect-ratioが効く
 
         this.render();
     },
