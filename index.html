@@ -489,23 +489,49 @@
         </div>
 
         <!-- ========== サウンド画面 ========== -->
+        <!-- ========== サウンド画面 (Pocket Console Layout) ========== -->
         <div id="sound-screen" class="screen">
-            <div class="screen-title">SOUND</div>
+            <!-- 1. ヘッダー：ソング制御盤 -->
+            <div id="bgm-console-header">
+                <div class="console-lcd-group">
+                    <button id="song-prev-btn" class="console-nav-btn">◀</button>
+                    <div id="song-title-display" class="console-lcd title-lcd" title="タップで名前変更">Song 1</div>
+                    <button id="song-next-btn" class="console-nav-btn">▶</button>
+                    <button id="song-menu-btn" class="console-menu-btn" title="ソングリスト">≡</button>
+                </div>
 
-            <!-- トラックパネル（トラック中央配置） -->
-            <div id="track-panel">
-                <div id="track-tabs">
-                    <button class="track-tab active" data-track="0">Tr1</button>
-                    <button class="track-tab" data-track="1">Tr2</button>
-                    <button class="track-tab" data-track="2">Tr3</button>
-                    <button class="track-tab" data-track="3">Tr4</button>
+                <div class="console-lcd-group right">
+                    <div class="console-param">
+                        <span class="label">BPM</span>
+                        <span id="bpm-display" class="console-lcd value-lcd">120</span>
+                    </div>
+                    <div class="console-param">
+                        <span class="label">BAR</span>
+                        <span id="bar-display" class="console-lcd value-lcd">4</span>
+                    </div>
                 </div>
             </div>
 
-            <!-- メインエリア（コントロール + ピアノロール） -->
+            <!-- 2. メインエリア（ツール + ピアノロール） -->
             <div id="sound-main-area">
-                <!-- プレイヤーコントロール（左縦配置） -->
+                <!-- 編集ツール（左側縦列） -->
                 <div id="sound-controls">
+                    <!-- ツールボタン群 -->
+                    <button class="sound-tool-btn active" data-tool="pencil" title="書き込み">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path
+                                d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
+                        </svg>
+                    </button>
+                    <button class="sound-tool-btn" data-tool="eraser" title="消しゴム">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path
+                                d="M15.14 3c-.51 0-1.02.2-1.41.59L2.59 14.73c-.78.78-.78 2.05 0 2.83L5.17 20.16c.79.78 2.05.78 2.83 0l11.03-11.03c.79-.79.79-2.05 0-2.83l-2.58-2.58C16.16 3.2 15.65 3 15.14 3zM9 19l-4.88-4.88L14.5 4.73 19.38 9.61 9 19z" />
+                        </svg>
+                    </button>
+
+                    <hr class="ctrl-divider">
+
                     <button id="sound-play-btn" class="sound-ctrl-btn play-stop" title="PLAY/STOP">
                         <svg viewBox="0 0 24 24" fill="currentColor">
                             <path d="M8 5v14l11-7z" />
@@ -516,25 +542,15 @@
                             <circle cx="12" cy="12" r="8" />
                         </svg>
                     </button>
+
                     <hr class="ctrl-divider">
-                    <button id="sound-del-btn" class="sound-ctrl-btn" title="DEL">
+
+                    <button id="sound-del-btn" class="sound-ctrl-btn" title="Undo (Long: Clear)">
                         <svg viewBox="0 0 24 24" fill="currentColor">
                             <path
                                 d="M12.5 8c-2.65 0-5.05 1.04-6.82 2.75L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z" />
                         </svg>
                     </button>
-                    <button id="sound-rest-btn" class="sound-ctrl-btn" title="REST">
-                        <svg viewBox="0 0 24 24" fill="currentColor" style="transform: scaleX(-1);">
-                            <path
-                                d="M12.5 8c-2.65 0-5.05 1.04-6.82 2.75L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z" />
-                        </svg>
-                    </button>
-                    <button id="sound-tie-btn" class="sound-ctrl-btn" title="TIE">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M4 16 C4 8, 20 8, 20 16" stroke-linecap="round" />
-                        </svg>
-                    </button>
-                    <hr class="ctrl-divider">
                     <button id="sound-copy-btn" class="sound-ctrl-btn" title="コピー">
                         <svg viewBox="0 0 24 24" fill="currentColor">
                             <path
@@ -555,60 +571,55 @@
                 </div>
             </div>
 
-            <!-- 鍵盤スクロールバー（iOS対応） -->
-            <div id="keyboard-scroll-container">
-                <input type="range" id="keyboard-scrollbar" min="0" max="100" value="0">
-            </div>
-
-            <!-- 鍵盤（5オクターブ、横スクロール） -->
-            <div id="keyboard-area">
-                <div id="piano-keyboard">
-                    <!-- JSで生成 -->
-                </div>
-            </div>
-
-            <!-- ソングパレット（タイルパレットと同じ構造） -->
-            <div id="song-palette-area" class="gallery-row">
-                <button id="add-song-btn" class="gallery-add-btn">+</button>
-                <div class="gallery-scroll">
-                    <div id="song-gallery">
-                        <!-- ソングボタンはJSで生成 -->
+            <!-- 3. フッター：チャンネルストリップ（トラックミキサー） -->
+            <div id="bgm-channel-strip">
+                <!-- JSで動的生成: .channel-strip-track -->
+                <div class="channel-strip-track active" data-track="0">
+                    <div class="track-info"><span class="track-num">TR1</span><span class="track-type">SQUARE</span>
                     </div>
-                </div>
-            </div>
-
-            <!-- ソング設定パネル（下から押し上げ） -->
-            <div id="song-config-panel" class="hidden">
-                <div class="config-header">
-                    <span class="config-title">ソング設定</span>
-                    <div class="config-header-btns">
-                        <button id="song-config-save" class="header-btn">保存</button>
-                        <button id="song-config-close" class="header-btn">閉じる</button>
-                    </div>
-                </div>
-                <div class="config-body">
-                    <div class="config-row">
-                        <label>ソング名</label>
-                        <input type="text" id="song-name-input" maxlength="16" placeholder="Song1">
-                    </div>
-                    <div class="config-row">
-                        <label>BPM</label>
-                        <div class="config-stepper">
-                            <button id="song-bpm-dec" class="stepper-btn">−</button>
-                            <span id="song-bpm-value">120</span>
-                            <button id="song-bpm-inc" class="stepper-btn">+</button>
+                    <div class="track-knobs">
+                        <div class="knob-wrap">
+                            <div class="knob-ctrl vol-knob"></div><span class="knob-label">VOL</span>
                         </div>
-                    </div>
-                    <div class="config-row">
-                        <label>小節数</label>
-                        <div class="config-stepper">
-                            <button id="song-bars-dec" class="stepper-btn">−</button>
-                            <span id="song-bars-value">1</span>
-                            <button id="song-bars-inc" class="stepper-btn">+</button>
+                        <div class="knob-wrap">
+                            <div class="knob-ctrl pan-knob"></div><span class="knob-label">PAN</span>
                         </div>
                     </div>
                 </div>
+                <!-- 他のトラックはJSで生成 -->
             </div>
+
+            <!-- 鍵盤エリア（最下部固定） -->
+            <div id="keyboard-container-wrapper">
+                <div id="keyboard-scroll-container">
+                    <input type="range" id="keyboard-scrollbar" min="0" max="100" value="0">
+                </div>
+                <div id="keyboard-area">
+                    <div id="piano-keyboard"></div>
+                </div>
+            </div>
+
+            <!-- --- モーダル類 --- -->
+
+            <!-- ソングリスト（ジュークボックス）モーダル -->
+            <div id="song-jukebox-modal" class="popup-overlay hidden">
+                <div class="popup-content jukebox-content">
+                    <div class="popup-header">
+                        <span class="popup-title">SONG LIST</span>
+                        <button id="jukebox-close-btn" class="popup-close">×</button>
+                    </div>
+                    <div class="jukebox-scroll">
+                        <div id="jukebox-list">
+                            <!-- JSで生成 -->
+                        </div>
+                    </div>
+                    <div class="popup-actions center">
+                        <button id="jukebox-add-btn" class="popup-btn primary">+ NEW SONG</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 名前変更などのサブメニュー用（必要なら） -->
         </div>
     </div>
 

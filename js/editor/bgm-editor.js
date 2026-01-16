@@ -48,23 +48,26 @@ const SoundEditor = {
         // Web Audio初期化
         this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-        // ソングデータ初期化
-        if (!App.projectData.songs) {
-            App.projectData.songs = [];
-        }
+        // ソングデータ初期化（マイグレーション含む）
+        this.migrateSongData();
+
         this.songs = App.projectData.songs;
         if (this.songs.length === 0) {
             this.addSong();
         }
 
-        this.initSongPalette();
-        this.initTrackTabs();
-        this.initBpmBarControls();
+        // 新UI初期化
+        this.initConsoleHeader();
+        this.initChannelStrip();
         this.initTools();
         this.initPlayerPanel();
         this.initKeyboard();
         this.initPianoRoll();
-        this.resize();
+        this.initSongJukebox(); // モーダル初期化
+
+        this.render();
+        this.updateConsoleDisplay();
+        this.updateChannelStripUI();
     },
 
     refresh() {
@@ -75,8 +78,24 @@ const SoundEditor = {
         if (this.songs.length === 0) {
             this.addSong();
         }
-        this.initSongPalette();
         this.render();
+        this.updateConsoleDisplay();
+        this.updateChannelStripUI();
+    },
+
+    // データ構造のマイグレーション (Vol/Pan追加)
+    migrateSongData() {
+        if (!App.projectData.songs) {
+            App.projectData.songs = [];
+            return;
+        }
+        App.projectData.songs.forEach(song => {
+            if (!song.tracks) return;
+            song.tracks.forEach(track => {
+                if (typeof track.volume === 'undefined') track.volume = 1.0;
+                if (typeof track.pan === 'undefined') track.pan = 0.0;
+            });
+        });
     },
 
     // iOSでconfirmダイアログ後にAudioContextが壊れる問題対策
@@ -112,209 +131,336 @@ const SoundEditor = {
         this.render();
     },
 
-    // ========== ソングパレット ==========
-    // ダブルタップ検出用状態
-    songClickState: { index: null, count: 0, timer: null },
+    // ========== Console Header (ソング制御盤) ==========
+    initConsoleHeader() {
+        // 前へ
+        document.getElementById('song-prev-btn')?.addEventListener('click', () => {
+            let nextIdx = this.currentSongIdx - 1;
+            if (nextIdx < 0) nextIdx = this.songs.length - 1;
+            this.selectSong(nextIdx);
+        });
 
-    initSongPalette() {
-        const container = document.getElementById('song-gallery');
+        // 次へ
+        document.getElementById('song-next-btn')?.addEventListener('click', () => {
+            let nextIdx = this.currentSongIdx + 1;
+            if (nextIdx >= this.songs.length) nextIdx = 0;
+            this.selectSong(nextIdx);
+        });
+
+        // タイトルタップ（名前変更）
+        document.getElementById('song-title-display')?.addEventListener('click', () => {
+            const song = this.getCurrentSong();
+            const newName = prompt('ソング名を入力', song.name);
+            if (newName !== null) {
+                song.name = newName.substring(0, 16) || `Song${song.id + 1}`;
+                this.updateConsoleDisplay();
+                // ステージエディタ等の選択肢更新
+                if (typeof StageEditor !== 'undefined' && StageEditor.updateBgmSelects) {
+                    StageEditor.updateBgmSelects();
+                }
+            }
+        });
+
+        // メニュー（ジュークボックスを開く）
+        document.getElementById('song-menu-btn')?.addEventListener('click', () => {
+            this.openSongJukebox();
+        });
+
+        // BPM調整 (タップで入力、スライドは簡易実装としてクリック毎に+5/-5)
+        // 数値表示部分をクリックでプロンプト入力も可能にする
+        const bpmDisplay = document.getElementById('bpm-display');
+        bpmDisplay?.addEventListener('click', () => {
+            const song = this.getCurrentSong();
+            const val = prompt('BPM (60-240)', song.bpm);
+            if (val !== null) {
+                const num = parseInt(val);
+                if (!isNaN(num)) {
+                    song.bpm = Math.max(60, Math.min(240, num));
+                    this.updateConsoleDisplay();
+                }
+            }
+        });
+
+        const barDisplay = document.getElementById('bar-display');
+        barDisplay?.addEventListener('click', () => {
+            const song = this.getCurrentSong();
+            const val = prompt('小節数 (1-16)', song.bars);
+            if (val !== null) {
+                const num = parseInt(val);
+                if (!isNaN(num)) {
+                    song.bars = Math.max(1, Math.min(16, num));
+                    this.updateConsoleDisplay();
+                    this.render();
+                }
+            }
+        });
+    },
+
+    updateConsoleDisplay() {
+        const song = this.getCurrentSong();
+        const titleEl = document.getElementById('song-title-display');
+        const bpmEl = document.getElementById('bpm-display');
+        const barEl = document.getElementById('bar-display');
+
+        if (titleEl) titleEl.textContent = song.name;
+        if (bpmEl) bpmEl.textContent = song.bpm;
+        if (barEl) barEl.textContent = song.bars;
+    },
+
+    // ========== Channel Strip (フッターミキサー) ==========
+    initChannelStrip() {
+        const container = document.getElementById('bgm-channel-strip');
         if (!container) return;
 
-        // 既存アイテム削除
         container.innerHTML = '';
+        const trackLabels = ['TR1', 'TR2', 'TR3', 'TR4'];
+        const trackTypes = ['SQUARE', 'SQUARE', 'TRIANGLE', 'NOISE'];
 
-        // ソングアイテム作成（ナンバリングなし）
+        trackLabels.forEach((label, idx) => {
+            const div = document.createElement('div');
+            div.className = 'channel-strip-track' + (idx === this.currentTrack ? ' active' : '');
+            div.dataset.track = idx;
+
+            div.innerHTML = `
+                <div class="track-info">
+                    <span class="track-num">${label}</span>
+                    <span class="track-type">${trackTypes[idx]}</span>
+                </div>
+                <div class="track-knobs">
+                    <div class="knob-wrap">
+                        <div class="knob-ctrl vol-knob" data-type="vol" data-track="${idx}"></div>
+                        <span class="knob-label">VOL</span>
+                    </div>
+                    <div class="knob-wrap">
+                        <div class="knob-ctrl pan-knob" data-type="pan" data-track="${idx}"></div>
+                        <span class="knob-label">PAN</span>
+                    </div>
+                </div>
+             `;
+
+            // トラック選択イベント
+            div.addEventListener('click', (e) => {
+                // ノブ操作時はトラック切り替えしない（あるいは切り替えてもいいが、誤爆防止）
+                if (e.target.classList.contains('knob-ctrl')) return;
+
+                this.currentTrack = idx;
+                this.updateChannelStripUI();
+                this.render();
+            });
+
+            container.appendChild(div);
+        });
+
+        // ノブのドラッグ操作初期化
+        this.initKnobInteractions();
+    },
+
+    updateChannelStripUI() {
+        // アクティブトラック表示更新
+        const tracks = document.querySelectorAll('.channel-strip-track');
+        tracks.forEach((t, idx) => {
+            t.classList.toggle('active', idx === this.currentTrack);
+        });
+
+        // ノブの回転更新
+        const song = this.getCurrentSong();
+        song.tracks.forEach((track, idx) => {
+            const volKnob = document.querySelector(`.vol-knob[data-track="${idx}"]`);
+            const panKnob = document.querySelector(`.pan-knob[data-track="${idx}"]`);
+
+            if (volKnob) {
+                // Vol 0.0-1.0 => -135deg to +135deg
+                const deg = (track.volume * 270) - 135;
+                volKnob.style.transform = `rotate(${deg}deg)`;
+            }
+            if (panKnob) {
+                // Pan -1.0 to 1.0 => -135deg to +135deg
+                const deg = track.pan * 135;
+                panKnob.style.transform = `rotate(${deg}deg)`;
+            }
+        });
+    },
+
+    initKnobInteractions() {
+        let activeKnob = null;
+        let startY = 0;
+        let startVal = 0;
+
+        const handleStart = (e) => {
+            if (!e.target.classList.contains('knob-ctrl')) return;
+            e.preventDefault();
+            e.stopPropagation();
+
+            activeKnob = e.target;
+            const trackIdx = parseInt(activeKnob.dataset.track);
+            const type = activeKnob.dataset.type;
+            const song = this.getCurrentSong();
+            const track = song.tracks[trackIdx];
+
+            startY = e.touches ? e.touches[0].pageY : e.pageY;
+            startVal = (type === 'vol') ? track.volume : track.pan;
+
+            window.addEventListener('mousemove', handleMove);
+            window.addEventListener('mouseup', handleEnd);
+            window.addEventListener('touchmove', handleMove, { passive: false });
+            window.addEventListener('touchend', handleEnd);
+        };
+
+        const handleMove = (e) => {
+            if (!activeKnob) return;
+            e.preventDefault(); // スクロール防止
+
+            const currentY = e.touches ? e.touches[0].pageY : e.pageY;
+            const deltaY = startY - currentY; // 上にドラッグでプラス
+
+            const song = this.getCurrentSong();
+            const trackIdx = parseInt(activeKnob.dataset.track);
+            const track = song.tracks[trackIdx];
+            const type = activeKnob.dataset.type;
+
+            // 感度調整
+            const Sensitivity = 0.005;
+
+            if (type === 'vol') {
+                let newVal = startVal + (deltaY * Sensitivity);
+                newVal = Math.max(0.0, Math.min(1.0, newVal));
+                track.volume = newVal;
+            } else {
+                let newVal = startVal + (deltaY * Sensitivity);
+                newVal = Math.max(-1.0, Math.min(1.0, newVal));
+                track.pan = newVal;
+            }
+
+            this.updateChannelStripUI();
+        };
+
+        const handleEnd = () => {
+            activeKnob = null;
+            window.removeEventListener('mousemove', handleMove);
+            window.removeEventListener('mouseup', handleEnd);
+            window.removeEventListener('touchmove', handleMove);
+            window.removeEventListener('touchend', handleEnd);
+        };
+
+        const container = document.getElementById('bgm-channel-strip');
+        container.addEventListener('mousedown', handleStart);
+        container.addEventListener('touchstart', handleStart, { passive: false });
+    },
+
+    // ========== Song Jukebox (ソングリスト) ==========
+    initSongJukebox() {
+        const modal = document.getElementById('song-jukebox-modal');
+        const closeBtn = document.getElementById('jukebox-close-btn');
+        const addBtn = document.getElementById('jukebox-add-btn');
+
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                modal.classList.add('hidden');
+            });
+        }
+
+        if (addBtn) {
+            addBtn.addEventListener('click', () => {
+                this.addSong();
+                this.renderJukeboxList(); // リスト更新
+                modal.classList.add('hidden'); // 閉じて編集へ
+            });
+        }
+    },
+
+    openSongJukebox() {
+        const modal = document.getElementById('song-jukebox-modal');
+        this.renderJukeboxList();
+        modal.classList.remove('hidden');
+    },
+
+    renderJukeboxList() {
+        const listContainer = document.getElementById('jukebox-list');
+        if (!listContainer) return;
+
+        listContainer.innerHTML = '';
+
         this.songs.forEach((song, idx) => {
             const item = document.createElement('div');
-            item.className = 'song-item' + (idx === this.currentSongIdx ? ' active' : '');
+            item.className = 'jukebox-item' + (idx === this.currentSongIdx ? ' active' : '');
 
-            // 長押し検出用
-            let longPressTimer = null;
-            let isLongPress = false;
-
-            // タップ/クリック処理（タイルパレット方式）
-            const handleTap = () => {
-                if (isLongPress) {
-                    isLongPress = false;
-                    return;
-                }
-
-                const state = this.songClickState;
-
-                // 同じソングへの2回目のクリック（ダブルタップ）
-                if (state.index === idx && state.count === 1) {
-                    clearTimeout(state.timer);
-                    state.count = 0;
-                    state.index = null;
-
-                    // ダブルタップ：設定パネル表示
-                    this.openSongConfig(idx);
-                } else {
-                    // 最初のクリック：即座に選択
-                    clearTimeout(state.timer);
-                    state.index = idx;
-                    state.count = 1;
-
-                    // 即座に選択を反映
-                    this.selectSong(idx);
-
-                    // ダブルタップ用タイマー
-                    state.timer = setTimeout(() => {
-                        state.count = 0;
-                        state.index = null;
-                    }, 300);
-                }
+            // 再生ボタン
+            const playBtn = document.createElement('button');
+            playBtn.className = 'jukebox-play-btn';
+            playBtn.innerHTML = '▶';
+            playBtn.onclick = (e) => {
+                e.stopPropagation();
+                // 簡易試聴機能（今は単にそのソングを選択して再生開始でも良い）
+                this.selectSong(idx);
+                this.play();
+                // 表示更新が必要ならここで行う
+                document.querySelectorAll('.jukebox-play-btn').forEach(b => {
+                    b.innerHTML = '▶'; b.classList.remove('playing');
+                });
+                playBtn.innerHTML = '■';
+                playBtn.classList.add('playing');
             };
 
-            // 長押し開始
-            const startLongPress = () => {
-                longPressTimer = setTimeout(() => {
-                    isLongPress = true;
-                    this.deleteSong(idx);
-                }, 800);
+            // 情報エリア
+            const infoDiv = document.createElement('div');
+            infoDiv.className = 'jukebox-info';
+            infoDiv.innerHTML = `
+                <div class="jukebox-title">${song.name}</div>
+                <div class="jukebox-meta">BPM: ${song.bpm} / BAR: ${song.bars}</div>
+            `;
+            infoDiv.onclick = () => {
+                this.selectSong(idx);
+                document.getElementById('song-jukebox-modal').classList.add('hidden');
             };
 
-            // 長押しキャンセル
-            const cancelLongPress = () => {
-                if (longPressTimer) {
-                    clearTimeout(longPressTimer);
-                    longPressTimer = null;
-                }
+            // メニューボタン (...)
+            const menuBtn = document.createElement('button');
+            menuBtn.className = 'jukebox-menu-btn';
+            menuBtn.innerHTML = '⋮';
+            menuBtn.onclick = (e) => {
+                e.stopPropagation();
+                this.showSongContextMenu(idx, e);
             };
 
-            item.addEventListener('click', handleTap);
-            item.addEventListener('mousedown', startLongPress);
-            item.addEventListener('mouseup', cancelLongPress);
-            item.addEventListener('mouseleave', cancelLongPress);
-            item.addEventListener('touchstart', startLongPress, { passive: true });
-            item.addEventListener('touchend', cancelLongPress);
-            item.addEventListener('touchcancel', cancelLongPress);
+            item.appendChild(playBtn);
+            item.appendChild(infoDiv);
+            item.appendChild(menuBtn);
 
-            container.appendChild(item);
-        });
-
-        // 追加ボタン
-        const addBtn = document.getElementById('add-song-btn');
-        if (addBtn) {
-            addBtn.onclick = () => this.addSong();
-        }
-
-        // 設定パネル初期化（一度だけ）
-        this.initSongConfigPanel();
-    },
-
-    initSongConfigPanel() {
-        const panel = document.getElementById('song-config-panel');
-        if (!panel || this._songConfigInitialized) return;
-        this._songConfigInitialized = true;
-
-        // 閉じるボタン
-        document.getElementById('song-config-close')?.addEventListener('click', () => {
-            this.closeSongConfig();
-        });
-
-        // BPM調整
-        document.getElementById('song-bpm-dec')?.addEventListener('click', () => {
-            const song = this.songs[this._configSongIdx];
-            if (song) {
-                song.bpm = Math.max(60, song.bpm - 5);
-                document.getElementById('song-bpm-value').textContent = song.bpm;
-            }
-        });
-        document.getElementById('song-bpm-inc')?.addEventListener('click', () => {
-            const song = this.songs[this._configSongIdx];
-            if (song) {
-                song.bpm = Math.min(240, song.bpm + 5);
-                document.getElementById('song-bpm-value').textContent = song.bpm;
-            }
-        });
-
-        // 小節数調整
-        document.getElementById('song-bars-dec')?.addEventListener('click', () => {
-            const song = this.songs[this._configSongIdx];
-            if (song) {
-                song.bars = Math.max(1, song.bars - 1);
-                document.getElementById('song-bars-value').textContent = song.bars;
-            }
-        });
-        document.getElementById('song-bars-inc')?.addEventListener('click', () => {
-            const song = this.songs[this._configSongIdx];
-            if (song) {
-                song.bars = Math.min(16, song.bars + 1);
-                document.getElementById('song-bars-value').textContent = song.bars;
-            }
-        });
-
-        // 保存
-        document.getElementById('song-config-save')?.addEventListener('click', () => {
-            const song = this.songs[this._configSongIdx];
-            if (song) {
-                const nameInput = document.getElementById('song-name-input');
-                song.name = nameInput.value || `Song${this._configSongIdx + 1}`;
-            }
-            this.closeSongConfig();
-            this.initSongPalette(); // ソングパレット更新（名前反映）
-            this.updateBpmBarDisplay();
-            this.render();
-
-            // ステージ設定のBGM選択肢も更新
-            if (typeof StageEditor !== 'undefined' && StageEditor.updateBgmSelects) {
-                StageEditor.updateBgmSelects();
-            }
+            listContainer.appendChild(item);
         });
     },
 
-    openSongConfig(idx) {
-        this._configSongIdx = idx;
-        const song = this.songs[idx];
-        if (!song) return;
+    showSongContextMenu(idx, event) {
+        // 簡易実装：ブラウザ標準のconfirm/promptで代用
+        const action = prompt('操作を選択 (delete / duplicate / rename)', 'duplicate');
+        if (!action) return;
 
-        document.getElementById('song-name-input').value = song.name || `Song${idx + 1}`;
-        document.getElementById('song-bpm-value').textContent = song.bpm;
-        document.getElementById('song-bars-value').textContent = song.bars;
-
-        const panel = document.getElementById('song-config-panel');
-        panel?.classList.remove('hidden');
+        if (action.toLowerCase() === 'delete') {
+            this.deleteSong(idx);
+            this.renderJukeboxList();
+        } else if (action.toLowerCase() === 'duplicate') {
+            this.duplicateSong(idx);
+            this.renderJukeboxList();
+        } else if (action.toLowerCase() === 'rename') {
+            const song = this.songs[idx];
+            const newName = prompt('新しい名前', song.name);
+            if (newName) {
+                song.name = newName;
+                this.renderJukeboxList();
+                this.updateConsoleDisplay();
+            }
+        }
     },
 
-    closeSongConfig() {
-        const panel = document.getElementById('song-config-panel');
-        panel?.classList.add('hidden');
-    },
+    duplicateSong(idx) {
+        const srcSong = this.songs[idx];
+        const newSong = JSON.parse(JSON.stringify(srcSong));
+        newSong.id = this.songs.length;
+        newSong.name = srcSong.name + '_copy';
+        this.songs.push(newSong);
 
-    deleteSong(idx) {
-        if (this.songs.length <= 1) {
-            alert('最後のソングは削除できません');
-            return;
-        }
-
-        // iOSでconfirmダイアログ中に音が溜まる問題対策：再生停止
-        const wasPlaying = this.isPlaying;
-        if (wasPlaying) {
-            this.stop();
-        }
-
-        if (!confirm('このソングを削除しますか？')) {
-            // iOSでconfirmダイアログ後にAudioContextが壊れる対策：再作成
-            this.resetAudioContext();
-            return;
-        }
-
-        // iOSでconfirmダイアログ後にAudioContextが壊れる対策：再作成
-        this.resetAudioContext();
-
-        this.songs.splice(idx, 1);
-        if (this.currentSongIdx >= this.songs.length) {
-            this.currentSongIdx = this.songs.length - 1;
-        }
-        this.initSongPalette();
-        this.updateBpmBarDisplay();
-        this.render();
-
-        // ステージ設定のBGM選択肢も更新
-        if (typeof StageEditor !== 'undefined' && StageEditor.updateBgmSelects) {
-            StageEditor.updateBgmSelects();
-        }
+        // 追加したソングへ移動
+        this.selectSong(this.songs.length - 1);
     },
 
     addSong() {
@@ -325,16 +471,15 @@ const SoundEditor = {
             bpm: 120,
             bars: 1,
             tracks: [
-                { type: 'square', notes: [] },
-                { type: 'square', notes: [] },
-                { type: 'triangle', notes: [] },
-                { type: 'noise', notes: [] }
+                { type: 'square', notes: [], volume: 1.0, pan: 0.0 },
+                { type: 'square', notes: [], volume: 1.0, pan: 0.0 },
+                { type: 'triangle', notes: [], volume: 1.0, pan: 0.0 },
+                { type: 'noise', notes: [], volume: 1.0, pan: 0.0 }
             ]
         };
         this.songs.push(song);
         this.currentSongIdx = id;
-        this.initSongPalette();
-        this.updateBpmBarDisplay();
+        this.updateConsoleDisplay();
         this.render();
     },
 
@@ -342,65 +487,13 @@ const SoundEditor = {
         this.currentSongIdx = idx;
         this.scrollX = 0;
         this.currentStep = 0;
-        this.initSongPalette();
-        this.updateBpmBarDisplay();
+        this.updateConsoleDisplay();
+        this.updateChannelStripUI();
         this.render();
     },
 
     getCurrentSong() {
         return this.songs[this.currentSongIdx] || this.songs[0];
-    },
-
-    // ========== トラックタブ ==========
-    initTrackTabs() {
-        const tabs = document.querySelectorAll('.track-tab');
-        tabs.forEach(tab => {
-            tab.addEventListener('click', () => {
-                tabs.forEach(t => t.classList.remove('active'));
-                tab.classList.add('active');
-                this.currentTrack = parseInt(tab.dataset.track);
-                this.render();
-            });
-        });
-    },
-
-    // ========== BPM/BAR コントロール ==========
-    initBpmBarControls() {
-        // BPM
-        document.getElementById('bpm-dec')?.addEventListener('click', () => {
-            const song = this.getCurrentSong();
-            song.bpm = Math.max(60, song.bpm - 5);
-            this.updateBpmBarDisplay();
-        });
-        document.getElementById('bpm-inc')?.addEventListener('click', () => {
-            const song = this.getCurrentSong();
-            song.bpm = Math.min(200, song.bpm + 5);
-            this.updateBpmBarDisplay();
-        });
-
-        // BAR
-        document.getElementById('bar-dec')?.addEventListener('click', () => {
-            const song = this.getCurrentSong();
-            song.bars = Math.max(1, song.bars - 1);
-            this.updateBpmBarDisplay();
-            this.render();
-        });
-        document.getElementById('bar-inc')?.addEventListener('click', () => {
-            const song = this.getCurrentSong();
-            song.bars = Math.min(16, song.bars + 1);
-            this.updateBpmBarDisplay();
-            this.render();
-        });
-
-        this.updateBpmBarDisplay();
-    },
-
-    updateBpmBarDisplay() {
-        const song = this.getCurrentSong();
-        const bpmVal = document.getElementById('bpm-value');
-        const barVal = document.getElementById('bar-value');
-        if (bpmVal) bpmVal.textContent = song.bpm;
-        if (barVal) barVal.textContent = song.bars;
     },
 
     // ========== 編集ツール ==========
@@ -452,21 +545,12 @@ const SoundEditor = {
             });
         }
 
-        // REST
-        document.getElementById('sound-rest-btn')?.addEventListener('click', () => {
-            this.inputRest();
-        });
-
-        // TIE
-        document.getElementById('sound-tie-btn')?.addEventListener('click', () => {
-            this.inputTie();
-        });
-
         // PLAY/PAUSE/STOP（シングル=一時停止/再生、ダブル=停止）
         const playBtn = document.getElementById('sound-play-btn');
         if (playBtn) {
             let lastClickTime = 0;
-            playBtn.addEventListener('click', () => {
+            playBtn.addEventListener('click', (e) => {
+                // 親のdiv(sound-controls)への伝播を防ぐ必要はないが念のため
                 const now = Date.now();
                 if (now - lastClickTime < 300) {
                     // ダブルクリック: 停止（位置リセット）
@@ -692,6 +776,8 @@ const SoundEditor = {
 
     // 現在再生中のオシレーターとゲイン
     currentKeyOsc: null,
+    // 現在再生中のオシレーターとゲイン、パン
+    currentKeyOsc: null,
     currentKeyGain: null,
 
     startKeySound(note, octave) {
@@ -700,12 +786,14 @@ const SoundEditor = {
 
         if (!this.audioCtx) return;
 
+        const song = this.getCurrentSong();
+        const track = song.tracks[this.currentTrack];
         const trackType = this.trackTypes[this.currentTrack];
         const pitch = this.noteToPitch(note, octave);
 
         // ノイズトラックはドラム音を使用
         if (trackType === 'noise') {
-            const result = this.playDrum(pitch, 0.5);
+            const result = this.playDrum(pitch, 0.5, track.volume, track.pan);
             if (result) {
                 this.currentKeyOsc = result.noise;
                 this.currentKeyGain = result.gain;
@@ -714,7 +802,13 @@ const SoundEditor = {
             const freq = this.getFrequency(note, octave);
             const osc = this.audioCtx.createOscillator();
             const gain = this.audioCtx.createGain();
-            gain.connect(this.audioCtx.destination);
+
+            // パンポット（定位）
+            const panner = this.audioCtx.createStereoPanner();
+            panner.pan.value = track.pan;
+
+            gain.connect(panner);
+            panner.connect(this.audioCtx.destination);
 
             // 波形タイプ
             if (trackType === 'square') {
@@ -724,7 +818,8 @@ const SoundEditor = {
             }
 
             osc.frequency.value = freq;
-            gain.gain.value = 0.3;
+            // マスター0.3 * トラックボリューム
+            gain.gain.value = 0.3 * track.volume;
 
             osc.connect(gain);
             osc.start();
@@ -762,15 +857,22 @@ const SoundEditor = {
     playNote(note, octave, duration = 0.2) {
         if (!this.audioCtx) return;
 
+        const song = this.getCurrentSong();
+        const track = song.tracks[this.currentTrack];
         const trackType = this.trackTypes[this.currentTrack];
 
         // ノイズトラックはドラム音を使用
         if (trackType === 'noise') {
             const pitch = this.noteToPitch(note, octave);
-            this.playDrum(pitch, duration);
+            this.playDrum(pitch, duration, track.volume, track.pan);
         } else {
             const gain = this.audioCtx.createGain();
-            gain.connect(this.audioCtx.destination);
+
+            const panner = this.audioCtx.createStereoPanner();
+            panner.pan.value = track.pan;
+
+            gain.connect(panner);
+            panner.connect(this.audioCtx.destination);
 
             const freq = this.getFrequency(note, octave);
             const osc = this.audioCtx.createOscillator();
@@ -782,8 +884,11 @@ const SoundEditor = {
             }
 
             osc.frequency.value = freq;
-            // Tr1/Tr2（矩形波）は音量を下げる、Tr3（三角波）は維持
-            const volume = (trackType === 'square') ? 0.19 : 0.3;
+
+            // 音量調整
+            const baseVol = (trackType === 'square') ? 0.19 : 0.3;
+            const volume = baseVol * track.volume;
+
             gain.gain.setValueAtTime(volume, this.audioCtx.currentTime);
             // 80%の時間は音量維持、残り20%で減衰
             const sustainTime = duration * 0.8;
@@ -800,6 +905,8 @@ const SoundEditor = {
     playNoteMonophonic(note, octave, duration, trackIdx) {
         if (!this.audioCtx) return;
 
+        const song = this.getCurrentSong();
+        const track = song.tracks[trackIdx];
         const trackType = this.trackTypes[trackIdx];
 
         // 前の音を停止
@@ -813,7 +920,7 @@ const SoundEditor = {
         // ノイズトラックはドラム音を使用
         if (trackType === 'noise') {
             const pitch = this.noteToPitch(note, octave);
-            const drumNodes = this.playDrum(pitch, duration);
+            const drumNodes = this.playDrum(pitch, duration, track.volume, track.pan);
 
             // アクティブノードを記録（同時発音数1制限用）
             if (drumNodes) {
@@ -832,7 +939,13 @@ const SoundEditor = {
             }
         } else {
             const gain = this.audioCtx.createGain();
-            gain.connect(this.audioCtx.destination);
+
+            // パンポット
+            const panner = this.audioCtx.createStereoPanner();
+            panner.pan.value = track.pan;
+
+            gain.connect(panner);
+            panner.connect(this.audioCtx.destination);
 
             const freq = this.getFrequency(note, octave);
             const osc = this.audioCtx.createOscillator();
@@ -844,9 +957,14 @@ const SoundEditor = {
             }
 
             osc.frequency.value = freq;
-            const volume = (trackType === 'square') ? 0.19 : 0.3;
+
+            // 音量調整
+            const baseVol = (trackType === 'square') ? 0.19 : 0.3;
+            const volume = baseVol * track.volume;
+
             gain.gain.setValueAtTime(volume, this.audioCtx.currentTime);
-            const sustainTime = duration * 0.8;
+            // 90%の時間は音量維持、残り10%で減衰（より歯切れよく）
+            const sustainTime = duration * 0.9;
             gain.gain.setValueAtTime(volume, this.audioCtx.currentTime + sustainTime);
             gain.gain.exponentialRampToValueAtTime(0.01, this.audioCtx.currentTime + duration);
 
@@ -886,23 +1004,25 @@ const SoundEditor = {
     },
 
     // ドラム音生成（ピッチに応じた連続的なフィルター周波数）
-    playDrum(pitch, duration, audioCtx) {
-        const ctx = audioCtx || this.audioCtx;
-        if (!ctx) return;
+    playDrum(pitch, duration, volume = 1.0, pan = 0.0) {
+        if (!this.audioCtx) return null;
 
-        // ノイズバッファ作成（durationを反映）
-        const bufferSize = ctx.sampleRate * Math.max(duration, 0.05);
-        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const bufferSize = this.audioCtx.sampleRate * Math.max(duration, 0.05);
+        const buffer = this.audioCtx.createBuffer(1, bufferSize, this.audioCtx.sampleRate);
         const data = buffer.getChannelData(0);
         for (let i = 0; i < bufferSize; i++) {
             data[i] = Math.random() * 2 - 1;
         }
 
-        const noise = ctx.createBufferSource();
+        const noise = this.audioCtx.createBufferSource();
         noise.buffer = buffer;
 
-        const gain = ctx.createGain();
-        const filter = ctx.createBiquadFilter();
+        const gain = this.audioCtx.createGain();
+        const filter = this.audioCtx.createBiquadFilter();
+
+        // パンポット
+        const panner = this.audioCtx.createStereoPanner();
+        panner.pan.value = pan;
 
         // ピッチ0-71を周波数80Hz-15000Hzにマッピング（指数的）
         const minFreq = 80;
@@ -921,36 +1041,29 @@ const SoundEditor = {
             // スネア: バンドパス、適度なQ値
             filter.type = 'bandpass';
             filter.frequency.value = filterFreq;
-            filter.Q.value = 3;
+            filter.Q.value = 5;
         } else {
-            // ハイハット: ハイパス
+            // ハイハット: ハイパス、高いQ値
             filter.type = 'highpass';
-            filter.frequency.value = filterFreq * 0.4;
-            filter.Q.value = 1;
+            filter.frequency.value = filterFreq;
+            filter.Q.value = 10;
         }
-
-        // 音量とディケイ（durationに応じて）- より強いアタック
-        const baseVolume = 0.5; // 音量アップ
-        const volume = baseVolume - (pitch / maxPitch) * 0.2; // 低音ほど大きく
-
-        // アタックを強調（急速に音量を上げる）
-        gain.gain.setValueAtTime(0, ctx.currentTime);
-        gain.gain.linearRampToValueAtTime(volume, ctx.currentTime + 0.005); // 5ms アタック
-
-        // 50%の時間は音量維持、残り50%で減衰
-        const sustainTime = duration * 0.5;
-        gain.gain.setValueAtTime(volume, ctx.currentTime + 0.005 + sustainTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
 
         noise.connect(filter);
         filter.connect(gain);
-        gain.connect(ctx.destination);
+        gain.connect(panner);
+        panner.connect(this.audioCtx.destination);
+
+        // ドラム音量調整 (やや大きめに)
+        const drumVol = 0.5 * volume;
+
+        gain.gain.setValueAtTime(drumVol, this.audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.audioCtx.currentTime + duration);
+
         noise.start();
-        noise.stop(ctx.currentTime + duration);
 
-        return { noise, gain };
+        return { noise: noise, gain: gain };
     },
-
     // ========== ノート入力 ==========
     inputNote(note, octave, length = 1) {
         const song = this.getCurrentSong();
