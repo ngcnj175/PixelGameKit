@@ -130,9 +130,10 @@ const SoundEditor = {
         // 内部解像度（stage-editor.jsと同じ）
         this.canvas.width = canvasSize;
         this.canvas.height = canvasSize;
-        // CSS表示サイズ（stage-editor.jsと同じ）
-        this.canvas.style.width = canvasSize + 'px';
-        this.canvas.style.height = canvasSize + 'px';
+
+        // CSS表示サイズはJSで設定しない
+        // style.width/heightを指定するとレスポンシブ対応時に縦長/横長になるリスクがある
+        // CSSの aspect-ratio: 1 に完全に任せる
 
         this.render();
     },
