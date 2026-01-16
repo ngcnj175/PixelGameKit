@@ -123,11 +123,10 @@ const SoundEditor = {
 
     resize() {
         if (!this.canvas) return;
-        // ピアノロール: 16x16グリッド
+        // ピアノロール: 16x16グリッド、内部解像度は320x320固定
+        // CSSでサイズ調整されるため、style.width/heightは設定しない
         this.canvas.width = 320;
         this.canvas.height = 320;
-        this.canvas.style.width = '320px';
-        this.canvas.style.height = '320px';
         this.render();
     },
 

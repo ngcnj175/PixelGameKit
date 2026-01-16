@@ -3165,6 +3165,7 @@ body {
 #piano-roll-area {
     flex: 1;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     padding: 8px;
@@ -3172,10 +3173,12 @@ body {
 }
 
 #piano-roll-canvas {
+    /* STAGE画面のキャンバスと完全一致 */
     width: 320px;
-    max-width: calc(100% - 16px);
-    aspect-ratio: 1;
-    /* STAGE画面と同じ形式 */
+    height: 320px;
+    max-width: calc(100% - 48px);
+    max-height: calc(100% - 16px);
+    /* aspect-ratio: 1; - 固定width/heightで正方形を維持 */
     background: #e8e8e8;
     background-image:
         linear-gradient(to right, rgba(255, 255, 255, 0.8) 1px, transparent 1px),
