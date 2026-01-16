@@ -518,7 +518,7 @@
             <div id="sound-main-area">
                 <!-- 編集ツール（左側縦列） -->
                 <div id="sound-controls">
-                    <!-- コントロールボタン群（鉛筆・消しゴムは削除） -->
+                    <!-- コントロールボタン群 -->
                     <button id="sound-play-btn" class="sound-ctrl-btn play-stop" title="PLAY/STOP">
                         <svg viewBox="0 0 24 24" fill="currentColor">
                             <path d="M8 5v14l11-7z" />
@@ -532,12 +532,26 @@
 
                     <hr class="ctrl-divider">
 
-                    <button id="sound-del-btn" class="sound-ctrl-btn" title="Undo (Long: Clear)">
+                    <button id="sound-del-btn" class="sound-ctrl-btn" title="DEL (Long: Clear)">
                         <svg viewBox="0 0 24 24" fill="currentColor">
                             <path
                                 d="M12.5 8c-2.65 0-5.05 1.04-6.82 2.75L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z" />
                         </svg>
                     </button>
+                    <button id="sound-rest-btn" class="sound-ctrl-btn" title="REST">
+                        <svg viewBox="0 0 24 24" fill="currentColor" style="transform: scaleX(-1);">
+                            <path
+                                d="M12.5 8c-2.65 0-5.05 1.04-6.82 2.75L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z" />
+                        </svg>
+                    </button>
+                    <button id="sound-tie-btn" class="sound-ctrl-btn" title="TIE">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 16 C4 8, 20 8, 20 16" stroke-linecap="round" />
+                        </svg>
+                    </button>
+
+                    <hr class="ctrl-divider">
+
                     <button id="sound-copy-btn" class="sound-ctrl-btn" title="コピー">
                         <svg viewBox="0 0 24 24" fill="currentColor">
                             <path
