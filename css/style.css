@@ -2990,68 +2990,64 @@ body {
 }
 
 /* =========================================
-   BGM Editor - Pocket Console Layout
+   BGM Editor - Pocket Console Layout (Simplified)
+   他画面（GAME/PIXEL/STAGE）と一貫したスタイル
    ========================================= */
 
-/* --- 1. Console Header --- */
+/* --- 1. Console Header (ソング制御ヘッダー) --- */
 #bgm-console-header {
-    height: 60px;
-    background: #333;
+    height: 40px;
+    background: var(--bg-device);
+    border-bottom: 1px solid var(--border-color);
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 0 12px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-    z-index: 10;
     flex-shrink: 0;
 }
 
 .console-lcd-group {
     display: flex;
     align-items: center;
-    gap: 8px;
-    background: #222;
-    padding: 4px 8px;
-    border-radius: 6px;
-    border: 1px solid #444;
+    gap: 6px;
 }
 
 .console-lcd-group.right {
-    gap: 12px;
+    gap: 10px;
 }
 
 .console-lcd {
-    font-family: 'Courier New', monospace;
-    color: #4ec0ff;
-    text-shadow: 0 0 2px rgba(78, 192, 255, 0.5);
-    background: #111;
-    padding: 4px 8px;
-    border-radius: 2px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    font-size: 12px;
+    color: var(--text-dark);
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: transparent;
 }
 
 .title-lcd {
-    width: 120px;
+    min-width: 80px;
     text-align: center;
-    font-weight: bold;
-    font-size: 14px;
+    font-weight: 600;
+    font-size: 13px;
     cursor: pointer;
+    color: var(--text-dark);
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
+    padding: 4px 8px;
 }
 
 .title-lcd:active {
-    background: #000;
+    background: rgba(0, 0, 0, 0.1);
 }
 
 .console-nav-btn {
-    width: 24px;
-    height: 24px;
-    background: #444;
-    border: none;
-    border-radius: 4px;
-    color: #ccc;
-    font-size: 10px;
+    width: 28px;
+    height: 28px;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--color-dark);
+    font-size: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -3059,22 +3055,20 @@ body {
 }
 
 .console-nav-btn:active {
-    background: #666;
-    transform: translateY(1px);
+    background: var(--border-color);
 }
 
 .console-menu-btn {
     width: 28px;
-    height: 24px;
-    background: #555;
-    border: none;
-    border-radius: 4px;
-    color: #fff;
-    font-size: 16px;
+    height: 28px;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--color-dark);
+    font-size: 14px;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-left: 4px;
     cursor: pointer;
 }
 
@@ -3082,148 +3076,89 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2px;
+    gap: 1px;
 }
 
 .console-param .label {
     font-size: 8px;
-    color: #888;
+    color: var(--color-medium);
     font-weight: bold;
-    letter-spacing: 1px;
+    letter-spacing: 0.5px;
 }
 
 .value-lcd {
-    min-width: 32px;
+    min-width: 28px;
     text-align: center;
-    font-size: 12px;
-    color: #ffcc00;
-    text-shadow: 0 0 2px rgba(255, 204, 0, 0.5);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-dark);
     cursor: pointer;
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 3px;
+    padding: 2px 4px;
+}
+
+.value-lcd:active {
+    background: rgba(0, 0, 0, 0.1);
 }
 
 
-/* --- 2. Main Area Adjustments --- */
-#sound-main-area {
-    /* 以前のheight: calc(...) は削除し、flex-growで対応 */
-    flex-grow: 1;
-    display: flex;
-    background: #2a2a2a;
-    overflow: hidden;
-    position: relative;
-}
-
-/* ツールレイアウト調整 */
-#sound-controls {
-    width: 44px;
-    background: #333;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 8px 0;
-    gap: 8px;
-    border-right: 1px solid #111;
-    flex-shrink: 0;
-    overflow-y: auto;
-}
-
-.sound-tool-btn,
-.sound-ctrl-btn {
-    width: 32px;
-    height: 32px;
-    border-radius: 6px;
-    margin: 0;
-}
-
-.ctrl-divider {
-    width: 20px;
-    border: none;
-    border-top: 1px solid #555;
-    margin: 4px 0;
-}
-
-
-/* --- 3. Channel Strip (Footer) --- */
+/* --- 2. Channel Strip (フッタートラック選択) --- */
 #bgm-channel-strip {
-    height: 80px;
-    background: #222;
-    border-top: 2px solid #111;
+    height: 60px;
+    background: var(--bg-device);
+    border-top: 1px solid var(--border-color);
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    /* 4トラック均等 */
     gap: 1px;
-    /* 境界線用 */
     flex-shrink: 0;
 }
 
 .channel-strip-track {
-    background: #333;
+    background: var(--bg-device);
     display: flex;
     flex-direction: column;
-    padding: 4px;
+    padding: 4px 6px;
     position: relative;
     cursor: pointer;
     transition: background 0.1s;
-    overflow: hidden;
+    border-right: 1px solid var(--border-color);
+}
+
+.channel-strip-track:last-child {
+    border-right: none;
 }
 
 .channel-strip-track:active {
-    background: #3a3a3a;
+    background: rgba(0, 0, 0, 0.05);
 }
 
 /* アクティブ選択状態 */
 .channel-strip-track.active {
-    background: #444;
-    box-shadow: inset 0 0 0 1px #888;
+    background: var(--bg-screen);
 }
 
-.channel-strip-track.active::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    pointer-events: none;
-}
-
-/* アクティブ時のLED */
-.channel-strip-track.active .track-num::before {
-    background: #0f0;
-    box-shadow: 0 0 4px #0f0;
+.channel-strip-track.active .track-num,
+.channel-strip-track.active .track-type {
+    color: var(--text-light);
 }
 
 .track-info {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 4px;
-    padding: 0 2px;
+    margin-bottom: 2px;
 }
 
 .track-num {
     font-size: 10px;
-    color: #fff;
+    color: var(--text-dark);
     font-weight: bold;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-}
-
-/* LEDインジケータ（通常時消灯） */
-.track-num::before {
-    content: '';
-    display: block;
-    width: 4px;
-    height: 4px;
-    border-radius: 50%;
-    background: #555;
-    margin-top: 1px;
 }
 
 .track-type {
     font-size: 8px;
-    color: #888;
+    color: var(--color-medium);
     text-transform: uppercase;
 }
 
@@ -3238,128 +3173,124 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2px;
+    gap: 1px;
 }
 
-/* CSS Knob */
+/* シンプルなノブスタイル */
 .knob-ctrl {
-    width: 28px;
-    height: 28px;
+    width: 20px;
+    height: 20px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #555, #222);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+    background: var(--color-light);
+    border: 1px solid var(--color-medium);
     position: relative;
     cursor: ew-resize;
-    /* 左右ドラッグを示唆 */
 }
 
-/* ノブのポインター */
 .knob-ctrl::after {
     content: '';
     position: absolute;
-    top: 3px;
+    top: 2px;
     left: 50%;
     width: 2px;
-    height: 8px;
-    background: #fff;
+    height: 6px;
+    background: var(--color-dark);
     transform: translateX(-50%);
-    /* 回転基準はJSでtransform: rotate(...) */
     transform-origin: bottom center;
-    /* 中心から回転させたいが、親の中心に対する位置調整が必要 */
+}
 
-    /* 簡易実装：中心点基準で回転させるため調整 */
-    top: 50%;
-    left: 50%;
-    height: 10px;
-    margin-top: -10px;
-    /* 上半分のみ */
-    transform-origin: bottom center;
+.channel-strip-track.active .knob-ctrl {
+    background: var(--color-medium);
+}
+
+.channel-strip-track.active .knob-ctrl::after {
+    background: var(--text-light);
 }
 
 .knob-label {
-    font-size: 8px;
-    color: #aaa;
+    font-size: 7px;
+    color: var(--color-medium);
+}
+
+.channel-strip-track.active .knob-label {
+    color: var(--text-light);
 }
 
 
-/* --- Keyboard Container Wrapper --- */
-/* 鍵盤エリアを最下部へ */
-#keyboard-container-wrapper {
-    height: 80px;
-    /* 鍵盤 + スクロールバー */
-    background: #111;
-    flex-shrink: 0;
-    display: flex;
-    flex-direction: column;
-}
-
-#keyboard-scroll-container {
-    height: 16px;
-    padding: 0 4px;
-}
-
-#keyboard-area {
-    flex-grow: 1;
-    /* 既存スタイルの調整 */
-    height: auto !important;
-}
-
-
-/* --- Jukebox Modal --- */
-.jukebox-content {
-    background: #ddd;
+/* --- Jukebox Modal (既存モーダルスタイル継承) --- */
+#song-jukebox-modal .modal-content {
+    background: var(--bg-device);
     width: 90%;
-    max-width: 400px;
-    height: 80vh;
+    max-width: 360px;
+    max-height: 70vh;
     border-radius: 12px;
     display: flex;
     flex-direction: column;
     overflow: hidden;
 }
 
+.jukebox-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.jukebox-header h3 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-dark);
+}
+
 .jukebox-scroll {
     flex-grow: 1;
     overflow-y: auto;
-    padding: 10px;
-    background: #fff;
-    border-top: 1px solid #ccc;
-    border-bottom: 1px solid #ccc;
+    padding: 8px;
+    background: var(--bg-device);
 }
 
 .jukebox-item {
     display: flex;
     align-items: center;
-    padding: 12px;
-    border-bottom: 1px solid #eee;
-    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    margin-bottom: 4px;
+    gap: 10px;
     cursor: pointer;
+    background: transparent;
 }
 
 .jukebox-item:active {
-    background: #f0f8ff;
+    background: rgba(0, 0, 0, 0.05);
 }
 
 .jukebox-item.active {
-    background: #e6f7ff;
-    border-left: 4px solid #2196F3;
+    background: var(--bg-screen);
+}
+
+.jukebox-item.active .jukebox-title,
+.jukebox-item.active .jukebox-meta {
+    color: var(--text-light);
 }
 
 .jukebox-play-btn {
-    width: 32px;
-    height: 32px;
+    width: 28px;
+    height: 28px;
     border-radius: 50%;
-    background: #eee;
-    border: none;
-    color: #555;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--color-dark);
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
+    font-size: 10px;
 }
 
-.jukebox-play-btn.playing {
-    background: #4CAF50;
-    color: #fff;
+.jukebox-item.active .jukebox-play-btn {
+    border-color: var(--text-light);
+    color: var(--text-light);
 }
 
 .jukebox-info {
@@ -3367,14 +3298,14 @@ body {
 }
 
 .jukebox-title {
-    font-weight: bold;
-    font-size: 14px;
-    color: #333;
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--text-dark);
 }
 
 .jukebox-meta {
     font-size: 10px;
-    color: #888;
+    color: var(--color-medium);
 }
 
 .jukebox-menu-btn {
@@ -3382,7 +3313,33 @@ body {
     height: 24px;
     background: transparent;
     border: none;
-    color: #aaa;
-    font-size: 18px;
+    color: var(--color-medium);
+    font-size: 16px;
     cursor: pointer;
+}
+
+.jukebox-item.active .jukebox-menu-btn {
+    color: var(--text-light);
+}
+
+.jukebox-footer {
+    padding: 12px 16px;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: center;
+}
+
+.jukebox-add-btn {
+    padding: 8px 24px;
+    background: var(--color-dark);
+    color: var(--text-light);
+    border: none;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.jukebox-add-btn:active {
+    background: var(--color-medium);
 }
