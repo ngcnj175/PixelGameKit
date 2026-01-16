@@ -123,10 +123,15 @@ const SoundEditor = {
 
     resize() {
         if (!this.canvas) return;
-        // ピアノロール: 16x16グリッド、内部解像度は320x320固定
-        // CSSでサイズ調整されるため、style.width/heightは設定しない
-        this.canvas.width = 320;
-        this.canvas.height = 320;
+        // ピアノロール: 16x16グリッド（STAGE画面と同じ設定）
+        // キャンバスは常に16x16タイル（320px）固定
+        const canvasSize = 320;
+
+        this.canvas.width = canvasSize;
+        this.canvas.height = canvasSize;
+        this.canvas.style.width = canvasSize + 'px';
+        this.canvas.style.height = canvasSize + 'px';
+
         this.render();
     },
 
