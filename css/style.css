@@ -3103,7 +3103,93 @@ body {
 }
 
 
-/* --- 2. Channel Strip (フッタートラック選択) --- */
+/* --- 2. Main Area (メインエリア: ツール + ピアノロール) --- */
+#sound-main-area {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+    background: var(--bg-device);
+}
+
+/* ツールバー（左側縦列） */
+#sound-controls {
+    width: 44px;
+    background: var(--bg-device);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 8px 4px;
+    gap: 6px;
+    border-right: 1px solid var(--border-color);
+    flex-shrink: 0;
+    overflow-y: auto;
+}
+
+.sound-ctrl-btn {
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--color-dark);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sound-ctrl-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+.sound-ctrl-btn:active {
+    background: var(--border-color);
+}
+
+.sound-ctrl-btn.active,
+.sound-ctrl-btn.recording {
+    background: var(--bg-screen);
+    color: var(--text-light);
+    border-color: var(--bg-screen);
+}
+
+.ctrl-divider {
+    width: 20px;
+    border: none;
+    border-top: 1px solid var(--border-color);
+    margin: 4px 0;
+}
+
+/* ピアノロールエリア (STAGE画面キャンバスと同じ形式) */
+#piano-roll-area {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    overflow: hidden;
+}
+
+#piano-roll-canvas {
+    width: 320px;
+    max-width: calc(100% - 16px);
+    aspect-ratio: 1;
+    /* STAGE画面と同じ形式 */
+    background: #e8e8e8;
+    background-image:
+        linear-gradient(to right, rgba(255, 255, 255, 0.8) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.8) 1px, transparent 1px);
+    /* 16×16グリッド: 320px ÷ 16 = 20px */
+    background-size: 20px 20px;
+    border: 2px solid var(--color-dark);
+    border-radius: 0;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+}
+
+
+/* --- 3. Channel Strip (フッタートラック選択) --- */
 #bgm-channel-strip {
     height: 60px;
     background: var(--bg-device);

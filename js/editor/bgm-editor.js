@@ -1314,18 +1314,23 @@ const SoundEditor = {
         const getPos = (e) => {
             const rect = this.canvas.getBoundingClientRect();
             const touch = e.touches ? e.touches[0] : e;
+            // CSSスケーリングを考慮: 表示サイズと内部解像度の比率で変換
+            const scaleX = this.canvas.width / rect.width;
+            const scaleY = this.canvas.height / rect.height;
             return {
-                x: touch.clientX - rect.left,
-                y: touch.clientY - rect.top
+                x: (touch.clientX - rect.left) * scaleX,
+                y: (touch.clientY - rect.top) * scaleY
             };
         };
 
         const getPosFromEvent = (e) => {
             const rect = this.canvas.getBoundingClientRect();
+            const scaleX = this.canvas.width / rect.width;
+            const scaleY = this.canvas.height / rect.height;
             if (e.changedTouches) {
                 return {
-                    x: e.changedTouches[0].clientX - rect.left,
-                    y: e.changedTouches[0].clientY - rect.top
+                    x: (e.changedTouches[0].clientX - rect.left) * scaleX,
+                    y: (e.changedTouches[0].clientY - rect.top) * scaleY
                 };
             }
             return getPos(e);
