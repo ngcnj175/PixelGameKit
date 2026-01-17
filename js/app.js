@@ -144,7 +144,54 @@ const App = {
         // iOSドラッグスクロール防止（必要な場所以外）
         this.preventIOSScroll();
 
+        // ビューポートスケーリング（PC/タブレット対応）
+        this.initViewportScaling();
+
         console.log('PixelGameKit initialized!');
+    },
+
+    // ビューポートスケーリング（PC/タブレットでも全体表示）
+    initViewportScaling() {
+        // 基準サイズ（iPhoneの一般的なサイズ）
+        const BASE_WIDTH = 480;  // 最大幅
+        const BASE_HEIGHT = 844; // iPhone 14基準の高さ
+
+        const app = document.getElementById('app');
+        if (!app) return;
+
+        const updateScale = () => {
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+
+            // 幅と高さそれぞれのスケール値を計算
+            const scaleX = Math.min(1, viewportWidth / BASE_WIDTH);
+            const scaleY = viewportHeight / BASE_HEIGHT;
+
+            // 小さい方のスケールを採用（画面に収める）
+            const scale = Math.min(scaleX, scaleY);
+
+            // スケールが1以上なら何もしない（拡大はしない）
+            if (scale >= 1) {
+                app.style.transform = '';
+                app.style.height = '100dvh';
+                return;
+            }
+
+            // スケールを適用
+            app.style.transform = `scale(${scale})`;
+            // 縮小した分、高さを逆算して設定（縮小後に画面いっぱいになるように）
+            app.style.height = `${100 / scale}dvh`;
+        };
+
+        // 初回実行
+        updateScale();
+
+        // リサイズ時に再計算
+        window.addEventListener('resize', updateScale);
+        // 画面回転にも対応
+        window.addEventListener('orientationchange', () => {
+            setTimeout(updateScale, 100);
+        });
     },
 
     // iOSでのドラッグによる全画面スクロールを防止
