@@ -388,21 +388,25 @@ const SoundEditor = {
         let options = [];
         if (trackType === 'square') {
             options = [
-                { val: 0, label: 'Standard (50%)' },
-                { val: 1, label: 'Hard (25%)' },
-                { val: 2, label: 'Sharp (12.5%)' }
+                { val: 0, label: 'Standard' },
+                { val: 1, label: 'Standard (Short)' },
+                { val: 2, label: 'Standard (FadeIn)' },
+                { val: 3, label: 'Sharp' },
+                { val: 4, label: 'Sharp (Short)' },
+                { val: 5, label: 'Sharp (FadeIn)' },
+                { val: 6, label: 'Tremolo (高速)' }
             ];
         } else if (trackType === 'triangle') {
             options = [
                 { val: 0, label: 'Standard' },
                 { val: 1, label: 'Soft (Sine)' },
-                { val: 2, label: 'Power (Saw)' }
+                { val: 2, label: 'Power (Saw)' },
+                { val: 3, label: 'Kick (ピッチ下降)' }
             ];
         } else if (trackType === 'noise') {
             options = [
-                { val: 0, label: 'White' },
-                { val: 1, label: 'Metal (Short)' },
-                { val: 2, label: 'Kick (Low)' }
+                { val: 0, label: 'Drum' },
+                { val: 1, label: 'Staccato (短く)' }
             ];
         }
 
@@ -993,6 +997,9 @@ const SoundEditor = {
                 this.currentKeyOsc = result.noise;
                 this.currentKeyGain = result.gain;
             }
+        } else if (trackType === 'triangle' && tone === 3) {
+            // Kickトーン：ピッチ下降音を再生
+            this.playKickTone(note, octave, track.volume, track.pan);
         } else {
             const freq = this.getFrequency(note, octave);
             const osc = this.audioCtx.createOscillator();
@@ -1009,30 +1016,26 @@ const SoundEditor = {
 
             // 波形タイプと音色
             if (trackType === 'square') {
-                if (tone === 0) {
-                    osc.type = 'square';
-                } else if (tone === 1) {
-                    const wave = this.getPeriodicWave(0.25);
-                    if (wave) osc.setPeriodicWave(wave);
-                    else osc.type = 'square';
-                } else if (tone === 2) {
+                // tone 0-2: Standard (50%), tone 3-6: Sharp (12.5%)
+                if (tone >= 3 && tone <= 6) {
                     const wave = this.getPeriodicWave(0.125);
                     if (wave) osc.setPeriodicWave(wave);
                     else osc.type = 'square';
+                } else {
+                    osc.type = 'square';
                 }
             } else if (trackType === 'triangle') {
                 if (tone === 0) {
                     osc.type = 'triangle';
                 } else if (tone === 1) {
-                    osc.type = 'sine'; // 丸い音
+                    osc.type = 'sine';
                 } else if (tone === 2) {
-                    osc.type = 'sawtooth'; // ノコギリ波
-                    volumeScale = 0.6; // 音量が大きいので下げる
+                    osc.type = 'sawtooth';
+                    volumeScale = 0.6;
                 }
             }
 
             osc.frequency.value = freq;
-            // マスター0.3 * トラックボリューム * 補正
             gain.gain.value = 0.3 * track.volume * volumeScale;
 
             osc.connect(gain);
@@ -1068,6 +1071,67 @@ const SoundEditor = {
         this.render();
     },
 
+    // Kickトーン（短くピッチ下降する音）
+    playKickTone(note, octave, volume, pan, duration = 0.15) {
+        if (!this.audioCtx) return;
+
+        const freq = this.getFrequency(note, octave);
+        const osc = this.audioCtx.createOscillator();
+        const gain = this.audioCtx.createGain();
+        const panner = this.audioCtx.createStereoPanner();
+
+        panner.pan.value = pan;
+        gain.connect(panner);
+        panner.connect(this.audioCtx.destination);
+
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, this.audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(freq * 0.25, this.audioCtx.currentTime + duration);
+
+        gain.gain.setValueAtTime(0.5 * volume, this.audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.audioCtx.currentTime + duration);
+
+        osc.connect(gain);
+        osc.start();
+        osc.stop(this.audioCtx.currentTime + duration);
+    },
+
+    // トレモロ（1オクターブ上と交互に高速切替）
+    playTremolo(note, octave, volume, pan, duration) {
+        if (!this.audioCtx) return;
+
+        const freq1 = this.getFrequency(note, octave);
+        const freq2 = freq1 * 2; // 1オクターブ上
+        const osc = this.audioCtx.createOscillator();
+        const gain = this.audioCtx.createGain();
+        const panner = this.audioCtx.createStereoPanner();
+
+        panner.pan.value = pan;
+        gain.connect(panner);
+        panner.connect(this.audioCtx.destination);
+
+        osc.type = 'square';
+
+        // 高速で周波数を交互に切り替える（約30Hzで交互）
+        const tremoloRate = 30;
+        const numCycles = Math.ceil(duration * tremoloRate);
+        const cycleTime = 1 / tremoloRate;
+
+        for (let i = 0; i < numCycles; i++) {
+            const t = this.audioCtx.currentTime + i * cycleTime;
+            osc.frequency.setValueAtTime(i % 2 === 0 ? freq1 : freq2, t);
+        }
+
+        gain.gain.setValueAtTime(0.19 * volume, this.audioCtx.currentTime);
+        const sustainTime = duration * 0.8;
+        gain.gain.setValueAtTime(0.19 * volume, this.audioCtx.currentTime + sustainTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.audioCtx.currentTime + duration);
+
+        osc.connect(gain);
+        osc.start();
+        osc.stop(this.audioCtx.currentTime + duration);
+    },
+
     playNote(note, octave, duration = 0.2) {
         if (!this.audioCtx) return;
 
@@ -1080,54 +1144,81 @@ const SoundEditor = {
         if (trackType === 'noise') {
             const pitch = this.noteToPitch(note, octave);
             this.playDrum(pitch, duration, track.volume, track.pan, tone);
-        } else {
-            const gain = this.audioCtx.createGain();
+            return;
+        }
 
-            const panner = this.audioCtx.createStereoPanner();
-            panner.pan.value = track.pan;
+        // TRIANGLE Kickトーン
+        if (trackType === 'triangle' && tone === 3) {
+            this.playKickTone(note, octave, track.volume, track.pan, duration);
+            return;
+        }
 
-            gain.connect(panner);
-            panner.connect(this.audioCtx.destination);
+        // SQUARE Tremoloトーン
+        if (trackType === 'square' && tone === 6) {
+            this.playTremolo(note, octave, track.volume, track.pan, duration);
+            return;
+        }
 
-            const freq = this.getFrequency(note, octave);
-            const osc = this.audioCtx.createOscillator();
-            let volumeScale = 1.0;
+        // 通常の音色
+        const gain = this.audioCtx.createGain();
+        const panner = this.audioCtx.createStereoPanner();
+        panner.pan.value = track.pan;
+        gain.connect(panner);
+        panner.connect(this.audioCtx.destination);
 
-            if (trackType === 'square') {
-                if (tone === 0) osc.type = 'square';
-                else if (tone === 1) {
-                    const wave = this.getPeriodicWave(0.25);
-                    if (wave) osc.setPeriodicWave(wave); else osc.type = 'square';
-                }
-                else if (tone === 2) {
-                    const wave = this.getPeriodicWave(0.125);
-                    if (wave) osc.setPeriodicWave(wave); else osc.type = 'square';
-                }
-            } else if (trackType === 'triangle') {
-                if (tone === 0) osc.type = 'triangle';
-                else if (tone === 1) osc.type = 'sine';
-                else if (tone === 2) {
-                    osc.type = 'sawtooth';
-                    volumeScale = 0.6;
-                }
+        const freq = this.getFrequency(note, octave);
+        const osc = this.audioCtx.createOscillator();
+        let volumeScale = 1.0;
+
+        // 波形タイプ
+        if (trackType === 'square') {
+            // tone 0-2: Standard (50%), tone 3-5: Sharp (12.5%)
+            if (tone >= 3 && tone <= 5) {
+                const wave = this.getPeriodicWave(0.125);
+                if (wave) osc.setPeriodicWave(wave);
+                else osc.type = 'square';
+            } else {
+                osc.type = 'square';
             }
+        } else if (trackType === 'triangle') {
+            if (tone === 0) osc.type = 'triangle';
+            else if (tone === 1) osc.type = 'sine';
+            else if (tone === 2) {
+                osc.type = 'sawtooth';
+                volumeScale = 0.6;
+            }
+        }
 
-            osc.frequency.value = freq;
+        osc.frequency.value = freq;
 
-            // 音量調整
-            const baseVol = (trackType === 'square') ? 0.19 : 0.3;
-            const volume = baseVol * track.volume * volumeScale;
+        const baseVol = (trackType === 'square') ? 0.19 : 0.3;
+        const volume = baseVol * track.volume * volumeScale;
 
+        // エンベロープ設定
+        const isShort = (tone === 1 || tone === 4); // Standard Short or Sharp Short
+        const isFadeIn = (tone === 2 || tone === 5); // Standard FadeIn or Sharp FadeIn
+
+        if (isShort) {
+            // Short: 短くスタッカート気味
             gain.gain.setValueAtTime(volume, this.audioCtx.currentTime);
-            // 80%の時間は音量維持、残り20%で減衰
+            gain.gain.exponentialRampToValueAtTime(0.01, this.audioCtx.currentTime + duration * 0.3);
+        } else if (isFadeIn) {
+            // FadeIn: アタックがなく徐々に大きくなる
+            gain.gain.setValueAtTime(0.01, this.audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(volume, this.audioCtx.currentTime + duration * 0.7);
+            gain.gain.setValueAtTime(volume, this.audioCtx.currentTime + duration * 0.9);
+            gain.gain.exponentialRampToValueAtTime(0.01, this.audioCtx.currentTime + duration);
+        } else {
+            // Normal: 通常のエンベロープ
+            gain.gain.setValueAtTime(volume, this.audioCtx.currentTime);
             const sustainTime = duration * 0.8;
             gain.gain.setValueAtTime(volume, this.audioCtx.currentTime + sustainTime);
             gain.gain.exponentialRampToValueAtTime(0.01, this.audioCtx.currentTime + duration);
-
-            osc.connect(gain);
-            osc.start();
-            osc.stop(this.audioCtx.currentTime + duration);
         }
+
+        osc.connect(gain);
+        osc.start();
+        osc.stop(this.audioCtx.currentTime + duration);
     },
 
     // 再生用（トラックごとに同時発音数1に制限）
@@ -1137,6 +1228,7 @@ const SoundEditor = {
         const song = this.getCurrentSong();
         const track = song.tracks[trackIdx];
         const trackType = this.trackTypes[trackIdx];
+        const tone = track.tone || 0;
 
         // 前の音を停止
         if (this.activeOscillators[trackIdx]) {
@@ -1149,71 +1241,90 @@ const SoundEditor = {
         // ノイズトラックはドラム音を使用
         if (trackType === 'noise') {
             const pitch = this.noteToPitch(note, octave);
-            const result = this.playDrum(pitch, duration, track.volume, track.pan, tone);
-            if (result) {
-                // ドラム音は自然減衰させるのでactiveOscillatorsには入れない（ループ制御しない）
-                // ただし、もし途中で止める必要があるなら入れるべき
-            }
-        } else {
-            const gain = this.audioCtx.createGain();
-
-            const panner = this.audioCtx.createStereoPanner();
-            panner.pan.value = track.pan;
-
-            gain.connect(panner);
-            panner.connect(this.audioCtx.destination);
-
-            const freq = this.getFrequency(note, octave);
-            const osc = this.audioCtx.createOscillator();
-            let volumeScale = 1.0;
-
-            if (trackType === 'square') {
-                if (tone === 0) osc.type = 'square';
-                else if (tone === 1) {
-                    const wave = this.getPeriodicWave(0.25);
-                    if (wave) osc.setPeriodicWave(wave); else osc.type = 'square';
-                }
-                else if (tone === 2) {
-                    const wave = this.getPeriodicWave(0.125);
-                    if (wave) osc.setPeriodicWave(wave); else osc.type = 'square';
-                }
-            } else if (trackType === 'triangle') {
-                if (tone === 0) osc.type = 'triangle';
-                else if (tone === 1) osc.type = 'sine';
-                else if (tone === 2) {
-                    osc.type = 'sawtooth';
-                    volumeScale = 0.6;
-                }
-            }
-
-            osc.frequency.value = freq;
-
-            // 音量調整
-            const baseVol = (trackType === 'square') ? 0.19 : 0.3;
-            // マスターボリュームはなし（シーケンサー側で管理しているなら）だが、ここでは0.3基準
-            gain.gain.setValueAtTime(baseVol * track.volume * volumeScale, this.audioCtx.currentTime);
-
-            // シーケンサーでの発音は減衰させず、duration後にstopする
-            // 次の音が来たらstopされるので、基本は鳴らしっぱなしで良いが
-            // durationが来たら止まるようにする（スタッカート等のため）
-
-            // ちょっとリリースを作る
-            gain.gain.setValueAtTime(baseVol * track.volume * volumeScale, this.audioCtx.currentTime + duration - 0.05);
-            gain.gain.linearRampToValueAtTime(0.01, this.audioCtx.currentTime + duration);
-
-            osc.connect(gain);
-            osc.start();
-            osc.stop(this.audioCtx.currentTime + duration + 0.05);
-
-            this.activeOscillators[trackIdx] = { osc, gain };
-
-            // 停止後にクリア
-            setTimeout(() => {
-                if (this.activeOscillators[trackIdx] && this.activeOscillators[trackIdx].osc === osc) {
-                    this.activeOscillators[trackIdx] = null;
-                }
-            }, duration * 1000);
+            this.playDrum(pitch, duration, track.volume, track.pan, tone);
+            return;
         }
+
+        // TRIANGLE Kickトーン
+        if (trackType === 'triangle' && tone === 3) {
+            this.playKickTone(note, octave, track.volume, track.pan, duration);
+            return;
+        }
+
+        // SQUARE Tremoloトーン
+        if (trackType === 'square' && tone === 6) {
+            this.playTremolo(note, octave, track.volume, track.pan, duration);
+            return;
+        }
+
+        // 通常の音色
+        const gain = this.audioCtx.createGain();
+        const panner = this.audioCtx.createStereoPanner();
+        panner.pan.value = track.pan;
+        gain.connect(panner);
+        panner.connect(this.audioCtx.destination);
+
+        const freq = this.getFrequency(note, octave);
+        const osc = this.audioCtx.createOscillator();
+        let volumeScale = 1.0;
+
+        // 波形タイプ
+        if (trackType === 'square') {
+            // tone 0-2: Standard (50%), tone 3-5: Sharp (12.5%)
+            if (tone >= 3 && tone <= 5) {
+                const wave = this.getPeriodicWave(0.125);
+                if (wave) osc.setPeriodicWave(wave);
+                else osc.type = 'square';
+            } else {
+                osc.type = 'square';
+            }
+        } else if (trackType === 'triangle') {
+            if (tone === 0) osc.type = 'triangle';
+            else if (tone === 1) osc.type = 'sine';
+            else if (tone === 2) {
+                osc.type = 'sawtooth';
+                volumeScale = 0.6;
+            }
+        }
+
+        osc.frequency.value = freq;
+
+        const baseVol = (trackType === 'square') ? 0.19 : 0.3;
+        const volume = baseVol * track.volume * volumeScale;
+
+        // エンベロープ設定
+        const isShort = (tone === 1 || tone === 4); // Standard Short or Sharp Short
+        const isFadeIn = (tone === 2 || tone === 5); // Standard FadeIn or Sharp FadeIn
+
+        if (isShort) {
+            // Short: 短くスタッカート気味
+            gain.gain.setValueAtTime(volume, this.audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, this.audioCtx.currentTime + duration * 0.3);
+        } else if (isFadeIn) {
+            // FadeIn: アタックがなく徐々に大きくなる
+            gain.gain.setValueAtTime(0.01, this.audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(volume, this.audioCtx.currentTime + duration * 0.7);
+            gain.gain.setValueAtTime(volume, this.audioCtx.currentTime + duration * 0.9);
+            gain.gain.exponentialRampToValueAtTime(0.01, this.audioCtx.currentTime + duration);
+        } else {
+            // Normal: 通常のエンベロープ
+            gain.gain.setValueAtTime(volume, this.audioCtx.currentTime);
+            gain.gain.setValueAtTime(volume, this.audioCtx.currentTime + duration - 0.05);
+            gain.gain.linearRampToValueAtTime(0.01, this.audioCtx.currentTime + duration);
+        }
+
+        osc.connect(gain);
+        osc.start();
+        osc.stop(this.audioCtx.currentTime + duration + 0.05);
+
+        this.activeOscillators[trackIdx] = { osc, gain };
+
+        // 停止後にクリア
+        setTimeout(() => {
+            if (this.activeOscillators[trackIdx] && this.activeOscillators[trackIdx].osc === osc) {
+                this.activeOscillators[trackIdx] = null;
+            }
+        }, duration * 1000);
     },
 
     getFrequency(note, octave) {
@@ -1235,37 +1346,22 @@ const SoundEditor = {
         return { note: this.noteNames[noteIdx], octave };
     },
 
-    // ドラム音生成（ピッチに応じた連続的なフィルター周波数）
-    // tone: 0=Default(Filter switch), 1=Metal(Short), 2=Kick(Low)
+    // ドラム音生成（粒立ちはっきり、低音はバスドラム的アタック）
+    // tone: 0=Drum(標準), 1=Staccato(短く強いアタック)
     playDrum(pitch, duration, volume = 1.0, pan = 0.0, tone = 0) {
         if (!this.audioCtx) return null;
 
-        let bufferSize;
-        if (tone === 1) {
-            // 短周期ノイズ（金属的な響き）
-            bufferSize = 128; // 短い周期
-        } else {
-            bufferSize = this.audioCtx.sampleRate * Math.max(duration, 0.05);
-        }
-
+        const bufferSize = this.audioCtx.sampleRate * Math.max(duration, 0.05);
         const buffer = this.audioCtx.createBuffer(1, bufferSize, this.audioCtx.sampleRate);
         const data = buffer.getChannelData(0);
+
+        // ノイズ生成
         for (let i = 0; i < bufferSize; i++) {
             data[i] = Math.random() * 2 - 1;
         }
 
         const noise = this.audioCtx.createBufferSource();
         noise.buffer = buffer;
-
-        if (tone === 1) {
-            noise.loop = true;
-            noise.loopEnd = buffer.duration;
-            // 短周期ノイズのピッチ感を変える（PITCHに応じて再生速度を変える）
-            // 基本速度1.0から、ピッチに応じて変化させる（ここでは簡易的に）
-            // C4(36)を1.0として、±1オクターブで±0.5程度
-            const rate = 1.0 + (pitch - 36) * 0.02;
-            noise.playbackRate.value = Math.max(0.1, rate);
-        }
 
         const gain = this.audioCtx.createGain();
         const filter = this.audioCtx.createBiquadFilter();
@@ -1274,42 +1370,46 @@ const SoundEditor = {
         const panner = this.audioCtx.createStereoPanner();
         panner.pan.value = pan;
 
-        // ピッチ0-71を周波数80Hz-15000Hzにマッピング（指数的）
-        const minFreq = 80;
-        const maxFreq = 15000;
+        // ピッチ0-71を周波数にマッピング
+        const minFreq = 60;
+        const maxFreq = 12000;
         const maxPitch = 71;
         const freqRatio = Math.pow(maxFreq / minFreq, pitch / maxPitch);
         const filterFreq = minFreq * freqRatio;
 
-        if (tone === 2) {
-            // Kick専用（強いローパス）
+        // 低音（バスドラム）/ 中音（スネア）/ 高音（ハイハット）で特性を変える
+        let drumVol = 0.6 * volume;
+        let attackTime = 0.01;
+        let decayTime = duration;
+
+        if (pitch < 24) {
+            // バスドラム: 低いローパス + 強いアタック + 短い減衰
             filter.type = 'lowpass';
-            filter.frequency.value = 150;
-            filter.Q.value = 2;
-        } else if (tone === 1) {
-            // Metal専用（ハイパスでキラキラさせる）
+            filter.frequency.value = Math.max(filterFreq, 100);
+            filter.Q.value = 3;
+            drumVol = 0.9 * volume;
+            attackTime = 0.005;
+            decayTime = tone === 1 ? duration * 0.25 : duration * 0.7;
+        } else if (pitch < 48) {
+            // スネア: バンドパス + 粒立ち良く
+            filter.type = 'bandpass';
+            filter.frequency.value = filterFreq;
+            filter.Q.value = 3;
+            drumVol = 0.7 * volume;
+            decayTime = tone === 1 ? duration * 0.2 : duration;
+        } else {
+            // ハイハット: ハイパス + シャープ
             filter.type = 'highpass';
             filter.frequency.value = filterFreq;
-            filter.Q.value = 5;
-        } else {
-            // Default: ピッチに応じて切り替え
-            // 低音はローパス（バスドラム）、中音はバンドパス（スネア）、高音はハイパス（ハイハット）
-            if (pitch < 24) {
-                // バスドラム: 強いローパス、低いQ値
-                filter.type = 'lowpass';
-                filter.frequency.value = filterFreq;
-                filter.Q.value = 1;
-            } else if (pitch < 48) {
-                // スネア: バンドパス、適度なQ値
-                filter.type = 'bandpass';
-                filter.frequency.value = filterFreq;
-                filter.Q.value = 5;
-            } else {
-                // ハイハット: ハイパス、高いQ値
-                filter.type = 'highpass';
-                filter.frequency.value = filterFreq;
-                filter.Q.value = 10;
-            }
+            filter.Q.value = 6;
+            drumVol = 0.5 * volume;
+            decayTime = tone === 1 ? duration * 0.15 : duration;
+        }
+
+        // Staccatoはアタックを更に強く
+        if (tone === 1) {
+            drumVol *= 1.3;
+            attackTime = 0.002;
         }
 
         noise.connect(filter);
@@ -1317,13 +1417,10 @@ const SoundEditor = {
         gain.connect(panner);
         panner.connect(this.audioCtx.destination);
 
-        // ドラム音量調整 (やや大きめに)
-        // Kickはより大きく
-        let drumVol = 0.5 * volume;
-        if (tone === 2) drumVol *= 1.5;
-
+        // エンベロープ: 強いアタック + 明確な減衰
         gain.gain.setValueAtTime(drumVol, this.audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, this.audioCtx.currentTime + duration);
+        gain.gain.setValueAtTime(drumVol, this.audioCtx.currentTime + attackTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.audioCtx.currentTime + decayTime);
 
         noise.start();
         noise.stop(this.audioCtx.currentTime + duration);
