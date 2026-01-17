@@ -99,8 +99,6 @@ body {
 
 .toolbar-icon .icon-label {
     font-size: 7px;
-    font-weight: 600;
-    letter-spacing: 0.5px;
     line-height: 1;
     white-space: nowrap;
 }
@@ -576,10 +574,10 @@ body {
     flex-shrink: 0;
     /* 背景色: 薄グレー */
     background: #e8e8e8;
-    /* グリッド表示（白、1ピクセル毎） */
+    /* グリッド表示（白、0.5px - ピアノロールと同じ） */
     background-image:
-        linear-gradient(to right, rgba(255, 255, 255, 0.8) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(255, 255, 255, 0.8) 1px, transparent 1px);
+        linear-gradient(to right, rgba(255, 255, 255, 0.8) 0.5px, transparent 0.5px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.8) 0.5px, transparent 0.5px);
     background-size: 20px 20px;
     border: 2px solid var(--color-dark);
     border-radius: 0;
