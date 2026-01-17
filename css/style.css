@@ -3010,10 +3010,12 @@ body {
     background: var(--bg-device);
     border-bottom: 1px solid var(--border-color);
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
+    /* 中央配置 */
     align-items: center;
     padding: 0 12px;
     flex-shrink: 0;
+    gap: 16px;
 }
 
 .console-lcd-group {
@@ -3112,23 +3114,31 @@ body {
     background: rgba(0, 0, 0, 0.1);
 }
 
+/* BPM/BAR ノブグループ */
+.console-knob-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
 
 /* --- 2. Main Area (メインエリア: ツール + ピアノロール) --- */
-/* #paint-main-area と同じレイアウト */
+/* 下揃えレイアウト（トラックミキサーの上） */
 #sound-main-area {
     flex-shrink: 0;
     display: flex;
-    align-items: flex-start;
+    align-items: flex-end;
+    /* 下揃え */
     justify-content: flex-start;
     padding: 0;
     gap: 0;
     min-height: 0;
     overflow-x: auto;
-    /* 幅が足りない場合はスクロール */
     overflow-y: hidden;
 }
 
-/* ツールバー（左側縦列） - #paint-tools と同じ */
+/* ツールバー（左側縦列）- 下揃え */
 #sound-controls {
     flex-shrink: 0;
     display: flex;
@@ -3137,10 +3147,10 @@ body {
     padding: 4px;
     width: 48px;
     min-width: 48px;
-    overflow-y: auto;
-    overflow-x: hidden;
-    max-height: 320px;
-    align-self: flex-start;
+    overflow: visible;
+    /* 見切れ防止 */
+    align-self: flex-end;
+    /* 下揃え */
 }
 
 .sound-ctrl-btn {

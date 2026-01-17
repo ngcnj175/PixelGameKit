@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/svg+xml" href="assets/icons/icon-192.svg">
     <link rel="apple-touch-icon" href="assets/icons/icon-192.svg">
-    <title>PixelGameKit v1.62.0</title>
+    <title>PixelGameKit v1.63.0</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 
@@ -511,13 +511,13 @@
                 </div>
 
                 <div class="console-lcd-group right">
-                    <div class="console-param">
-                        <span class="label">BPM</span>
-                        <span id="bpm-display" class="console-lcd value-lcd">120</span>
+                    <div class="console-knob-group">
+                        <div id="bpm-knob" class="knob-ctrl" data-param="bpm" title="BPM (60-240)"></div>
+                        <span class="knob-label">BPM</span>
                     </div>
-                    <div class="console-param">
-                        <span class="label">BAR</span>
-                        <span id="bar-display" class="console-lcd value-lcd">4</span>
+                    <div class="console-knob-group">
+                        <div id="bar-knob" class="knob-ctrl" data-param="bar" title="BAR (1-8)"></div>
+                        <span class="knob-label">BAR</span>
                     </div>
                 </div>
             </div>
