@@ -1998,8 +1998,8 @@ const SoundEditor = {
                 const deltaY = lastTouchY - currentY;
 
                 this.scrollX = Math.max(0, this.scrollX + deltaX);
-                // 60音（pitch 12-71）× 20px = 1200px の縦スクロール範囲
-                const maxScrollY = 60 * this.cellSize - this.canvas.height;
+                // 72音（pitch 0-71）× 20px = 1440px の縦スクロール範囲（6オクターブ）
+                const maxScrollY = 72 * this.cellSize - this.canvas.height;
                 this.scrollY = Math.max(0, Math.min(maxScrollY, this.scrollY + deltaY));
 
                 lastTouchX = currentX;
