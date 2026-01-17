@@ -880,8 +880,8 @@ const SoundEditor = {
         if (!container || !keyboardArea) return;
         container.innerHTML = '';
 
-        // 7オクターブ (C0-B6)
-        const octaves = [0, 1, 2, 3, 4, 5, 6];
+        // 6オクターブ (C1-B6)
+        const octaves = [1, 2, 3, 4, 5, 6];
         let whiteKeyIndex = 0;
         const whiteKeyWidth = 40; // CSS拡大版に合わせる
 
@@ -2370,11 +2370,11 @@ const SoundEditor = {
         }
 
         // オクターブ区切り（Cの音、白1px）
-        const maxPitch = 83; // C0-B6 (7オクターブ)
+        const maxPitch = 71; // C1-B6 (6オクターブ)
         this.ctx.strokeStyle = '#fff';
         this.ctx.lineWidth = 1;
-        for (let octave = 0; octave <= 6; octave++) {
-            const cPitch = octave * 12; // C0=0, C1=12, C2=24, etc.
+        for (let octave = 1; octave <= 6; octave++) {
+            const cPitch = (octave - 1) * 12; // C1=0, C2=12, C3=24, etc.
             const y = (maxPitch - cPitch + 1) * this.cellSize - scrollY;
             if (y >= 0 && y <= this.canvas.height) {
                 this.ctx.beginPath();
@@ -2407,7 +2407,7 @@ const SoundEditor = {
 
         // ハイライト行
         // maxPitchは既に宣言済み
-        if (this.highlightPitch >= 0 && this.highlightPitch <= 83) {
+        if (this.highlightPitch >= 0 && this.highlightPitch <= 71) {
             const y = (maxPitch - this.highlightPitch) * this.cellSize - scrollY;
             if (y + this.cellSize >= 0 && y < this.canvas.height) {
                 this.ctx.fillStyle = 'rgba(74, 124, 89, 0.3)';
