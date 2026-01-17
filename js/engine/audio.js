@@ -39,32 +39,55 @@ const NesAudio = {
         return baseFreq * Math.pow(2, octaveDiff);
     },
 
-    playNote(trackType, note, octave, duration) {
+    // 波形キャッシュ
+    waveCache: {},
+
+    playNote(trackType, note, octave, duration, tone = 0) {
         this.ensureContext();
 
         const freq = this.getFrequency(note, octave);
-        const now = this.ctx.currentTime;
 
         switch (trackType) {
             case 'pulse1':
             case 'pulse2':
-                this.playPulse(freq, duration, trackType === 'pulse1' ? 0.5 : 0.25);
+                this.playPulse(freq, duration, tone);
                 break;
             case 'triangle':
-                this.playTriangle(freq, duration);
+                this.playTriangle(freq, duration, tone);
                 break;
             case 'noise':
-                this.playNoise(duration);
+                this.playNoise(duration, tone);
                 break;
         }
     },
 
-    playPulse(freq, duration, duty = 0.5) {
+    // 矩形波 (tone: 0=Square50%, 1=Square25%, 2=Square12.5%)
+    playPulse(freq, duration, tone) {
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
 
-        // 矩形波を近似
-        osc.type = 'square';
+        // Duty比の決定
+        let duty = 0.5;
+        if (tone === 1) duty = 0.25;
+        if (tone === 2) duty = 0.125;
+
+        if (duty === 0.5) {
+            osc.type = 'square';
+        } else {
+            // PeriodicWaveでDuty比の異なる矩形波を生成
+            const cacheKey = `pulse_${duty}`;
+            if (!this.waveCache[cacheKey]) {
+                const n = 4096;
+                const real = new Float32Array(n);
+                const imag = new Float32Array(n);
+                for (let i = 1; i < n; i++) {
+                    imag[i] = (2 / (i * Math.PI)) * Math.sin(i * Math.PI * duty);
+                }
+                this.waveCache[cacheKey] = this.ctx.createPeriodicWave(real, imag);
+            }
+            osc.setPeriodicWave(this.waveCache[cacheKey]);
+        }
+
         osc.frequency.value = freq;
 
         gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
@@ -77,14 +100,27 @@ const NesAudio = {
         osc.stop(this.ctx.currentTime + duration);
     },
 
-    playTriangle(freq, duration) {
+    // 三角波 (tone: 0=Triangle, 1=Sine, 2=Sawtooth)
+    playTriangle(freq, duration, tone) {
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
 
-        osc.type = 'triangle';
+        if (tone === 1) {
+            osc.type = 'sine'; // 丸い音
+        } else if (tone === 2) {
+            osc.type = 'sawtooth'; // 拡張音源風
+            gain.gain.value = 0.2; // Sawtoothは音が大きいので下げる
+        } else {
+            osc.type = 'triangle'; // 標準
+        }
+
         osc.frequency.value = freq;
 
-        gain.gain.setValueAtTime(0.4, this.ctx.currentTime);
+        if (tone !== 2) {
+            gain.gain.setValueAtTime(0.4, this.ctx.currentTime);
+        } else {
+            gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+        }
         gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
 
         osc.connect(gain);
@@ -94,27 +130,61 @@ const NesAudio = {
         osc.stop(this.ctx.currentTime + duration);
     },
 
-    playNoise(duration) {
-        const bufferSize = this.ctx.sampleRate * duration;
+    // ノイズ (tone: 0=White, 1=Short(Metal), 2=Kick(Low))
+    playNoise(duration, tone) {
+        let bufferSize;
+
+        if (tone === 1) {
+            // 短周期ノイズ（金属音）
+            // 非常に短いバッファを繰り返すことで金属的な響きを作る
+            // 93サンプル程度でC#4〜D4付近のピッチ感が出る (44100Hzの場合)
+            bufferSize = 128;
+        } else {
+            bufferSize = this.ctx.sampleRate * duration;
+        }
+
         const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
         const data = buffer.getChannelData(0);
 
-        // ホワイトノイズ生成
+        // ノイズ生成
         for (let i = 0; i < bufferSize; i++) {
             data[i] = Math.random() * 2 - 1;
         }
 
         const source = this.ctx.createBufferSource();
+        source.buffer = buffer;
+
+        if (tone === 1) {
+            source.loop = true;
+            source.loopEnd = buffer.duration;
+            // 短周期の場合はdurationで停止させるためstopが必要
+            // pitch調整用にplaybackRateを少し変えるのもありだが今回は固定
+        }
+
         const gain = this.ctx.createGain();
 
-        source.buffer = buffer;
-        gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+        // フィルタ（Kick用）
+        let filter = null;
+        if (tone === 2) {
+            filter = this.ctx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.value = 200; // 低域のみ通す
+            filter.Q.value = 1;
+
+            source.connect(filter);
+            filter.connect(gain);
+        } else {
+            source.connect(gain);
+        }
+
+        const volume = (tone === 2) ? 0.8 : 0.2; // Kickは音量大きめ
+        gain.gain.setValueAtTime(volume, this.ctx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
 
-        source.connect(gain);
         gain.connect(this.masterGain);
 
         source.start();
+        source.stop(this.ctx.currentTime + duration);
     },
 
     // ========== SE再生 ==========

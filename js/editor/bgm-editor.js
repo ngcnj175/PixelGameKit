@@ -94,8 +94,29 @@ const SoundEditor = {
             song.tracks.forEach(track => {
                 if (typeof track.volume === 'undefined') track.volume = 1.0;
                 if (typeof track.pan === 'undefined') track.pan = 0.0;
+                if (typeof track.tone === 'undefined') track.tone = 0; // 音色バリエーション (0=Default)
             });
         });
+    },
+
+    // 波形キャッシュ
+    waveCache: {},
+
+    getPeriodicWave(duty) {
+        if (!this.audioCtx) return null;
+
+        const cacheKey = `pulse_${duty}`;
+        if (this.waveCache[cacheKey]) return this.waveCache[cacheKey];
+
+        const n = 4096;
+        const real = new Float32Array(n);
+        const imag = new Float32Array(n);
+        for (let i = 1; i < n; i++) {
+            imag[i] = (2 / (i * Math.PI)) * Math.sin(i * Math.PI * duty);
+        }
+        const wave = this.audioCtx.createPeriodicWave(real, imag);
+        this.waveCache[cacheKey] = wave;
+        return wave;
     },
 
     // iOSでconfirmダイアログ後にAudioContextが壊れる問題対策
@@ -312,9 +333,26 @@ const SoundEditor = {
                 </div>
              `;
 
-            // トラック選択イベント
-            div.addEventListener('click', (e) => {
-                // ノブ操作時はトラック切り替えしない（あるいは切り替えてもいいが、誤爆防止）
+            // トラック選択イベント（長押しで音色変更）
+            let longPressTimer;
+            const startLongPress = (e) => {
+                longPressTimer = setTimeout(() => {
+                    this.showToneSelectMenu(idx);
+                }, 600);
+            };
+            const cancelLongPress = () => {
+                clearTimeout(longPressTimer);
+            };
+
+            const trackInfo = div.querySelector('.track-info');
+            trackInfo.addEventListener('mousedown', startLongPress);
+            trackInfo.addEventListener('touchstart', startLongPress, { passive: true });
+            trackInfo.addEventListener('mouseup', cancelLongPress);
+            trackInfo.addEventListener('mouseleave', cancelLongPress);
+            trackInfo.addEventListener('touchend', cancelLongPress);
+
+            trackInfo.addEventListener('click', (e) => {
+                // ノブ操作時はトラック切り替えしない
                 if (e.target.classList.contains('knob-ctrl')) return;
 
                 this.currentTrack = idx;
@@ -327,6 +365,78 @@ const SoundEditor = {
 
         // ノブのドラッグ操作初期化
         this.initKnobInteractions();
+    },
+
+    showToneSelectMenu(trackIdx) {
+        const song = this.getCurrentSong();
+        const track = song.tracks[trackIdx];
+        const trackType = ['square', 'square', 'triangle', 'noise'][trackIdx];
+
+        // 既存のメニューがあれば削除
+        const existing = document.getElementById('tone-select-menu');
+        if (existing) existing.remove();
+
+        const menu = document.createElement('div');
+        menu.id = 'tone-select-menu';
+        menu.className = 'tone-select-menu';
+
+        const title = document.createElement('div');
+        title.className = 'tone-menu-title';
+        title.innerText = '音色を選択';
+        menu.appendChild(title);
+
+        let options = [];
+        if (trackType === 'square') {
+            options = [
+                { val: 0, label: 'Standard (50%)' },
+                { val: 1, label: 'Hard (25%)' },
+                { val: 2, label: 'Sharp (12.5%)' }
+            ];
+        } else if (trackType === 'triangle') {
+            options = [
+                { val: 0, label: 'Standard' },
+                { val: 1, label: 'Soft (Sine)' },
+                { val: 2, label: 'Power (Saw)' }
+            ];
+        } else if (trackType === 'noise') {
+            options = [
+                { val: 0, label: 'White' },
+                { val: 1, label: 'Metal (Short)' },
+                { val: 2, label: 'Kick (Low)' }
+            ];
+        }
+
+        options.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.className = 'tone-menu-btn' + (track.tone === opt.val ? ' active' : '');
+            btn.innerText = opt.label;
+            btn.onclick = () => {
+                track.tone = opt.val;
+                // UI反映（必要なら）
+                menu.remove();
+
+                // プレビュー再生
+                this.previewTone(trackIdx);
+            };
+            menu.appendChild(btn);
+        });
+
+        // 閉じるボタン（背景クリックで閉じる機能があれば不要だが、念のため）
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'tone-menu-close';
+        closeBtn.innerText = '閉じる';
+        closeBtn.onclick = () => menu.remove();
+        menu.appendChild(closeBtn);
+
+        document.body.appendChild(menu);
+    },
+
+    previewTone(trackIdx) {
+        const note = 'C';
+        const octave = 4;
+        this.currentTrack = trackIdx;
+        // 単音再生（プレビュー）
+        this.playNote(note, octave, 0.4);
     },
 
     updateChannelStripUI() {
@@ -874,10 +984,11 @@ const SoundEditor = {
         const track = song.tracks[this.currentTrack];
         const trackType = this.trackTypes[this.currentTrack];
         const pitch = this.noteToPitch(note, octave);
+        const tone = track.tone || 0;
 
         // ノイズトラックはドラム音を使用
         if (trackType === 'noise') {
-            const result = this.playDrum(pitch, 0.5, track.volume, track.pan);
+            const result = this.playDrum(pitch, 0.5, track.volume, track.pan, tone);
             if (result) {
                 this.currentKeyOsc = result.noise;
                 this.currentKeyGain = result.gain;
@@ -894,16 +1005,35 @@ const SoundEditor = {
             gain.connect(panner);
             panner.connect(this.audioCtx.destination);
 
-            // 波形タイプ
+            let volumeScale = 1.0;
+
+            // 波形タイプと音色
             if (trackType === 'square') {
-                osc.type = 'square';
+                if (tone === 0) {
+                    osc.type = 'square';
+                } else if (tone === 1) {
+                    const wave = this.getPeriodicWave(0.25);
+                    if (wave) osc.setPeriodicWave(wave);
+                    else osc.type = 'square';
+                } else if (tone === 2) {
+                    const wave = this.getPeriodicWave(0.125);
+                    if (wave) osc.setPeriodicWave(wave);
+                    else osc.type = 'square';
+                }
             } else if (trackType === 'triangle') {
-                osc.type = 'triangle';
+                if (tone === 0) {
+                    osc.type = 'triangle';
+                } else if (tone === 1) {
+                    osc.type = 'sine'; // 丸い音
+                } else if (tone === 2) {
+                    osc.type = 'sawtooth'; // ノコギリ波
+                    volumeScale = 0.6; // 音量が大きいので下げる
+                }
             }
 
             osc.frequency.value = freq;
-            // マスター0.3 * トラックボリューム
-            gain.gain.value = 0.3 * track.volume;
+            // マスター0.3 * トラックボリューム * 補正
+            gain.gain.value = 0.3 * track.volume * volumeScale;
 
             osc.connect(gain);
             osc.start();
@@ -944,11 +1074,12 @@ const SoundEditor = {
         const song = this.getCurrentSong();
         const track = song.tracks[this.currentTrack];
         const trackType = this.trackTypes[this.currentTrack];
+        const tone = track.tone || 0;
 
         // ノイズトラックはドラム音を使用
         if (trackType === 'noise') {
             const pitch = this.noteToPitch(note, octave);
-            this.playDrum(pitch, duration, track.volume, track.pan);
+            this.playDrum(pitch, duration, track.volume, track.pan, tone);
         } else {
             const gain = this.audioCtx.createGain();
 
@@ -960,18 +1091,32 @@ const SoundEditor = {
 
             const freq = this.getFrequency(note, octave);
             const osc = this.audioCtx.createOscillator();
+            let volumeScale = 1.0;
 
             if (trackType === 'square') {
-                osc.type = 'square';
+                if (tone === 0) osc.type = 'square';
+                else if (tone === 1) {
+                    const wave = this.getPeriodicWave(0.25);
+                    if (wave) osc.setPeriodicWave(wave); else osc.type = 'square';
+                }
+                else if (tone === 2) {
+                    const wave = this.getPeriodicWave(0.125);
+                    if (wave) osc.setPeriodicWave(wave); else osc.type = 'square';
+                }
             } else if (trackType === 'triangle') {
-                osc.type = 'triangle';
+                if (tone === 0) osc.type = 'triangle';
+                else if (tone === 1) osc.type = 'sine';
+                else if (tone === 2) {
+                    osc.type = 'sawtooth';
+                    volumeScale = 0.6;
+                }
             }
 
             osc.frequency.value = freq;
 
             // 音量調整
             const baseVol = (trackType === 'square') ? 0.19 : 0.3;
-            const volume = baseVol * track.volume;
+            const volume = baseVol * track.volume * volumeScale;
 
             gain.gain.setValueAtTime(volume, this.audioCtx.currentTime);
             // 80%の時間は音量維持、残り20%で減衰
@@ -1004,27 +1149,14 @@ const SoundEditor = {
         // ノイズトラックはドラム音を使用
         if (trackType === 'noise') {
             const pitch = this.noteToPitch(note, octave);
-            const drumNodes = this.playDrum(pitch, duration, track.volume, track.pan);
-
-            // アクティブノードを記録（同時発音数1制限用）
-            if (drumNodes) {
-                this.activeOscillators[trackIdx] = {
-                    osc: drumNodes.noise,
-                    gain: drumNodes.gain
-                };
-
-                // 停止後にクリア
-                setTimeout(() => {
-                    if (this.activeOscillators[trackIdx] &&
-                        this.activeOscillators[trackIdx].osc === drumNodes.noise) {
-                        this.activeOscillators[trackIdx] = null;
-                    }
-                }, duration * 1000);
+            const result = this.playDrum(pitch, duration, track.volume, track.pan, tone);
+            if (result) {
+                // ドラム音は自然減衰させるのでactiveOscillatorsには入れない（ループ制御しない）
+                // ただし、もし途中で止める必要があるなら入れるべき
             }
         } else {
             const gain = this.audioCtx.createGain();
 
-            // パンポット
             const panner = this.audioCtx.createStereoPanner();
             panner.pan.value = track.pan;
 
@@ -1033,30 +1165,46 @@ const SoundEditor = {
 
             const freq = this.getFrequency(note, octave);
             const osc = this.audioCtx.createOscillator();
+            let volumeScale = 1.0;
 
             if (trackType === 'square') {
-                osc.type = 'square';
+                if (tone === 0) osc.type = 'square';
+                else if (tone === 1) {
+                    const wave = this.getPeriodicWave(0.25);
+                    if (wave) osc.setPeriodicWave(wave); else osc.type = 'square';
+                }
+                else if (tone === 2) {
+                    const wave = this.getPeriodicWave(0.125);
+                    if (wave) osc.setPeriodicWave(wave); else osc.type = 'square';
+                }
             } else if (trackType === 'triangle') {
-                osc.type = 'triangle';
+                if (tone === 0) osc.type = 'triangle';
+                else if (tone === 1) osc.type = 'sine';
+                else if (tone === 2) {
+                    osc.type = 'sawtooth';
+                    volumeScale = 0.6;
+                }
             }
 
             osc.frequency.value = freq;
 
             // 音量調整
             const baseVol = (trackType === 'square') ? 0.19 : 0.3;
-            const volume = baseVol * track.volume;
+            // マスターボリュームはなし（シーケンサー側で管理しているなら）だが、ここでは0.3基準
+            gain.gain.setValueAtTime(baseVol * track.volume * volumeScale, this.audioCtx.currentTime);
 
-            gain.gain.setValueAtTime(volume, this.audioCtx.currentTime);
-            // 90%の時間は音量維持、残り10%で減衰（より歯切れよく）
-            const sustainTime = duration * 0.9;
-            gain.gain.setValueAtTime(volume, this.audioCtx.currentTime + sustainTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, this.audioCtx.currentTime + duration);
+            // シーケンサーでの発音は減衰させず、duration後にstopする
+            // 次の音が来たらstopされるので、基本は鳴らしっぱなしで良いが
+            // durationが来たら止まるようにする（スタッカート等のため）
+
+            // ちょっとリリースを作る
+            gain.gain.setValueAtTime(baseVol * track.volume * volumeScale, this.audioCtx.currentTime + duration - 0.05);
+            gain.gain.linearRampToValueAtTime(0.01, this.audioCtx.currentTime + duration);
 
             osc.connect(gain);
             osc.start();
-            osc.stop(this.audioCtx.currentTime + duration);
+            osc.stop(this.audioCtx.currentTime + duration + 0.05);
 
-            // アクティブオシレーターを記録
             this.activeOscillators[trackIdx] = { osc, gain };
 
             // 停止後にクリア
@@ -1088,10 +1236,18 @@ const SoundEditor = {
     },
 
     // ドラム音生成（ピッチに応じた連続的なフィルター周波数）
-    playDrum(pitch, duration, volume = 1.0, pan = 0.0) {
+    // tone: 0=Default(Filter switch), 1=Metal(Short), 2=Kick(Low)
+    playDrum(pitch, duration, volume = 1.0, pan = 0.0, tone = 0) {
         if (!this.audioCtx) return null;
 
-        const bufferSize = this.audioCtx.sampleRate * Math.max(duration, 0.05);
+        let bufferSize;
+        if (tone === 1) {
+            // 短周期ノイズ（金属的な響き）
+            bufferSize = 128; // 短い周期
+        } else {
+            bufferSize = this.audioCtx.sampleRate * Math.max(duration, 0.05);
+        }
+
         const buffer = this.audioCtx.createBuffer(1, bufferSize, this.audioCtx.sampleRate);
         const data = buffer.getChannelData(0);
         for (let i = 0; i < bufferSize; i++) {
@@ -1101,10 +1257,20 @@ const SoundEditor = {
         const noise = this.audioCtx.createBufferSource();
         noise.buffer = buffer;
 
+        if (tone === 1) {
+            noise.loop = true;
+            noise.loopEnd = buffer.duration;
+            // 短周期ノイズのピッチ感を変える（PITCHに応じて再生速度を変える）
+            // 基本速度1.0から、ピッチに応じて変化させる（ここでは簡易的に）
+            // C4(36)を1.0として、±1オクターブで±0.5程度
+            const rate = 1.0 + (pitch - 36) * 0.02;
+            noise.playbackRate.value = Math.max(0.1, rate);
+        }
+
         const gain = this.audioCtx.createGain();
         const filter = this.audioCtx.createBiquadFilter();
 
-        // パンポット
+        // パンポット（定位）
         const panner = this.audioCtx.createStereoPanner();
         panner.pan.value = pan;
 
@@ -1115,22 +1281,35 @@ const SoundEditor = {
         const freqRatio = Math.pow(maxFreq / minFreq, pitch / maxPitch);
         const filterFreq = minFreq * freqRatio;
 
-        // 低音はローパス（バスドラム）、中音はバンドパス（スネア）、高音はハイパス（ハイハット）
-        if (pitch < 24) {
-            // バスドラム: 強いローパス、低いQ値
+        if (tone === 2) {
+            // Kick専用（強いローパス）
             filter.type = 'lowpass';
-            filter.frequency.value = filterFreq;
-            filter.Q.value = 1;
-        } else if (pitch < 48) {
-            // スネア: バンドパス、適度なQ値
-            filter.type = 'bandpass';
+            filter.frequency.value = 150;
+            filter.Q.value = 2;
+        } else if (tone === 1) {
+            // Metal専用（ハイパスでキラキラさせる）
+            filter.type = 'highpass';
             filter.frequency.value = filterFreq;
             filter.Q.value = 5;
         } else {
-            // ハイハット: ハイパス、高いQ値
-            filter.type = 'highpass';
-            filter.frequency.value = filterFreq;
-            filter.Q.value = 10;
+            // Default: ピッチに応じて切り替え
+            // 低音はローパス（バスドラム）、中音はバンドパス（スネア）、高音はハイパス（ハイハット）
+            if (pitch < 24) {
+                // バスドラム: 強いローパス、低いQ値
+                filter.type = 'lowpass';
+                filter.frequency.value = filterFreq;
+                filter.Q.value = 1;
+            } else if (pitch < 48) {
+                // スネア: バンドパス、適度なQ値
+                filter.type = 'bandpass';
+                filter.frequency.value = filterFreq;
+                filter.Q.value = 5;
+            } else {
+                // ハイハット: ハイパス、高いQ値
+                filter.type = 'highpass';
+                filter.frequency.value = filterFreq;
+                filter.Q.value = 10;
+            }
         }
 
         noise.connect(filter);
@@ -1139,12 +1318,15 @@ const SoundEditor = {
         panner.connect(this.audioCtx.destination);
 
         // ドラム音量調整 (やや大きめに)
-        const drumVol = 0.5 * volume;
+        // Kickはより大きく
+        let drumVol = 0.5 * volume;
+        if (tone === 2) drumVol *= 1.5;
 
         gain.gain.setValueAtTime(drumVol, this.audioCtx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.01, this.audioCtx.currentTime + duration);
 
         noise.start();
+        noise.stop(this.audioCtx.currentTime + duration);
 
         return { noise: noise, gain: gain };
     },
