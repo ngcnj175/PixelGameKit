@@ -1477,8 +1477,8 @@ const StageEditor = {
         const scrollX = this.canvasScrollX || 0;
         const scrollY = this.canvasScrollY || 0;
 
-        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
-        this.ctx.lineWidth = 1;
+        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+        this.ctx.lineWidth = 0.5;
 
         // 表示範囲のグリッドのみ描画
         for (let x = 0; x <= stage.width; x++) {

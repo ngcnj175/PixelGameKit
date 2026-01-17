@@ -855,9 +855,9 @@ const SpriteEditor = {
             }
         }
 
-        // グリッド線（白）
-        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
-        this.ctx.lineWidth = 1;
+        // グリッド線（白 - ピアノロールと同じ設定）
+        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+        this.ctx.lineWidth = 0.5;
         for (let i = 1; i < 16; i++) {
             // 縦線
             this.ctx.beginPath();
