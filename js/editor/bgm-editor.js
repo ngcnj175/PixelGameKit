@@ -830,6 +830,47 @@ const SoundEditor = {
         if (pasteBtn) {
             pasteBtn.addEventListener('click', () => this.pasteTrack());
         }
+
+        // REST（ステップを進める、休符入力）
+        const restBtn = document.getElementById('sound-rest-btn');
+        if (restBtn) {
+            restBtn.addEventListener('click', () => {
+                if (this.isStepRecording) {
+                    this.currentStep++;
+                    const song = this.getCurrentSong();
+                    const maxSteps = song.bars * 16;
+                    if (this.currentStep >= maxSteps) {
+                        this.currentStep = 0;
+                    }
+                    this.render();
+                }
+            });
+        }
+
+        // TIE（直前のノートを1ステップ延長）
+        const tieBtn = document.getElementById('sound-tie-btn');
+        if (tieBtn) {
+            tieBtn.addEventListener('click', () => {
+                if (this.isStepRecording) {
+                    const song = this.getCurrentSong();
+                    const track = song.tracks[this.currentTrack];
+                    // 直前のステップにあるノートを延長
+                    const prevStep = this.currentStep - 1;
+                    if (prevStep >= 0) {
+                        const prevNote = track.notes.find(n => n.step + n.length - 1 === prevStep);
+                        if (prevNote) {
+                            prevNote.length++;
+                            this.currentStep++;
+                            const maxSteps = song.bars * 16;
+                            if (this.currentStep >= maxSteps) {
+                                this.currentStep = 0;
+                            }
+                            this.render();
+                        }
+                    }
+                }
+            });
+        }
     },
 
     // ========== 鍵盤 ==========
@@ -839,8 +880,8 @@ const SoundEditor = {
         if (!container || !keyboardArea) return;
         container.innerHTML = '';
 
-        // 5オクターブ (C1-B5)
-        const octaves = [1, 2, 3, 4, 5, 6];
+        // 7オクターブ (C0-B6)
+        const octaves = [0, 1, 2, 3, 4, 5, 6];
         let whiteKeyIndex = 0;
         const whiteKeyWidth = 40; // CSS拡大版に合わせる
 
@@ -1063,7 +1104,8 @@ const SoundEditor = {
                 osc.frequency.setValueAtTime(i % 2 === 0 ? freq1 : freq2, t);
             }
 
-            gain.gain.value = 0.19 * track.volume;
+            // TremoloはSQUARE Standard系なので音量80%減
+            gain.gain.value = 0.038 * track.volume;
 
             osc.connect(gain);
             osc.start();
@@ -1106,7 +1148,12 @@ const SoundEditor = {
             }
 
             osc.frequency.value = freq;
-            gain.gain.value = 0.3 * track.volume * volumeScale;
+            // SQUARE Standard系(tone 0-2)は音量80%減
+            let baseVol = 0.3;
+            if (trackType === 'square') {
+                baseVol = (tone >= 0 && tone <= 2) ? 0.038 : 0.19;
+            }
+            gain.gain.value = baseVol * track.volume * volumeScale;
 
             osc.connect(gain);
             osc.start();
@@ -1192,9 +1239,10 @@ const SoundEditor = {
             osc.frequency.setValueAtTime(i % 2 === 0 ? freq1 : freq2, t);
         }
 
-        gain.gain.setValueAtTime(0.19 * volume, this.audioCtx.currentTime);
+        // TremoloはSQUARE Standard系なので音量80%減
+        gain.gain.setValueAtTime(0.038 * volume, this.audioCtx.currentTime);
         const sustainTime = duration * 0.8;
-        gain.gain.setValueAtTime(0.19 * volume, this.audioCtx.currentTime + sustainTime);
+        gain.gain.setValueAtTime(0.038 * volume, this.audioCtx.currentTime + sustainTime);
         gain.gain.exponentialRampToValueAtTime(0.01, this.audioCtx.currentTime + duration);
 
         osc.connect(gain);
@@ -1261,7 +1309,11 @@ const SoundEditor = {
 
         osc.frequency.value = freq;
 
-        const baseVol = (trackType === 'square') ? 0.19 : 0.3;
+        // SQUARE Standard系(tone 0-2)は音量80%減
+        let baseVol = (trackType === 'square') ? 0.19 : 0.3;
+        if (trackType === 'square' && tone >= 0 && tone <= 2) {
+            baseVol = 0.038; // 0.19 * 0.2
+        }
         const volume = baseVol * track.volume * volumeScale;
 
         // エンベロープ設定
@@ -1359,7 +1411,11 @@ const SoundEditor = {
 
         osc.frequency.value = freq;
 
-        const baseVol = (trackType === 'square') ? 0.19 : 0.3;
+        // SQUARE Standard系(tone 0-2)は音量80%減
+        let baseVol = (trackType === 'square') ? 0.19 : 0.3;
+        if (trackType === 'square' && tone >= 0 && tone <= 2) {
+            baseVol = 0.038; // 0.19 * 0.2
+        }
         const volume = baseVol * track.volume * volumeScale;
 
         // エンベロープ設定
@@ -2314,11 +2370,11 @@ const SoundEditor = {
         }
 
         // オクターブ区切り（Cの音、白1px）
-        const maxPitch = 71;
+        const maxPitch = 83; // C0-B6 (7オクターブ)
         this.ctx.strokeStyle = '#fff';
         this.ctx.lineWidth = 1;
-        for (let octave = 1; octave <= 6; octave++) {
-            const cPitch = (octave - 1) * 12; // C1=0, C2=12, C3=24, C4=36, C5=48
+        for (let octave = 0; octave <= 6; octave++) {
+            const cPitch = octave * 12; // C0=0, C1=12, C2=24, etc.
             const y = (maxPitch - cPitch + 1) * this.cellSize - scrollY;
             if (y >= 0 && y <= this.canvas.height) {
                 this.ctx.beginPath();
@@ -2351,7 +2407,7 @@ const SoundEditor = {
 
         // ハイライト行
         // maxPitchは既に宣言済み
-        if (this.highlightPitch >= 0 && this.highlightPitch <= 71) {
+        if (this.highlightPitch >= 0 && this.highlightPitch <= 83) {
             const y = (maxPitch - this.highlightPitch) * this.cellSize - scrollY;
             if (y + this.cellSize >= 0 && y < this.canvas.height) {
                 this.ctx.fillStyle = 'rgba(74, 124, 89, 0.3)';
