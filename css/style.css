@@ -3269,21 +3269,18 @@ body {
 
 .track-info {
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
+    /* 中央寄せ */
     align-items: center;
     margin-bottom: 2px;
 }
 
-.track-num {
-    font-size: 10px;
-    color: var(--text-dark);
-    font-weight: bold;
-}
-
-.track-type {
-    font-size: 8px;
+.track-name {
+    font-size: 9px;
     color: var(--color-medium);
-    text-transform: uppercase;
+    /* VOL/PANと同じ色 */
+    font-weight: 600;
+    text-align: center;
 }
 
 .track-knobs {
@@ -3455,9 +3452,11 @@ body {
 
 .jukebox-add-btn {
     padding: 8px 24px;
-    background: var(--color-dark);
-    color: var(--text-light);
-    border: none;
+    background: #ffffff;
+    /* 白背景 */
+    color: var(--color-medium);
+    /* グレー文字 */
+    border: 1px solid var(--border-color);
     border-radius: 8px;
     font-size: 12px;
     font-weight: 600;

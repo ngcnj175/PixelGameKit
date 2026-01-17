@@ -288,8 +288,8 @@ const SoundEditor = {
         if (!container) return;
 
         container.innerHTML = '';
-        const trackLabels = ['TR1', 'TR2', 'TR3', 'TR4'];
-        const trackTypes = ['SQUARE', 'SQUARE', 'TRIANGLE', 'NOISE'];
+        // 楽器名のみ表示（TR1～4は削除）
+        const trackLabels = ['SQUARE1', 'SQUARE2', 'TRIANGLE', 'NOISE'];
 
         trackLabels.forEach((label, idx) => {
             const div = document.createElement('div');
@@ -298,8 +298,7 @@ const SoundEditor = {
 
             div.innerHTML = `
                 <div class="track-info">
-                    <span class="track-num">${label}</span>
-                    <span class="track-type">${trackTypes[idx]}</span>
+                    <span class="track-name">${label}</span>
                 </div>
                 <div class="track-knobs">
                     <div class="knob-wrap">
@@ -465,10 +464,8 @@ const SoundEditor = {
             playBtn.innerHTML = '▶';
             playBtn.onclick = (e) => {
                 e.stopPropagation();
-                // 簡易試聴機能（今は単にそのソングを選択して再生開始でも良い）
                 this.selectSong(idx);
                 this.play();
-                // 表示更新が必要ならここで行う
                 document.querySelectorAll('.jukebox-play-btn').forEach(b => {
                     b.innerHTML = '▶'; b.classList.remove('playing');
                 });
@@ -476,30 +473,42 @@ const SoundEditor = {
                 playBtn.classList.add('playing');
             };
 
-            // 情報エリア
+            // 情報エリア（ソング名のみ）
             const infoDiv = document.createElement('div');
             infoDiv.className = 'jukebox-info';
-            infoDiv.innerHTML = `
-                <div class="jukebox-title">${song.name}</div>
-                <div class="jukebox-meta">BPM: ${song.bpm} / BAR: ${song.bars}</div>
-            `;
+            infoDiv.innerHTML = `<div class="jukebox-title">${song.name}</div>`;
+
+            // タップで選択
             infoDiv.onclick = () => {
                 this.selectSong(idx);
                 document.getElementById('song-jukebox-modal').classList.add('hidden');
             };
 
-            // メニューボタン (...)
-            const menuBtn = document.createElement('button');
-            menuBtn.className = 'jukebox-menu-btn';
-            menuBtn.innerHTML = '⋮';
-            menuBtn.onclick = (e) => {
-                e.stopPropagation();
-                this.showSongContextMenu(idx, e);
+            // 長押しで削除
+            let longPressTimer;
+            const startLongPress = (e) => {
+                longPressTimer = setTimeout(() => {
+                    if (this.songs.length <= 1) {
+                        alert('最後のソングは削除できません');
+                        return;
+                    }
+                    if (confirm(`"${song.name}" を削除しますか？`)) {
+                        this.deleteSong(idx);
+                        this.renderJukeboxList();
+                    }
+                }, 800);
             };
+            const cancelLongPress = () => {
+                clearTimeout(longPressTimer);
+            };
+            infoDiv.addEventListener('mousedown', startLongPress);
+            infoDiv.addEventListener('touchstart', startLongPress, { passive: true });
+            infoDiv.addEventListener('mouseup', cancelLongPress);
+            infoDiv.addEventListener('mouseleave', cancelLongPress);
+            infoDiv.addEventListener('touchend', cancelLongPress);
 
             item.appendChild(playBtn);
             item.appendChild(infoDiv);
-            item.appendChild(menuBtn);
 
             listContainer.appendChild(item);
         });
