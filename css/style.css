@@ -47,11 +47,22 @@ body {
 #app {
     display: flex;
     flex-direction: column;
-    height: 100%;
-    height: 100dvh;
-    max-width: 480px;
-    margin: 0 auto;
+
+    /* 固定アスペクト比（iPhone基準: 9:19） */
+    /* 画面の幅・高さの両方を考慮し、収まる最大サイズを計算 */
+    --app-aspect: calc(9 / 19);
+
+    /* 幅: 高さから計算した値 vs 画面幅 vs 480px の最小値 */
+    width: min(480px, 100vw, calc(100dvh * var(--app-aspect)));
+
+    /* 高さ: 幅から逆算（aspect-ratioで自動計算） */
+    aspect-ratio: 9 / 19;
+
+    /* 中央配置 */
+    margin: auto;
+
     background: var(--bg-device);
+    overflow: hidden;
 }
 
 /* ========================================
