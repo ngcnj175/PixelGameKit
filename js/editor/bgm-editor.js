@@ -174,25 +174,25 @@ const SoundEditor = {
         });
 
 
-        // BPMノブ（ドラッグで調整）
-        const bpmKnob = document.getElementById('bpm-knob');
-        if (bpmKnob) {
+        // BPM表示（上下ドラッグで調整）
+        const bpmDisplay = document.getElementById('bpm-display');
+        if (bpmDisplay) {
             let isDragging = false;
-            let startX = 0;
+            let startY = 0;
             let startValue = 0;
 
             const onStart = (e) => {
                 isDragging = true;
-                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-                startX = clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                startY = clientY;
                 startValue = this.getCurrentSong().bpm;
                 e.preventDefault();
             };
 
             const onMove = (e) => {
                 if (!isDragging) return;
-                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-                const delta = Math.round((clientX - startX) / 3); // 3px = 1BPM
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                const delta = Math.round((startY - clientY) / 3); // 上に3px = +1BPM
                 const song = this.getCurrentSong();
                 song.bpm = Math.max(60, Math.min(240, startValue + delta));
                 this.updateConsoleDisplay();
@@ -202,8 +202,8 @@ const SoundEditor = {
                 isDragging = false;
             };
 
-            bpmKnob.addEventListener('mousedown', onStart);
-            bpmKnob.addEventListener('touchstart', onStart, { passive: false });
+            bpmDisplay.addEventListener('mousedown', onStart);
+            bpmDisplay.addEventListener('touchstart', onStart, { passive: false });
             document.addEventListener('mousemove', onMove);
             document.addEventListener('touchmove', onMove, { passive: false });
             document.addEventListener('mouseup', onEnd);
@@ -211,7 +211,7 @@ const SoundEditor = {
 
             // ダブルタップでリセット（120BPM）
             let lastTapBpm = 0;
-            bpmKnob.addEventListener('touchend', () => {
+            bpmDisplay.addEventListener('touchend', () => {
                 const now = Date.now();
                 if (now - lastTapBpm < 300) {
                     this.getCurrentSong().bpm = 120;
@@ -221,25 +221,25 @@ const SoundEditor = {
             });
         }
 
-        // BARノブ（ドラッグで調整）
-        const barKnob = document.getElementById('bar-knob');
-        if (barKnob) {
+        // BAR表示（上下ドラッグで調整）
+        const barDisplay = document.getElementById('bar-display');
+        if (barDisplay) {
             let isDragging = false;
-            let startX = 0;
+            let startY = 0;
             let startValue = 0;
 
             const onStart = (e) => {
                 isDragging = true;
-                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-                startX = clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                startY = clientY;
                 startValue = this.getCurrentSong().bars;
                 e.preventDefault();
             };
 
             const onMove = (e) => {
                 if (!isDragging) return;
-                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-                const delta = Math.round((clientX - startX) / 20); // 20px = 1BAR
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                const delta = Math.round((startY - clientY) / 20); // 上に20px = +1BAR
                 const song = this.getCurrentSong();
                 song.bars = Math.max(1, Math.min(16, startValue + delta));
                 this.updateConsoleDisplay();
@@ -250,8 +250,8 @@ const SoundEditor = {
                 isDragging = false;
             };
 
-            barKnob.addEventListener('mousedown', onStart);
-            barKnob.addEventListener('touchstart', onStart, { passive: false });
+            barDisplay.addEventListener('mousedown', onStart);
+            barDisplay.addEventListener('touchstart', onStart, { passive: false });
             document.addEventListener('mousemove', onMove);
             document.addEventListener('touchmove', onMove, { passive: false });
             document.addEventListener('mouseup', onEnd);
@@ -259,7 +259,7 @@ const SoundEditor = {
 
             // ダブルタップでリセット（4BAR）
             let lastTapBar = 0;
-            barKnob.addEventListener('touchend', () => {
+            barDisplay.addEventListener('touchend', () => {
                 const now = Date.now();
                 if (now - lastTapBar < 300) {
                     this.getCurrentSong().bars = 4;
@@ -274,9 +274,12 @@ const SoundEditor = {
     updateConsoleDisplay() {
         const song = this.getCurrentSong();
         const titleEl = document.getElementById('song-title-display');
+        const bpmEl = document.getElementById('bpm-display');
+        const barEl = document.getElementById('bar-display');
 
         if (titleEl) titleEl.textContent = song.name;
-        // BPM/BARはノブ式に変更（数値表示なし）
+        if (bpmEl) bpmEl.textContent = song.bpm;
+        if (barEl) barEl.textContent = song.bars;
     },
 
     // ========== Channel Strip (フッターミキサー) ==========

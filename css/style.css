@@ -3010,12 +3010,11 @@ body {
     background: var(--bg-device);
     border-bottom: 1px solid var(--border-color);
     display: flex;
-    justify-content: center;
-    /* 中央配置 */
+    justify-content: space-between;
+    /* 左にタイトル、右にBPM/BAR */
     align-items: center;
     padding: 0 12px;
     flex-shrink: 0;
-    gap: 16px;
 }
 
 .console-lcd-group {
@@ -3136,6 +3135,8 @@ body {
     min-height: 0;
     overflow-x: auto;
     overflow-y: hidden;
+    margin-bottom: 12px;
+    /* トラックミキサーとの間にスペース */
 }
 
 /* ツールバー（左側縦列）- 下揃え */
