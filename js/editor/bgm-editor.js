@@ -1104,8 +1104,8 @@ const SoundEditor = {
                 osc.frequency.setValueAtTime(i % 2 === 0 ? freq1 : freq2, t);
             }
 
-            // TremoloはSQUARE Standard系なので音量80%減
-            gain.gain.value = 0.038 * track.volume;
+            // TremoloはSQUARE Standard系なので音量調整済み（110%増）
+            gain.gain.value = 0.0418 * track.volume;
 
             osc.connect(gain);
             osc.start();
@@ -1148,10 +1148,17 @@ const SoundEditor = {
             }
 
             osc.frequency.value = freq;
-            // SQUARE Standard系(tone 0-2)は音量80%減
+            // SQUARE Standard系(tone 0-2)は音量調整済み
+            // Short(tone 1)は更に大きく
             let baseVol = 0.3;
             if (trackType === 'square') {
-                baseVol = (tone >= 0 && tone <= 2) ? 0.038 : 0.19;
+                if (tone === 1) {
+                    baseVol = 0.0502; // Short
+                } else if (tone === 0 || tone === 2) {
+                    baseVol = 0.0418; // Standard/FadeIn
+                } else {
+                    baseVol = 0.19; // Sharp系
+                }
             }
             gain.gain.value = baseVol * track.volume * volumeScale;
 
@@ -1239,10 +1246,10 @@ const SoundEditor = {
             osc.frequency.setValueAtTime(i % 2 === 0 ? freq1 : freq2, t);
         }
 
-        // TremoloはSQUARE Standard系なので音量80%減
-        gain.gain.setValueAtTime(0.038 * volume, this.audioCtx.currentTime);
+        // TremoloはSQUARE Standard系なので音量調整済み（110%増）
+        gain.gain.setValueAtTime(0.0418 * volume, this.audioCtx.currentTime);
         const sustainTime = duration * 0.8;
-        gain.gain.setValueAtTime(0.038 * volume, this.audioCtx.currentTime + sustainTime);
+        gain.gain.setValueAtTime(0.0418 * volume, this.audioCtx.currentTime + sustainTime);
         gain.gain.exponentialRampToValueAtTime(0.01, this.audioCtx.currentTime + duration);
 
         osc.connect(gain);
@@ -1309,10 +1316,13 @@ const SoundEditor = {
 
         osc.frequency.value = freq;
 
-        // SQUARE Standard系(tone 0-2)は音量80%減
+        // SQUARE Standard系(tone 0-2)は音量調整済み（元の80%減 * 110%増）
+        // Short(tone 1)は更に120%増
         let baseVol = (trackType === 'square') ? 0.19 : 0.3;
-        if (trackType === 'square' && tone >= 0 && tone <= 2) {
-            baseVol = 0.038; // 0.19 * 0.2
+        if (trackType === 'square' && tone === 1) {
+            baseVol = 0.0502; // Standard Short: 0.038 * 1.1 * 1.2
+        } else if (trackType === 'square' && (tone === 0 || tone === 2)) {
+            baseVol = 0.0418; // Standard/FadeIn: 0.038 * 1.1
         }
         const volume = baseVol * track.volume * volumeScale;
 
@@ -1411,10 +1421,13 @@ const SoundEditor = {
 
         osc.frequency.value = freq;
 
-        // SQUARE Standard系(tone 0-2)は音量80%減
+        // SQUARE Standard系(tone 0-2)は音量調整済み（元の80%減 * 110%増）
+        // Short(tone 1)は更に120%増
         let baseVol = (trackType === 'square') ? 0.19 : 0.3;
-        if (trackType === 'square' && tone >= 0 && tone <= 2) {
-            baseVol = 0.038; // 0.19 * 0.2
+        if (trackType === 'square' && tone === 1) {
+            baseVol = 0.0502; // Standard Short: 0.038 * 1.1 * 1.2
+        } else if (trackType === 'square' && (tone === 0 || tone === 2)) {
+            baseVol = 0.0418; // Standard/FadeIn: 0.038 * 1.1
         }
         const volume = baseVol * track.volume * volumeScale;
 
