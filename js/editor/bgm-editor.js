@@ -92,7 +92,7 @@ const SoundEditor = {
         App.projectData.songs.forEach(song => {
             if (!song.tracks) return;
             song.tracks.forEach(track => {
-                if (typeof track.volume === 'undefined') track.volume = 1.0;
+                if (typeof track.volume === 'undefined') track.volume = 0.65;
                 if (typeof track.pan === 'undefined') track.pan = 0.0;
                 if (typeof track.tone === 'undefined') track.tone = 0; // 音色バリエーション (0=Default)
             });
@@ -474,6 +474,37 @@ const SoundEditor = {
         let startY = 0;
         let startVal = 0;
 
+        // ダブルタップ検出用
+        let lastTapTime = {};
+        const DOUBLE_TAP_DELAY = 300;
+
+        const handleDoubleTap = (e) => {
+            if (!e.target.classList.contains('knob-ctrl')) return;
+
+            const knob = e.target;
+            const trackIdx = parseInt(knob.dataset.track);
+            const type = knob.dataset.type;
+            const now = Date.now();
+            const key = `${type}_${trackIdx}`;
+
+            if (lastTapTime[key] && (now - lastTapTime[key]) < DOUBLE_TAP_DELAY) {
+                // ダブルタップ検出 - デフォルト値にリセット
+                const song = this.getCurrentSong();
+                const track = song.tracks[trackIdx];
+
+                if (type === 'vol') {
+                    track.volume = 0.65; // デフォルト65%
+                } else {
+                    track.pan = 0.0; // デフォルト中央
+                }
+
+                this.updateChannelStripUI();
+                lastTapTime[key] = 0; // リセット
+            } else {
+                lastTapTime[key] = now;
+            }
+        };
+
         const handleStart = (e) => {
             if (!e.target.classList.contains('knob-ctrl')) return;
             e.preventDefault();
@@ -533,6 +564,7 @@ const SoundEditor = {
         const container = document.getElementById('bgm-channel-strip');
         container.addEventListener('mousedown', handleStart);
         container.addEventListener('touchstart', handleStart, { passive: false });
+        container.addEventListener('click', handleDoubleTap);
     },
 
     // ========== Song Jukebox (ソングリスト) ==========
@@ -1000,6 +1032,38 @@ const SoundEditor = {
         } else if (trackType === 'triangle' && tone === 3) {
             // Kickトーン：ピッチ下降音を再生
             this.playKickTone(note, octave, track.volume, track.pan);
+        } else if (trackType === 'square' && tone === 6) {
+            // Tremoloトーン：1オクターブ上と交互に高速切替
+            const freq1 = this.getFrequency(note, octave);
+            const freq2 = freq1 * 2;
+            const osc = this.audioCtx.createOscillator();
+            const gain = this.audioCtx.createGain();
+            const panner = this.audioCtx.createStereoPanner();
+
+            panner.pan.value = track.pan;
+            gain.connect(panner);
+            panner.connect(this.audioCtx.destination);
+
+            osc.type = 'square';
+
+            // 高速で周波数を交互に切り替える（約30Hzで交互、5秒分スケジュール）
+            const tremoloRate = 30;
+            const maxDuration = 5;
+            const numCycles = tremoloRate * maxDuration;
+            const cycleTime = 1 / tremoloRate;
+
+            for (let i = 0; i < numCycles; i++) {
+                const t = this.audioCtx.currentTime + i * cycleTime;
+                osc.frequency.setValueAtTime(i % 2 === 0 ? freq1 : freq2, t);
+            }
+
+            gain.gain.value = 0.19 * track.volume;
+
+            osc.connect(gain);
+            osc.start();
+
+            this.currentKeyOsc = osc;
+            this.currentKeyGain = gain;
         } else {
             const freq = this.getFrequency(note, octave);
             const osc = this.audioCtx.createOscillator();
@@ -1016,8 +1080,8 @@ const SoundEditor = {
 
             // 波形タイプと音色
             if (trackType === 'square') {
-                // tone 0-2: Standard (50%), tone 3-6: Sharp (12.5%)
-                if (tone >= 3 && tone <= 6) {
+                // tone 0-2: Standard (50%), tone 3-5: Sharp (12.5%)
+                if (tone >= 3 && tone <= 5) {
                     const wave = this.getPeriodicWave(0.125);
                     if (wave) osc.setPeriodicWave(wave);
                     else osc.type = 'square';
@@ -1201,7 +1265,7 @@ const SoundEditor = {
         if (isShort) {
             // Short: 短くスタッカート気味
             gain.gain.setValueAtTime(volume, this.audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, this.audioCtx.currentTime + duration * 0.3);
+            gain.gain.exponentialRampToValueAtTime(0.01, this.audioCtx.currentTime + duration * 0.5);
         } else if (isFadeIn) {
             // FadeIn: アタックがなく徐々に大きくなる
             gain.gain.setValueAtTime(0.01, this.audioCtx.currentTime);
@@ -1299,7 +1363,7 @@ const SoundEditor = {
         if (isShort) {
             // Short: 短くスタッカート気味
             gain.gain.setValueAtTime(volume, this.audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, this.audioCtx.currentTime + duration * 0.3);
+            gain.gain.exponentialRampToValueAtTime(0.01, this.audioCtx.currentTime + duration * 0.5);
         } else if (isFadeIn) {
             // FadeIn: アタックがなく徐々に大きくなる
             gain.gain.setValueAtTime(0.01, this.audioCtx.currentTime);
