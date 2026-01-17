@@ -565,6 +565,12 @@ const SoundEditor = {
         container.addEventListener('mousedown', handleStart);
         container.addEventListener('touchstart', handleStart, { passive: false });
         container.addEventListener('click', handleDoubleTap);
+        container.addEventListener('touchend', (e) => {
+            // タッチでのダブルタップ検出（iPhone対応）
+            if (e.target.classList.contains('knob-ctrl')) {
+                handleDoubleTap(e);
+            }
+        });
     },
 
     // ========== Song Jukebox (ソングリスト) ==========
@@ -701,10 +707,10 @@ const SoundEditor = {
             bpm: 120,
             bars: 1,
             tracks: [
-                { type: 'square', notes: [], volume: 1.0, pan: 0.0 },
-                { type: 'square', notes: [], volume: 1.0, pan: 0.0 },
-                { type: 'triangle', notes: [], volume: 1.0, pan: 0.0 },
-                { type: 'noise', notes: [], volume: 1.0, pan: 0.0 }
+                { type: 'square', notes: [], volume: 0.65, pan: 0.0, tone: 0 },
+                { type: 'square', notes: [], volume: 0.65, pan: 0.0, tone: 0 },
+                { type: 'triangle', notes: [], volume: 0.65, pan: 0.0, tone: 0 },
+                { type: 'noise', notes: [], volume: 0.65, pan: 0.0, tone: 0 }
             ]
         };
         this.songs.push(song);
