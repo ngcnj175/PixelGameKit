@@ -1006,13 +1006,22 @@ const GameEngine = {
             case 'boss':
                 // ボスを倒したらクリア（雑魚敵が残っていてもOK）
                 // ボスが画面外に消えたら（isDying && deathTimer > 60）シーケンス開始
-                if (this.bossEnemy && this.bossEnemy.isDying && this.bossEnemy.deathTimer > 60) {
-                    if (!this.bossDefeatPhase) {
-                        // ボス撃破演出開始：BGM停止→1秒無音→クリアBGM
-                        this.stopBgm();
-                        this.bossDefeatPhase = 'silence';
-                        this.bossDefeatTimer = 0;
+                if (this.bossEnemy) {
+                    // デバッグログ
+                    if (this.bossEnemy.isDying && !this.bossDefeatPhase) {
+                        console.log('Boss dying! deathTimer:', this.bossEnemy.deathTimer, 'bossDefeatPhase:', this.bossDefeatPhase);
                     }
+                    if (this.bossEnemy.isDying && this.bossEnemy.deathTimer > 60) {
+                        if (!this.bossDefeatPhase) {
+                            console.log('Starting boss defeat sequence!');
+                            // ボス撃破演出開始：BGM停止→1秒無音→クリアBGM
+                            this.stopBgm();
+                            this.bossDefeatPhase = 'silence';
+                            this.bossDefeatTimer = 0;
+                        }
+                    }
+                } else {
+                    console.log('bossEnemy is null - no boss on stage or boss template not marked as isBoss');
                 }
                 break;
 

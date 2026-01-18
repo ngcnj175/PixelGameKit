@@ -78,6 +78,17 @@ const SoundEditor = {
         if (this.songs.length === 0) {
             this.addSong();
         }
+
+        // iOS対応: audioCtxがsuspendedなら再開を試みる
+        if (this.audioCtx) {
+            if (this.audioCtx.state === 'suspended') {
+                this.audioCtx.resume().catch(e => console.log('AudioContext resume failed:', e));
+            }
+        } else {
+            // audioCtxがnullなら再作成
+            this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
         this.resize(); // キャンバスサイズ設定
         this.updateConsoleDisplay();
         this.updateChannelStripUI();
