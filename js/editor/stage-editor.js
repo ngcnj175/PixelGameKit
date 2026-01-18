@@ -357,8 +357,13 @@ const StageEditor = {
         if (type === 'player' || type === 'enemy') {
             html += this.renderSlider('ライフ数', 'life', config.life ?? 3, 1, 10);
             html += this.renderSlider('足の速さ', 'speed', config.speed ?? 5, 1, 10);
-            html += this.renderSliderWithCheck('ジャンプ力', 'jumpPower', config.jumpPower ?? 10, 1, 20, '2段ジャンプ', 'wJump', config.wJump);
-            html += this.renderSlider('射程距離', 'shotMaxRange', config.shotMaxRange ?? 0, 0, 16);
+            // プレイヤーのみ2段ジャンプを表示
+            if (type === 'player') {
+                html += this.renderSliderWithCheck('ジャンプ力', 'jumpPower', config.jumpPower ?? 10, 1, 20, '2段ジャンプ', 'wJump', config.wJump);
+            } else {
+                html += this.renderSlider('ジャンプ力', 'jumpPower', config.jumpPower ?? 10, 1, 20);
+            }
+            html += this.renderSlider('射程距離', 'shotMaxRange', config.shotMaxRange ?? 16, 0, 16);
 
             // プレイヤー専用SE設定
             if (type === 'player') {

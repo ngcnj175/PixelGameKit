@@ -268,7 +268,7 @@ class Player {
             engine.projectiles.push({
                 x: this.x + (this.facingRight ? this.width : -0.2),
                 y: this.y + this.height / 2 - 0.25,
-                vx: 0.15 * direction,
+                vx: 0.225 * direction,
                 vy: 0,
                 width: 0.5,
                 height: 0.5,

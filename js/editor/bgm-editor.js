@@ -774,12 +774,24 @@ const SoundEditor = {
     },
 
     selectSong(idx) {
+        const wasPlaying = this.isPlaying;
+
+        // 再生中なら一旦停止
+        if (this.isPlaying) {
+            this.stop();
+        }
+
         this.currentSongIdx = idx;
         this.scrollX = 0;
         this.currentStep = 0;
         this.updateConsoleDisplay();
         this.updateChannelStripUI();
         this.render();
+
+        // 再生中だった場合は新しい曲を再生
+        if (wasPlaying) {
+            this.play();
+        }
     },
 
     getCurrentSong() {
@@ -1473,13 +1485,8 @@ const SoundEditor = {
 
         osc.frequency.value = freq;
 
-        // SQUARE全体の音量を120%増
-        let baseVol = (trackType === 'square') ? 0.228 : 0.3; // Sharp系: 0.19 * 1.2
-        if (trackType === 'square' && tone === 1) {
-            baseVol = 0.0602; // Standard Short: 0.0502 * 1.2
-        } else if (trackType === 'square' && (tone === 0 || tone === 2)) {
-            baseVol = 0.0502; // Standard/FadeIn: 0.0418 * 1.2
-        }
+        // 全トラック統一の基本音量
+        const baseVol = 0.3;
         const volume = baseVol * track.volume * volumeScale;
 
         // エンベロープ設定
