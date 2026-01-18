@@ -750,7 +750,7 @@ const GameEngine = {
                     this.bossSequenceTimer = 0;
                 }
             }
-            // シーケンス中はプレイヤーのみ更新（ボスは静止）
+            // シーケンス中もプレイヤーと敵を更新（ボスはfrozenで動かないが、deathTimerは更新される）
             if (this.player) {
                 this.player.update(this);
                 const viewWidth = this.canvas.width / this.TILE_SIZE;
@@ -761,7 +761,10 @@ const GameEngine = {
                 this.camera.x = Math.max(0, Math.min(this.camera.x, stage.width - viewWidth));
                 this.camera.y = Math.max(0, Math.min(this.camera.y, stage.height - viewHeight));
             }
-            return; // シーケンス中は他の更新をスキップ
+            // 敵も更新（deathTimer増加のため）
+            this.enemies.forEach(enemy => enemy.update(this));
+            this.checkClearCondition();
+            return;
         }
 
         // ボス撃破シーケンス処理
