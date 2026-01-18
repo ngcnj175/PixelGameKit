@@ -3526,3 +3526,7 @@ body {
     font-size: 12px;
     cursor: pointer;
 }
+/* ソング名変更ポップアップ */
+.song-name-content {
+    max-width: 300px;
+}

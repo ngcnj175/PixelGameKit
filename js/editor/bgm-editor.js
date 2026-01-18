@@ -175,18 +175,19 @@ const SoundEditor = {
             this.selectSong(nextIdx);
         });
 
-        // タイトルタップ（名前変更）
+        // タイトルタップ（名前変更モーダル表示）
         document.getElementById('song-title-display')?.addEventListener('click', () => {
-            const song = this.getCurrentSong();
-            const newName = prompt('ソング名を入力', song.name);
-            if (newName !== null) {
-                song.name = newName.substring(0, 16) || `Song${song.id + 1}`;
-                this.updateConsoleDisplay();
-                // ステージエディタ等の選択肢更新
-                if (typeof StageEditor !== 'undefined' && StageEditor.updateBgmSelects) {
-                    StageEditor.updateBgmSelects();
-                }
-            }
+            this.openSongNameModal();
+        });
+
+        // モーダル保存ボタン
+        document.getElementById('song-name-save')?.addEventListener('click', () => {
+            this.saveSongName();
+        });
+
+        // モーダルキャンセルボタン
+        document.getElementById('song-name-cancel')?.addEventListener('click', () => {
+            this.closeSongNameModal();
         });
 
         // メニュー（ジュークボックスを開く）
@@ -301,6 +302,48 @@ const SoundEditor = {
         if (titleEl) titleEl.textContent = song.name;
         if (bpmEl) bpmEl.textContent = song.bpm;
         if (barEl) barEl.textContent = song.bars;
+    },
+
+    // ========== ソング名変更モーダル ==========
+    openSongNameModal() {
+        const song = this.getCurrentSong();
+        const popup = document.getElementById('song-name-popup');
+        const input = document.getElementById('song-name-input');
+        if (popup && input) {
+            input.value = song.name;
+            popup.classList.remove('hidden');
+            // iOSでのバースト防止：再生停止
+            if (this.isPlaying) {
+                this.wasPlayingBeforeModal = true;
+                this.pause();
+            } else {
+                this.wasPlayingBeforeModal = false;
+            }
+        }
+    },
+
+    closeSongNameModal() {
+        const popup = document.getElementById('song-name-popup');
+        if (popup) {
+            popup.classList.add('hidden');
+        }
+    },
+
+    saveSongName() {
+        const input = document.getElementById('song-name-input');
+        if (input) {
+            const newName = input.value.trim().substring(0, 16);
+            if (newName) {
+                const song = this.getCurrentSong();
+                song.name = newName;
+                this.updateConsoleDisplay();
+                // ステージエディタ等の更新
+                if (typeof StageEditor !== 'undefined' && StageEditor.updateBgmSelects) {
+                    StageEditor.updateBgmSelects();
+                }
+            }
+            this.closeSongNameModal();
+        }
     },
 
     // ========== Channel Strip (フッターミキサー) ==========

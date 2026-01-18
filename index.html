@@ -496,6 +496,23 @@
             </div>
         </div>
 
+        <!-- ソング名変更ポップアップ -->
+        <div id="song-name-popup" class="popup-overlay hidden">
+            <div class="popup-content song-name-content">
+                <div class="popup-header">
+                    <span class="popup-title">ソング名変更</span>
+                    <button id="song-name-cancel" class="popup-close">✕</button>
+                </div>
+                <div class="popup-body" style="padding: 16px; display: flex; justify-content: center;">
+                    <input type="text" id="song-name-input" maxlength="16" placeholder="ソング名を入力"
+                        style="width: 100%; padding: 8px; font-size: 16px; border: 1px solid #ccc; border-radius: 4px;">
+                </div>
+                <div class="popup-actions">
+                    <button id="song-name-save" class="popup-btn primary">保存</button>
+                </div>
+            </div>
+        </div>
+
         <!-- ========== サウンド画面 ========== -->
         <!-- ========== サウンド画面 (Pocket Console Layout) ========== -->
         <div id="sound-screen" class="screen">
