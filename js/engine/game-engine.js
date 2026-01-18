@@ -1018,11 +1018,21 @@ const GameEngine = {
                 break;
 
             case 'boss':
-                // ボスを倒したらクリア（雑魚敵が残っていてもOK）
-                // ボスがisDyingになった瞬間に撃破シーケンス開始
-                if (this.bossEnemy && this.bossEnemy.isDying && !this.bossDefeatPhase) {
-                    console.log('Boss defeated! Starting defeat sequence.');
-                    // ボス撃破演出開始：BGM停止→1秒無音→クリアBGM
+                // 全てのボスを倒したらクリア（複数ボス対応）
+                // 生存中のボス（isDyingでない）をカウント
+                const aliveBosses = this.enemies.filter(e =>
+                    e.template?.config?.isBoss && !e.isDying
+                );
+                const dyingBosses = this.enemies.filter(e =>
+                    e.template?.config?.isBoss && e.isDying
+                );
+
+                // ボスが全て倒された（生存ボスがいない、かつ死亡演出中のボスがいる）
+                if (aliveBosses.length === 0 && dyingBosses.length > 0 && !this.bossDefeatPhase) {
+                    console.log('Last boss defeated! Starting defeat sequence.');
+                    // 最後のボスを撃破演出用に記録
+                    this.bossEnemy = dyingBosses[0];
+                    // ボス撃破演出開始：BGM停止→1秒無音→ボス落下→クリアBGM
                     this.stopBgm();
                     this.bossDefeatPhase = 'silence';
                     this.bossDefeatTimer = 0;

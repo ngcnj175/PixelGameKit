@@ -234,9 +234,9 @@ const StageEditor = {
     getDefaultConfig(type) {
         switch (type) {
             case 'player':
-                return { life: 3, lifeCount: 3, speed: 5, jumpPower: 10, wJump: false, shotMaxRange: 1 };
+                return { life: 3, lifeCount: 3, speed: 5, jumpPower: 10, wJump: false, shotMaxRange: 16 };
             case 'enemy':
-                return { life: 1, lifeCount: 1, speed: 3, jumpPower: 5, shotMaxRange: 1, move: 'idle' };
+                return { life: 1, lifeCount: 1, speed: 3, jumpPower: 5, shotMaxRange: 16, move: 'idle' };
             case 'material':
                 return { collision: true, life: -1 };
             case 'item':
