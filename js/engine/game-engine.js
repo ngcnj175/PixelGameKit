@@ -34,7 +34,13 @@ const GameEngine = {
     // BGM再生
     bgmAudioCtx: null,
     bgmPlayInterval: null,
-    currentBgmType: null, // 'stage', 'invincible', 'clear', 'gameover'
+    currentBgmType: null, // 'stage', 'invincible', 'clear', 'gameover', 'boss'
+
+    // ボス演出
+    bossSpawned: false,        // ボスが画面に出現したか
+    bossSequencePhase: null,   // 'fadeout', 'silence', 'bossbgm', null
+    bossSequenceTimer: 0,      // 演出タイマー
+    bossEnemy: null,           // ボスエネミー参照
 
     init() {
         this.canvas = document.getElementById('game-canvas');
@@ -278,6 +284,18 @@ const GameEngine = {
         this.enemies = enemyPositions.map(pos =>
             new Enemy(pos.x, pos.y, pos.template, pos.behavior, pos.templateIdx)
         );
+
+        // ボス状態リセット＆ボス敵をfrozen状態に
+        this.bossSpawned = false;
+        this.bossSequencePhase = null;
+        this.bossSequenceTimer = 0;
+        this.bossEnemy = null;
+        this.enemies.forEach(enemy => {
+            if (enemy.template?.config?.isBoss) {
+                enemy.frozen = true; // ボスは最初動かない
+                this.bossEnemy = enemy;
+            }
+        });
 
         // プロジェクタイルとアイテムをリセット
         this.projectiles = [];
@@ -707,6 +725,58 @@ const GameEngine = {
     },
 
     update() {
+        // ボス演出シーケンス処理
+        if (this.bossSequencePhase) {
+            this.bossSequenceTimer++;
+            if (this.bossSequencePhase === 'fadeout') {
+                // フェードアウト（約1秒=60フレーム）
+                if (this.bossSequenceTimer >= 60) {
+                    this.stopBgm();
+                    this.bossSequencePhase = 'silence';
+                    this.bossSequenceTimer = 0;
+                }
+            } else if (this.bossSequencePhase === 'silence') {
+                // 無音（3秒=180フレーム）
+                if (this.bossSequenceTimer >= 180) {
+                    this.playBgm('boss');
+                    if (this.bossEnemy) {
+                        this.bossEnemy.frozen = false; // ボス活性化
+                    }
+                    this.bossSequencePhase = null;
+                    this.bossSequenceTimer = 0;
+                }
+            }
+            // シーケンス中はプレイヤーのみ更新（ボスは静止）
+            if (this.player) {
+                this.player.update(this);
+                const viewWidth = this.canvas.width / this.TILE_SIZE;
+                const viewHeight = this.canvas.height / this.TILE_SIZE;
+                this.camera.x = this.player.x - viewWidth / 2 + 0.5;
+                this.camera.y = this.player.y - viewHeight / 2 + 0.5;
+                const stage = App.projectData.stage;
+                this.camera.x = Math.max(0, Math.min(this.camera.x, stage.width - viewWidth));
+                this.camera.y = Math.max(0, Math.min(this.camera.y, stage.height - viewHeight));
+            }
+            return; // シーケンス中は他の更新をスキップ
+        }
+
+        // ボス出現検知（まだスポーンしていない場合のみ）
+        if (this.bossEnemy && !this.bossSpawned && !this.bossEnemy.isDying) {
+            const viewWidth = this.canvas.width / this.TILE_SIZE;
+            const viewHeight = this.canvas.height / this.TILE_SIZE;
+            const bossX = this.bossEnemy.x;
+            const bossY = this.bossEnemy.y;
+            // ボスが画面内にいるか
+            if (bossX >= this.camera.x && bossX < this.camera.x + viewWidth &&
+                bossY >= this.camera.y && bossY < this.camera.y + viewHeight) {
+                // ボス出現！シーケンス開始
+                this.bossSpawned = true;
+                this.bossSequencePhase = 'fadeout';
+                this.bossSequenceTimer = 0;
+                // BGMフェードアウトは通常のstopBgmで代用（シンプル化）
+            }
+        }
+
         if (this.player) {
             this.player.update(this);
 
@@ -900,6 +970,13 @@ const GameEngine = {
             case 'enemies':
                 // すべての敵を倒したらクリア
                 if (this.enemies.length === 0 && this.allEnemiesSpawned) {
+                    this.triggerClear();
+                }
+                break;
+
+            case 'boss':
+                // ボスを倒したらクリア（雑魚敵が残っていてもOK）
+                if (this.bossEnemy && this.bossEnemy.isDying) {
                     this.triggerClear();
                 }
                 break;

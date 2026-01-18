@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/svg+xml" href="assets/icons/icon-192.svg">
     <link rel="apple-touch-icon" href="assets/icons/icon-192.svg">
-    <title>PixelGameKit v1.65.0</title>
+    <title>PixelGameKit v1.67.0</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 
@@ -324,6 +324,13 @@
                                     <option value="bgm1">BGM 1</option>
                                 </select>
                             </div>
+                            <div class="bgm-select-row">
+                                <span class="bgm-label">ボス</span>
+                                <select id="bgm-boss" class="bgm-select">
+                                    <option value="">なし</option>
+                                    <option value="bgm1">BGM 1</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                     <!-- クリア条件 -->
@@ -333,6 +340,7 @@
                             <option value="none">なし</option>
                             <option value="item">アイテム取得</option>
                             <option value="enemies">敵ぜんめつ</option>
+                            <option value="boss">ボス撃破</option>
                             <option value="survival">サバイバル</option>
                         </select>
                     </div>

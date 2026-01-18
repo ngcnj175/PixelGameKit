@@ -381,6 +381,12 @@ const StageEditor = {
                             <option value="chase" ${config.move === 'chase' ? 'selected' : ''}>CHASE</option>
                         </select>
                     </div>
+                    <div class="param-row">
+                        <label class="param-check-label">
+                            <input type="checkbox" data-key="isBoss" ${config.isBoss ? 'checked' : ''}>
+                            BOSS
+                        </label>
+                    </div>
                 `;
             }
         } else if (type === 'material') {
@@ -1681,6 +1687,15 @@ const StageEditor = {
             });
         }
 
+        // ボスBGM
+        const bgmBoss = document.getElementById('bgm-boss');
+        if (bgmBoss) {
+            bgmBoss.addEventListener('change', () => {
+                if (!App.projectData.stage.bgm) App.projectData.stage.bgm = {};
+                App.projectData.stage.bgm.boss = bgmBoss.value;
+            });
+        }
+
         // クリア条件
         const clearCondition = document.getElementById('stage-clear-condition');
         const timeLimitRow = document.getElementById('time-limit-row');
@@ -1782,6 +1797,7 @@ const StageEditor = {
         const bgmInvincible = document.getElementById('bgm-invincible');
         const bgmClear = document.getElementById('bgm-clear');
         const bgmGameover = document.getElementById('bgm-gameover');
+        const bgmBoss = document.getElementById('bgm-boss');
 
         // 名前（ステージ名またはプロジェクト名）
         if (nameInput) nameInput.value = stage.name || App.projectData.meta?.name || '新規プロジェクト';
@@ -1831,6 +1847,7 @@ const StageEditor = {
         if (bgmInvincible) bgmInvincible.value = bgm.invincible || '';
         if (bgmClear) bgmClear.value = bgm.clear || '';
         if (bgmGameover) bgmGameover.value = bgm.gameover || '';
+        if (bgmBoss) bgmBoss.value = bgm.boss || '';
     },
 
     updateBgmSelects() {
@@ -1838,7 +1855,8 @@ const StageEditor = {
             document.getElementById('bgm-stage'),
             document.getElementById('bgm-invincible'),
             document.getElementById('bgm-clear'),
-            document.getElementById('bgm-gameover')
+            document.getElementById('bgm-gameover'),
+            document.getElementById('bgm-boss')
         ];
 
         const songs = App.projectData.songs || [];

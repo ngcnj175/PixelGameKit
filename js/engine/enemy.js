@@ -39,6 +39,11 @@ class Enemy {
     }
 
     update(engine) {
+        // ボス演出中は動かない
+        if (this.frozen) {
+            return false;
+        }
+
         if (this.isDying) {
             this.vy += this.gravity;
             this.y += this.vy;
