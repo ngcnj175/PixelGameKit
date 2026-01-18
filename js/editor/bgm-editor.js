@@ -1382,7 +1382,7 @@ const SoundEditor = {
         osc.frequency.value = freq;
 
         // 全トラック統一の基本音量
-        const baseVol = 0.3;
+        const baseVol = 0.2;
         const volume = baseVol * track.volume * volumeScale;
 
         // エンベロープ設定

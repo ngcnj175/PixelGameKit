@@ -297,7 +297,7 @@ const GameEngine = {
         this.enemies.forEach(enemy => {
             if (enemy.template?.config?.isBoss) {
                 enemy.frozen = true; // ボスは最初動かない
-                this.bossEnemy = enemy;
+                // this.bossEnemy = enemy; // ここでは設定しない（出現時に設定）
             }
         });
 
@@ -803,20 +803,46 @@ const GameEngine = {
             return;
         }
 
-        // ボス出現検知（まだスポーンしていない場合のみ）
-        if (this.bossEnemy && !this.bossSpawned && !this.bossEnemy.isDying) {
+        // ボス出現・撃破管理
+        // 1. 中ボス撃破判定（ボス撃破シーケンス中でない時）
+        if (this.bossEnemy && this.bossEnemy.isDying && !this.bossDefeatPhase) {
+            // 他にボスが残っているか？
+            const remainingBosses = this.enemies.filter(e =>
+                e.template?.config?.isBoss && !e.isDying && e !== this.bossEnemy
+            );
+
+            if (remainingBosses.length > 0) {
+                // 中ボス撃破：BGMをステージ曲に戻す
+                console.log('Intermediate boss defeated.');
+                this.bossEnemy = null; // ボス戦状態解除
+                this.bossSpawned = false; // 次のボス用に出現フラグリセット
+                this.playBgm('stage');
+            } else {
+                // 最後のボスは checkClearCondition で処理されるためここでは何もしない
+            }
+        }
+
+        // 2. ボス出現検知（まだスポーンしていない場合のみ）
+        if (!this.bossSpawned && !this.bossEnemy) {
+            // 画面内にいて、まだ死んでいないfrozen状態のボスを探す
             const viewWidth = this.canvas.width / this.TILE_SIZE;
             const viewHeight = this.canvas.height / this.TILE_SIZE;
-            const bossX = this.bossEnemy.x;
-            const bossY = this.bossEnemy.y;
-            // ボスが画面内にいるか
-            if (bossX >= this.camera.x && bossX < this.camera.x + viewWidth &&
-                bossY >= this.camera.y && bossY < this.camera.y + viewHeight) {
+
+            const nextBoss = this.enemies.find(e =>
+                e.template?.config?.isBoss &&
+                e.frozen &&
+                !e.isDying &&
+                e.x >= this.camera.x && e.x < this.camera.x + viewWidth &&
+                e.y >= this.camera.y && e.y < this.camera.y + viewHeight
+            );
+
+            if (nextBoss) {
                 // ボス出現！シーケンス開始
+                console.log('Boss encountered!');
+                this.bossEnemy = nextBoss;
                 this.bossSpawned = true;
                 this.bossSequencePhase = 'fadeout';
                 this.bossSequenceTimer = 0;
-                // BGMフェードアウトは通常のstopBgmで代用（シンプル化）
             }
         }
 
@@ -1686,7 +1712,7 @@ const GameEngine = {
             osc.frequency.setValueAtTime(freq, ctx.currentTime);
 
             // 音量設定（toneによるバリエーション）
-            let volume = (waveType === 'square') ? 0.10 : 0.15;
+            let volume = 0.2; // 全波形タイプで統一
             const isShort = (tone === 1 || tone === 4);
             const isFadeIn = (tone === 2 || tone === 5);
 

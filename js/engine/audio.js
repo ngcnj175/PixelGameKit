@@ -90,7 +90,8 @@ const NesAudio = {
 
         osc.frequency.value = freq;
 
-        gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+        // Base volume unified to 0.2
+        gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
 
         osc.connect(gain);
@@ -109,15 +110,16 @@ const NesAudio = {
             osc.type = 'sine'; // 丸い音
         } else if (tone === 2) {
             osc.type = 'sawtooth'; // 拡張音源風
-            gain.gain.value = 0.2; // Sawtoothは音が大きいので下げる
+            gain.gain.value = 0.2; // Sawtoothはもともと大きいため0.2でOK（他に合わせて調整）
         } else {
             osc.type = 'triangle'; // 標準
         }
 
         osc.frequency.value = freq;
 
+        // Base volume unified to 0.2
         if (tone !== 2) {
-            gain.gain.setValueAtTime(0.4, this.ctx.currentTime);
+            gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
         } else {
             gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
         }
@@ -177,7 +179,8 @@ const NesAudio = {
             source.connect(gain);
         }
 
-        const volume = (tone === 2) ? 0.8 : 0.2; // Kickは音量大きめ
+        // Bass Drum (Kick) stays loud (0.8), others unified to 0.2
+        const volume = (tone === 2) ? 0.8 : 0.2;
         gain.gain.setValueAtTime(volume, this.ctx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
 
@@ -232,7 +235,7 @@ const NesAudio = {
         osc.type = 'sawtooth';
         osc.frequency.setValueAtTime(400, this.ctx.currentTime);
         osc.frequency.exponentialRampToValueAtTime(100, this.ctx.currentTime + 0.1);
-        gain.gain.setValueAtTime(0.25, this.ctx.currentTime);
+        gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.1);
         osc.connect(gain);
         gain.connect(this.masterGain);
@@ -281,7 +284,7 @@ const NesAudio = {
         osc.type = 'square';
         osc.frequency.setValueAtTime(600, this.ctx.currentTime);
         osc.frequency.exponentialRampToValueAtTime(200, this.ctx.currentTime + 0.08);
-        gain.gain.setValueAtTime(0.25, this.ctx.currentTime);
+        gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.1);
         osc.connect(gain);
         gain.connect(this.masterGain);
