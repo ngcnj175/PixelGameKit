@@ -1507,7 +1507,7 @@ const StageEditor = {
         }
 
         // 16タイル毎のガイド線（見やすい赤線）
-        this.ctx.strokeStyle = 'rgba(255, 100, 100, 0.6)';
+        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
         this.ctx.lineWidth = 2;
 
         for (let x = 16; x < stage.width; x += 16) {

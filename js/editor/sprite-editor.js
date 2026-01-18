@@ -875,7 +875,7 @@ const SpriteEditor = {
         if (dimension > 16) {
             const offsetX = Math.floor(this.viewportOffsetX / this.pixelSize);
             const offsetY = Math.floor(this.viewportOffsetY / this.pixelSize);
-            this.ctx.strokeStyle = 'rgba(255, 100, 100, 0.8)';
+            this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
             this.ctx.lineWidth = 2;
             // 16ピクセル境界線を描画
             for (let i = 16; i < dimension; i += 16) {
