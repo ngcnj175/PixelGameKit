@@ -856,7 +856,7 @@ const SpriteEditor = {
         }
 
         // グリッド線（白 - ピアノロールと同じ設定）
-        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
         this.ctx.lineWidth = 0.5;
         for (let i = 1; i < 16; i++) {
             // 縦線
@@ -869,6 +869,32 @@ const SpriteEditor = {
             this.ctx.moveTo(0, i * this.pixelSize);
             this.ctx.lineTo(this.canvas.width, i * this.pixelSize);
             this.ctx.stroke();
+        }
+
+        // 16ピクセル毎のガイド線（赤 - 32x32編集時の視認性向上）
+        if (dimension > 16) {
+            const offsetX = Math.floor(this.viewportOffsetX / this.pixelSize);
+            const offsetY = Math.floor(this.viewportOffsetY / this.pixelSize);
+            this.ctx.strokeStyle = 'rgba(255, 100, 100, 0.8)';
+            this.ctx.lineWidth = 2;
+            // 16ピクセル境界線を描画
+            for (let i = 16; i < dimension; i += 16) {
+                // ビューポート内に表示される位置を計算
+                const screenX = (i - offsetX) * this.pixelSize;
+                const screenY = (i - offsetY) * this.pixelSize;
+                if (screenX > 0 && screenX < this.canvas.width) {
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(screenX, 0);
+                    this.ctx.lineTo(screenX, this.canvas.height);
+                    this.ctx.stroke();
+                }
+                if (screenY > 0 && screenY < this.canvas.height) {
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(0, screenY);
+                    this.ctx.lineTo(this.canvas.width, screenY);
+                    this.ctx.stroke();
+                }
+            }
         }
 
         // 範囲選択表示（点線）
@@ -1064,18 +1090,37 @@ const SpriteEditor = {
         document.addEventListener('mouseup', () => this.onPointerUp());
 
 
+        // 2本指パン誤入力防止用の変数
+        this.pendingTouch = null;
+        this.touchStartTimer = null;
+
         this.canvas.addEventListener('touchstart', (e) => {
             e.preventDefault();
 
-            // 2本指の場合はパン開始
+            // 既存のタイマーをクリア
+            if (this.touchStartTimer) {
+                clearTimeout(this.touchStartTimer);
+                this.touchStartTimer = null;
+            }
+
+            // 2本指の場合は即座にパン開始
             if (e.touches.length === 2 && this.getCurrentSpriteSize() === 2) {
                 this.isPanning = true;
+                this.pendingTouch = null; // 保留中のタッチをキャンセル
                 const touch1 = e.touches[0];
                 const touch2 = e.touches[1];
                 this.panStartX = (touch1.clientX + touch2.clientX) / 2;
                 this.panStartY = (touch1.clientY + touch2.clientY) / 2;
             } else if (e.touches.length === 1) {
-                this.onPointerDown(e.touches[0]);
+                // 1本指の場合、少し待ってから描画開始（2本指検出のため）
+                this.pendingTouch = e.touches[0];
+                this.touchStartTimer = setTimeout(() => {
+                    if (this.pendingTouch && !this.isPanning) {
+                        this.onPointerDown(this.pendingTouch);
+                    }
+                    this.pendingTouch = null;
+                    this.touchStartTimer = null;
+                }, 50); // 50ms待機
             }
         }, { passive: false });
 
@@ -1114,12 +1159,21 @@ const SpriteEditor = {
                 this.panStartY = centerY;
 
                 this.render();
-            } else if (e.touches.length === 1) {
-                this.onPointerMove(e.touches[0]);
+            } else if (e.touches.length === 1 && !this.isPanning) {
+                // 2本指パン中でなければ、描画を続行
+                if (this.isDrawing) {
+                    this.onPointerMove(e.touches[0]);
+                }
             }
         }, { passive: false });
 
         document.addEventListener('touchend', () => {
+            // タイマーをクリア
+            if (this.touchStartTimer) {
+                clearTimeout(this.touchStartTimer);
+                this.touchStartTimer = null;
+            }
+            this.pendingTouch = null;
             this.isPanning = false;
             this.onPointerUp();
         });

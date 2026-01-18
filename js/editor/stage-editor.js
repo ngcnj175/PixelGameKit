@@ -1482,10 +1482,10 @@ const StageEditor = {
         const scrollX = this.canvasScrollX || 0;
         const scrollY = this.canvasScrollY || 0;
 
-        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+        // 通常のグリッド線（薄め）
+        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
         this.ctx.lineWidth = 0.5;
 
-        // 表示範囲のグリッドのみ描画
         for (let x = 0; x <= stage.width; x++) {
             const px = x * this.tileSize + scrollX;
             if (px >= 0 && px <= this.canvas.width) {
@@ -1497,6 +1497,30 @@ const StageEditor = {
         }
 
         for (let y = 0; y <= stage.height; y++) {
+            const py = y * this.tileSize + scrollY;
+            if (py >= 0 && py <= this.canvas.height) {
+                this.ctx.beginPath();
+                this.ctx.moveTo(0, py);
+                this.ctx.lineTo(this.canvas.width, py);
+                this.ctx.stroke();
+            }
+        }
+
+        // 16タイル毎のガイド線（見やすい赤線）
+        this.ctx.strokeStyle = 'rgba(255, 100, 100, 0.6)';
+        this.ctx.lineWidth = 2;
+
+        for (let x = 16; x < stage.width; x += 16) {
+            const px = x * this.tileSize + scrollX;
+            if (px >= 0 && px <= this.canvas.width) {
+                this.ctx.beginPath();
+                this.ctx.moveTo(px, 0);
+                this.ctx.lineTo(px, this.canvas.height);
+                this.ctx.stroke();
+            }
+        }
+
+        for (let y = 16; y < stage.height; y += 16) {
             const py = y * this.tileSize + scrollY;
             if (py >= 0 && py <= this.canvas.height) {
                 this.ctx.beginPath();

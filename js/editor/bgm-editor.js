@@ -1942,21 +1942,24 @@ const SoundEditor = {
                 startX = pos.x;
                 startY = pos.y;
 
-                // 選択モード中
+                // 選択モード中（縦は全選択、横のみドラッグ）
                 if (this.selectionMode) {
                     if (!this.selectionStart) {
-                        this.selectionStart = { step, pitch };
-                        this.selectionEnd = { step, pitch };
+                        // 音程は全選択（0～60）
+                        this.selectionStart = { step, pitch: 0 };
+                        this.selectionEnd = { step, pitch: 60 };
                     } else {
-                        this.selectionEnd = { step, pitch };
+                        // stepのみ更新、pitchは全選択維持
+                        this.selectionEnd = { step, pitch: 60 };
                     }
                     this.render();
                     return;
                 }
 
-                // ペーストモード中
+                // ペーストモード中（横のみ移動可能）
                 if (this.pasteMode) {
-                    this.pasteOffset = { step, pitch };
+                    // stepのみ更新、pitchは0に固定
+                    this.pasteOffset = { step, pitch: 0 };
                     this.render();
                     return;
                 }
@@ -2008,21 +2011,24 @@ const SoundEditor = {
             startX = pos.x;
             startY = pos.y;
 
-            // 選択モード中
+            // 選択モード中（縦は全選択、横のみドラッグ）
             if (this.selectionMode) {
                 if (!this.selectionStart) {
-                    this.selectionStart = { step, pitch };
-                    this.selectionEnd = { step, pitch };
+                    // 音程は全選択（0～60）
+                    this.selectionStart = { step, pitch: 0 };
+                    this.selectionEnd = { step, pitch: 60 };
                 } else {
-                    this.selectionEnd = { step, pitch };
+                    // stepのみ更新、pitchは全選択維持
+                    this.selectionEnd = { step, pitch: 60 };
                 }
                 this.render();
                 return;
             }
 
-            // ペーストモード中
+            // ペーストモード中（横のみ移動可能）
             if (this.pasteMode) {
-                this.pasteOffset = { step, pitch };
+                // stepのみ更新、pitchは0に固定
+                this.pasteOffset = { step, pitch: 0 };
                 this.render();
                 return;
             }
@@ -2080,18 +2086,18 @@ const SoundEditor = {
                     clearTimeout(longPressTimer);
                 }
 
-                // 選択モード中のドラッグ
+                // 選択モード中のドラッグ（縦全選択、横のみ）
                 if (this.selectionMode && this.selectionStart) {
-                    const { step, pitch } = getStepPitch(pos);
-                    this.selectionEnd = { step, pitch };
+                    const { step } = getStepPitch(pos);
+                    this.selectionEnd = { step, pitch: 60 };
                     this.render();
                     return;
                 }
 
-                // ペーストモード中のドラッグ
+                // ペーストモード中のドラッグ（横のみ移動）
                 if (this.pasteMode) {
-                    const { step, pitch } = getStepPitch(pos);
-                    this.pasteOffset = { step, pitch };
+                    const { step } = getStepPitch(pos);
+                    this.pasteOffset = { step, pitch: 0 };
                     this.render();
                     return;
                 }
@@ -2123,18 +2129,18 @@ const SoundEditor = {
                     clearTimeout(longPressTimer);
                 }
 
-                // 選択モード中のドラッグ
+                // 選択モード中のドラッグ（縦全選択、横のみ）
                 if (this.selectionMode && this.selectionStart) {
-                    const { step, pitch } = getStepPitch(pos);
-                    this.selectionEnd = { step, pitch };
+                    const { step } = getStepPitch(pos);
+                    this.selectionEnd = { step, pitch: 60 };
                     this.render();
                     return;
                 }
 
-                // ペーストモード中のドラッグ
+                // ペーストモード中のドラッグ（横のみ移動）
                 if (this.pasteMode) {
-                    const { step, pitch } = getStepPitch(pos);
-                    this.pasteOffset = { step, pitch };
+                    const { step } = getStepPitch(pos);
+                    this.pasteOffset = { step, pitch: 0 };
                     this.render();
                     return;
                 }

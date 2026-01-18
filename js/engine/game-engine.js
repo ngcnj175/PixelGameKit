@@ -773,12 +773,21 @@ const GameEngine = {
             if (this.bossDefeatPhase === 'silence') {
                 // 無音（1秒=60フレーム）
                 if (this.bossDefeatTimer >= 60) {
+                    this.bossDefeatPhase = 'waitfall';
+                    this.bossDefeatTimer = 0;
+                }
+            } else if (this.bossDefeatPhase === 'waitfall') {
+                // ボスが落ちるのを待つ（deathTimer > 120 または画面外に落下）
+                const bossFallen = !this.bossEnemy ||
+                    this.bossEnemy.deathTimer > 120 ||
+                    this.bossEnemy.y > App.projectData.stage.height + 5;
+                if (bossFallen) {
                     this.bossDefeatPhase = null;
                     this.bossDefeatTimer = 0;
                     this.triggerClear(); // クリアシーケンス開始（内部でクリアBGM再生）
                 }
             }
-            // シーケンス中もプレイヤーとカメラは更新
+            // シーケンス中もプレイヤーとカメラ、敵を更新
             if (this.player) {
                 this.player.update(this);
                 const viewWidth = this.canvas.width / this.TILE_SIZE;
@@ -789,6 +798,8 @@ const GameEngine = {
                 this.camera.x = Math.max(0, Math.min(this.camera.x, stage.width - viewWidth));
                 this.camera.y = Math.max(0, Math.min(this.camera.y, stage.height - viewHeight));
             }
+            // ボスの落下アニメーション更新
+            this.enemies.forEach(enemy => enemy.update(this));
             return;
         }
 
