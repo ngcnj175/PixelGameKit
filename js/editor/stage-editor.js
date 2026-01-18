@@ -262,8 +262,8 @@ const StageEditor = {
     // 属性ラベル表示用のマッピング
     typeLabels: {
         player: 'プレイヤー',
-        enemy: '敵',
-        material: '素材',
+        enemy: 'てき',
+        material: 'ブロック・背景',
         item: 'アイテム',
         goal: 'ゴール'
     },
@@ -330,8 +330,8 @@ const StageEditor = {
 
         // スロット表示名
         const labels = {
-            idle: 'IDLE', walk: 'WALK', jump: 'JUMP',
-            attack: 'ATTACK', shot: 'SHOT', life: 'LIFE', main: 'MAIN'
+            idle: '立ち', walk: '歩き', jump: 'ジャンプ',
+            attack: '攻撃', shot: '飛び道具', life: 'ライフ', main: '見た目'
         };
 
         return `
@@ -355,36 +355,35 @@ const StageEditor = {
         let html = '';
 
         if (type === 'player' || type === 'enemy') {
-            html += this.renderSlider('MAX LIFE', 'life', config.life ?? 3, 1, 10);
-            html += this.renderSlider('SPEED', 'speed', config.speed ?? 5, 1, 10);
-            html += this.renderSliderWithCheck('JUMP POWER', 'jumpPower', config.jumpPower ?? 10, 1, 20, 'W JUMP', 'wJump', config.wJump);
-            html += this.renderSlider('SHOT MAX RANGE', 'shotMaxRange', config.shotMaxRange ?? 0, 0, 16);
+            html += this.renderSlider('ライフ数', 'life', config.life ?? 3, 1, 10);
+            html += this.renderSlider('足の速さ', 'speed', config.speed ?? 5, 1, 10);
+            html += this.renderSliderWithCheck('ジャンプ力', 'jumpPower', config.jumpPower ?? 10, 1, 20, '2段ジャンプ', 'wJump', config.wJump);
+            html += this.renderSlider('射程距離', 'shotMaxRange', config.shotMaxRange ?? 0, 0, 16);
 
             // プレイヤー専用SE設定
             if (type === 'player') {
-                html += '<div class="param-section-label">SE:</div>';
-                html += this.renderSeSelect('JUMP', 'seJump', config.seJump ?? 0);
-                html += this.renderSeSelect('ATTACK', 'seAttack', config.seAttack ?? 1);
-                html += this.renderSeSelect('DAMAGE', 'seDamage', config.seDamage ?? 2);
-                html += this.renderSeSelect('ITEM GET', 'seItemGet', config.seItemGet ?? 3);
-                html += this.renderSeSelect('ENEMY DEFEAT', 'seEnemyDefeat', config.seEnemyDefeat ?? 4);
+                html += '<div class="param-section-label">効果音</div>';
+                html += this.renderSeSelect('ジャンプ音', 'seJump', config.seJump ?? 0);
+                html += this.renderSeSelect('攻撃音', 'seAttack', config.seAttack ?? 1);
+                html += this.renderSeSelect('ダメージ音', 'seDamage', config.seDamage ?? 2);
+                html += this.renderSeSelect('ゲット音', 'seItemGet', config.seItemGet ?? 3);
             }
 
             if (type === 'enemy') {
                 html += `
                     <div class="param-row">
-                        <span class="param-label">MOVE:</span>
+                        <span class="param-label">てきの動き</span>
                         <select class="param-select" data-key="move">
-                            <option value="idle" ${config.move === 'idle' ? 'selected' : ''}>IDLE</option>
-                            <option value="patrol" ${config.move === 'patrol' ? 'selected' : ''}>PATROL</option>
-                            <option value="jump" ${config.move === 'jump' ? 'selected' : ''}>JUMP</option>
-                            <option value="chase" ${config.move === 'chase' ? 'selected' : ''}>CHASE</option>
+                            <option value="idle" ${config.move === 'idle' ? 'selected' : ''}>動かない</option>
+                            <option value="patrol" ${config.move === 'patrol' ? 'selected' : ''}>うろうろ</option>
+                            <option value="jump" ${config.move === 'jump' ? 'selected' : ''}>ぴょんぴょん</option>
+                            <option value="chase" ${config.move === 'chase' ? 'selected' : ''}>追いかけてくる</option>
                         </select>
                     </div>
                     <div class="param-row">
                         <label class="param-check-label">
                             <input type="checkbox" data-key="isBoss" ${config.isBoss ? 'checked' : ''}>
-                            BOSS
+                            ボスてき
                         </label>
                     </div>
                 `;
@@ -394,19 +393,19 @@ const StageEditor = {
                 <div class="param-row">
                     <label class="param-check-label">
                         <input type="checkbox" data-key="collision" ${config.collision !== false ? 'checked' : ''}>
-                        Collision
+                        当たり判定
                     </label>
                 </div>
             `;
-            html += this.renderSlider('LIFE', 'life', config.life ?? -1, -1, 10);
+            html += this.renderSlider('耐久性', 'life', config.life ?? -1, -1, 10);
         } else if (type === 'item') {
             html += `
                 <div class="param-row">
-                    <span class="param-label">Type:</span>
+                    <span class="param-label">種類</span>
                     <select class="param-select" data-key="itemType">
-                        <option value="star" ${config.itemType === 'star' ? 'selected' : ''}>STAR</option>
-                        <option value="lifeup" ${config.itemType === 'lifeup' ? 'selected' : ''}>LifeUp</option>
-                        <option value="clear" ${config.itemType === 'clear' ? 'selected' : ''}>CLEAR</option>
+                        <option value="star" ${config.itemType === 'star' ? 'selected' : ''}>むてき</option>
+                        <option value="lifeup" ${config.itemType === 'lifeup' ? 'selected' : ''}>ライフアップ</option>
+                        <option value="clear" ${config.itemType === 'clear' ? 'selected' : ''}>クリア</option>
                     </select>
                 </div>
             `;

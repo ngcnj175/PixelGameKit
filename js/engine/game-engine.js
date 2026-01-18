@@ -38,9 +38,11 @@ const GameEngine = {
 
     // ボス演出
     bossSpawned: false,        // ボスが画面に出現したか
-    bossSequencePhase: null,   // 'fadeout', 'silence', 'bossbgm', null
+    bossSequencePhase: null,   // 'fadeout', 'silence', null (出現演出)
     bossSequenceTimer: 0,      // 演出タイマー
     bossEnemy: null,           // ボスエネミー参照
+    bossDefeatPhase: null,     // 'silence', 'clear', null (撃破演出)
+    bossDefeatTimer: 0,        // 撃破演出タイマー
 
     init() {
         this.canvas = document.getElementById('game-canvas');
@@ -289,6 +291,8 @@ const GameEngine = {
         this.bossSpawned = false;
         this.bossSequencePhase = null;
         this.bossSequenceTimer = 0;
+        this.bossDefeatPhase = null;
+        this.bossDefeatTimer = 0;
         this.bossEnemy = null;
         this.enemies.forEach(enemy => {
             if (enemy.template?.config?.isBoss) {
@@ -736,8 +740,8 @@ const GameEngine = {
                     this.bossSequenceTimer = 0;
                 }
             } else if (this.bossSequencePhase === 'silence') {
-                // 無音（3秒=180フレーム）
-                if (this.bossSequenceTimer >= 180) {
+                // 無音（1秒=60フレーム）
+                if (this.bossSequenceTimer >= 60) {
                     this.playBgm('boss');
                     if (this.bossEnemy) {
                         this.bossEnemy.frozen = false; // ボス活性化
@@ -758,6 +762,31 @@ const GameEngine = {
                 this.camera.y = Math.max(0, Math.min(this.camera.y, stage.height - viewHeight));
             }
             return; // シーケンス中は他の更新をスキップ
+        }
+
+        // ボス撃破シーケンス処理
+        if (this.bossDefeatPhase) {
+            this.bossDefeatTimer++;
+            if (this.bossDefeatPhase === 'silence') {
+                // 無音（1秒=60フレーム）
+                if (this.bossDefeatTimer >= 60) {
+                    this.bossDefeatPhase = null;
+                    this.bossDefeatTimer = 0;
+                    this.triggerClear(); // クリアシーケンス開始（内部でクリアBGM再生）
+                }
+            }
+            // シーケンス中もプレイヤーとカメラは更新
+            if (this.player) {
+                this.player.update(this);
+                const viewWidth = this.canvas.width / this.TILE_SIZE;
+                const viewHeight = this.canvas.height / this.TILE_SIZE;
+                this.camera.x = this.player.x - viewWidth / 2 + 0.5;
+                this.camera.y = this.player.y - viewHeight / 2 + 0.5;
+                const stage = App.projectData.stage;
+                this.camera.x = Math.max(0, Math.min(this.camera.x, stage.width - viewWidth));
+                this.camera.y = Math.max(0, Math.min(this.camera.y, stage.height - viewHeight));
+            }
+            return;
         }
 
         // ボス出現検知（まだスポーンしていない場合のみ）
@@ -976,8 +1005,14 @@ const GameEngine = {
 
             case 'boss':
                 // ボスを倒したらクリア（雑魚敵が残っていてもOK）
-                if (this.bossEnemy && this.bossEnemy.isDying) {
-                    this.triggerClear();
+                // ボスが画面外に消えたら（isDying && deathTimer > 60）シーケンス開始
+                if (this.bossEnemy && this.bossEnemy.isDying && this.bossEnemy.deathTimer > 60) {
+                    if (!this.bossDefeatPhase) {
+                        // ボス撃破演出開始：BGM停止→1秒無音→クリアBGM
+                        this.stopBgm();
+                        this.bossDefeatPhase = 'silence';
+                        this.bossDefeatTimer = 0;
+                    }
                 }
                 break;
 
@@ -1546,7 +1581,7 @@ const GameEngine = {
             return 440 * Math.pow(2, semitone / 12);
         };
 
-        const playNote = (freq, waveType, duration, pitch, trackIdx) => {
+        const playNote = (freq, waveType, duration, pitch, trackIdx, tone) => {
             const ctx = this.bgmAudioCtx;
 
             // 前の音を停止（同時発音数1制限）
@@ -1594,15 +1629,12 @@ const GameEngine = {
                     filter.Q.value = 1;
                 }
 
-                // 音量とディケイ（durationに応じて）- より強いアタック
+                // 音量とディケイ
                 const baseVolume = 0.35;
                 const volume = baseVolume - (pitch / maxPitch) * 0.15;
 
-                // アタックを強調
                 gain.gain.setValueAtTime(0, ctx.currentTime);
                 gain.gain.linearRampToValueAtTime(volume, ctx.currentTime + 0.005);
-
-                // 50%の時間は音量維持、残り50%で減衰
                 const sustainTime = duration * 0.5;
                 gain.gain.setValueAtTime(volume, ctx.currentTime + 0.005 + sustainTime);
                 gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
@@ -1613,7 +1645,6 @@ const GameEngine = {
                 noise.start();
                 noise.stop(ctx.currentTime + duration);
 
-                // アクティブノードを記録
                 activeNodes[trackIdx] = noise;
                 return;
             }
@@ -1621,23 +1652,44 @@ const GameEngine = {
             const osc = ctx.createOscillator();
             const gain = ctx.createGain();
 
-            osc.type = waveType;
+            // tone に応じた波形タイプ設定
+            if (waveType === 'triangle') {
+                if (tone === 1) osc.type = 'sine';
+                else if (tone === 2) osc.type = 'sawtooth';
+                else osc.type = 'triangle';
+            } else {
+                osc.type = waveType; // square
+            }
             osc.frequency.setValueAtTime(freq, ctx.currentTime);
 
-            // 矩形波は音量を下げる（0.10）、三角波は維持（0.15）
-            const volume = (waveType === 'square') ? 0.10 : 0.15;
-            gain.gain.setValueAtTime(volume, ctx.currentTime);
-            // 80%の時間は音量維持、残り20%で減衰
-            const sustainTime = duration * 0.8;
-            gain.gain.setValueAtTime(volume, ctx.currentTime + sustainTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
+            // 音量設定（toneによるバリエーション）
+            let volume = (waveType === 'square') ? 0.10 : 0.15;
+            const isShort = (tone === 1 || tone === 4);
+            const isFadeIn = (tone === 2 || tone === 5);
+
+            if (isShort) {
+                // Short: 短くスタッカート
+                gain.gain.setValueAtTime(volume, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration * 0.5);
+            } else if (isFadeIn) {
+                // FadeIn: フェードイン
+                gain.gain.setValueAtTime(0.01, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(volume, ctx.currentTime + duration * 0.7);
+                gain.gain.setValueAtTime(volume, ctx.currentTime + duration * 0.9);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
+            } else {
+                // Normal
+                gain.gain.setValueAtTime(volume, ctx.currentTime);
+                const sustainTime = duration * 0.8;
+                gain.gain.setValueAtTime(volume, ctx.currentTime + sustainTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
+            }
 
             osc.connect(gain);
             gain.connect(ctx.destination);
             osc.start();
             osc.stop(ctx.currentTime + duration);
 
-            // アクティブノードを記録
             activeNodes[trackIdx] = osc;
         };
 
@@ -1654,7 +1706,8 @@ const GameEngine = {
                 track.notes.forEach(note => {
                     if (note.step === step) {
                         const freq = getFrequency(note.pitch);
-                        playNote(freq, trackTypes[trackIdx], stepDuration * note.length, note.pitch, trackIdx);
+                        const tone = track.tone || 0;
+                        playNote(freq, trackTypes[trackIdx], stepDuration * note.length, note.pitch, trackIdx, tone);
                     }
                 });
             });
