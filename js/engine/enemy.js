@@ -22,12 +22,16 @@ class Enemy {
         this.animFrame = 0;
         this.animTimer = 0;
 
+        // 物理パラメータ（config値を反映）
+        const speedConfig = template?.config?.speed ?? 5;
+        this.moveSpeed = 0.03 + (speedConfig / 10) * 0.05; // 敵は少し遅め
         this.gravity = 0.02;
         this.maxFallSpeed = 0.4;
 
         this.lives = template?.config?.life || 1;
         this.isDying = false;
         this.deathTimer = 0;
+        this.damageFlashTimer = 0; // ダメージ時の白点滅
 
         // 空中モード
         this.isAerial = template?.config?.isAerial || false;
@@ -80,6 +84,11 @@ class Enemy {
             if (this.attackTimer <= 0) {
                 this.isAttacking = false;
             }
+        }
+
+        // ダメージ点滅タイマー
+        if (this.damageFlashTimer > 0) {
+            this.damageFlashTimer--;
         }
 
         // 空中か地上かで分岐
@@ -452,11 +461,11 @@ class Enemy {
                 }
                 break;
             case 'return':
-                // 元の位置へ戻る
+                // 元の位置へ戻る（後ずさり：向きは変えない）
                 const dxReturn = this.originX - this.x;
                 if (Math.abs(dxReturn) > 0.2) {
+                    // 向きを変えずに戻る（後ずさり）
                     this.vx = dxReturn > 0 ? this.moveSpeed : -this.moveSpeed;
-                    this.facingRight = dxReturn > 0;
                 } else {
                     this.x = this.originX;
                     this.vx = 0;
@@ -508,11 +517,12 @@ class Enemy {
                 }
                 break;
             case 'return':
+                // 元の位置へ戻る（後ずさり：向きは変えない）
                 const dxReturn = this.originX - this.x;
                 const dyReturn = this.originY - this.y;
                 if (Math.abs(dxReturn) > 0.2) {
+                    // 向きを変えずに戻る（後ずさり）
                     this.vx = dxReturn > 0 ? this.moveSpeed : -this.moveSpeed;
-                    this.facingRight = dxReturn > 0;
                 } else {
                     this.vx = 0;
                 }
@@ -584,6 +594,7 @@ class Enemy {
 
     takeDamage(fromRight) {
         this.lives--;
+        this.damageFlashTimer = 10; // 白点滅（10フレーム）
         if (this.lives <= 0) {
             this.die(fromRight);
         }
@@ -675,7 +686,12 @@ class Enemy {
                 for (let x = 0; x < dimension; x++) {
                     const colorIndex = sprite.data[y]?.[x];
                     if (colorIndex >= 0) {
-                        ctx.fillStyle = palette[colorIndex];
+                        // ダメージ点滅中は白色
+                        if (this.damageFlashTimer > 0 && this.damageFlashTimer % 2 === 0) {
+                            ctx.fillStyle = '#FFFFFF';
+                        } else {
+                            ctx.fillStyle = palette[colorIndex];
+                        }
                         const drawX = flipX ? screenX + (dimension - 1 - x) * pixelSize : screenX + x * pixelSize;
                         ctx.fillRect(drawX, adjustedScreenY + y * pixelSize, pixelSize + 0.5, pixelSize + 0.5);
                     }

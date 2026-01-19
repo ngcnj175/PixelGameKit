@@ -21,9 +21,11 @@ class Player {
         this.animFrame = 0;
         this.animTimer = 0;
 
-        // 物理パラメータ
-        this.moveSpeed = 0.1;
-        this.jumpPower = -0.35;
+        // 物理パラメータ（config値を反映: 1-20のスケールを実際の値に変換）
+        const speedConfig = template?.config?.speed ?? 5;
+        const jumpConfig = template?.config?.jumpPower ?? 10;
+        this.moveSpeed = 0.05 + (speedConfig / 10) * 0.1; // 1=0.06, 5=0.1, 10=0.15
+        this.jumpPower = -0.2 - (jumpConfig / 20) * 0.3;  // 1=-0.215, 10=-0.35, 20=-0.5
         this.gravity = 0.02;
         this.maxFallSpeed = 0.4;
 

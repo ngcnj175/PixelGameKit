@@ -1391,8 +1391,9 @@ const StageEditor = {
             const spriteIdx = template.sprites?.idle?.frames?.[0] ?? template.sprites?.main?.frames?.[0];
             const sprite = sprites[spriteIdx];
             if (sprite) {
-                // 座標はentity.x, entity.yを使用
-                this.renderSprite(sprite, entity.x, entity.y, palette);
+                // 敵は左向きに反転して描画
+                const flipX = template.type === 'enemy';
+                this.renderSprite(sprite, entity.x, entity.y, palette, flipX);
             }
         });
     },
@@ -1432,7 +1433,7 @@ const StageEditor = {
         this.ctx.globalAlpha = 1;
     },
 
-    renderSprite(sprite, tileX, tileY, palette) {
+    renderSprite(sprite, tileX, tileY, palette, flipX = false) {
         const scrollX = this.canvasScrollX || 0;
         const scrollY = this.canvasScrollY || 0;
 
@@ -1447,8 +1448,12 @@ const StageEditor = {
                 const colorIndex = sprite.data[y]?.[x];
                 if (colorIndex >= 0) {
                     this.ctx.fillStyle = palette[colorIndex];
+                    // flipXの場合はX座標を反転
+                    const drawX = flipX
+                        ? tileX * this.tileSize + (dimension - 1 - x) * pixelSize + scrollX
+                        : tileX * this.tileSize + x * pixelSize + scrollX;
                     this.ctx.fillRect(
-                        tileX * this.tileSize + x * pixelSize + scrollX,
+                        drawX,
                         tileY * this.tileSize + y * pixelSize + scrollY,
                         pixelSize + 0.5,
                         pixelSize + 0.5
