@@ -1014,6 +1014,29 @@ const GameEngine = {
 
         // 消滅した敵を削除（画面外に落下した敵）
         this.enemies = this.enemies.filter(e => {
+            // ボスが落下で消える場合の特別処理
+            if (e.template?.config?.isBoss && e.y > App.projectData.stage.height + 5) {
+                // 落下による死亡もボス撃破として扱う
+                if (this.bossEnemy === e) {
+                    // 他の生存ボスがいるか確認
+                    const remainingBosses = this.enemies.filter(other =>
+                        other !== e && other.template?.config?.isBoss && !other.isDying && other.y <= App.projectData.stage.height + 5
+                    );
+                    if (remainingBosses.length > 0) {
+                        // 中ボス撃破：BGMをステージ曲に戻す
+                        console.log('Intermediate boss fell off stage.');
+                        this.bossEnemy = null;
+                        this.bossSpawned = false;
+                        this.playBgm('stage');
+                    } else if (!this.bossDefeatPhase && !this.isCleared) {
+                        // 最終ボス撃破：クリアシーケンス開始
+                        console.log('Final boss fell off stage. Triggering clear.');
+                        this.bossEnemy = null;
+                        this.triggerClear();
+                    }
+                }
+                return false; // このボスを配列から削除
+            }
             if (e.isDying && e.deathTimer > 120) return false;
             if (e.y > App.projectData.stage.height + 5) return false;
             return true;
