@@ -383,6 +383,7 @@ const StageEditor = {
                             <option value="jump" ${config.move === 'jump' ? 'selected' : ''}>ぴょんぴょん</option>
                             <option value="jumpPatrol" ${config.move === 'jumpPatrol' ? 'selected' : ''}>うろぴょん</option>
                             <option value="chase" ${config.move === 'chase' ? 'selected' : ''}>追いかけてくる</option>
+                            <option value="rush" ${config.move === 'rush' ? 'selected' : ''}>とっしん</option>
                         </select>
                     </div>
                     <div class="param-row">

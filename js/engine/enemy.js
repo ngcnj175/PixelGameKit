@@ -39,7 +39,7 @@ class Enemy {
 
         // 追いかけ状態
         this.isChasing = false;
-        this.detectionRange = 8; // 検知距離
+        this.detectionRange = 6; // 検知距離（6タイル）
 
         // 空中上下移動用
         this.floatDirection = 1; // 1=下, -1=上
@@ -47,6 +47,11 @@ class Enemy {
         this.diveTimer = 0; // うろぴょん空中版用
         this.isDiving = false;
         this.isReturning = false;
+
+        // とっしん用状態
+        this.rushPhase = 'idle'; // 'idle', 'back', 'rush', 'return'
+        this.rushStartX = tileX;
+        this.rushStartY = tileY;
 
         // SHOT設定
         this.shotMaxRange = template?.config?.shotMaxRange || 0;
@@ -126,15 +131,38 @@ class Enemy {
                 }
                 break;
             case 'jumpPatrol':
-                // 移動しながらジャンプ
-                this.patrol(engine);
-                if (this.onGround && Math.random() < 0.02) {
+                // ジャンプで移動（歩かない、4タイル範囲）
+                const jpMaxRange = 4;
+                const jpDistX = this.x - this.originX;
+
+                // 範囲制限
+                if (this.facingRight && jpDistX >= jpMaxRange) {
+                    this.facingRight = false;
+                } else if (!this.facingRight && jpDistX <= -jpMaxRange) {
+                    this.facingRight = true;
+                }
+
+                // ジャンプ中のみ移動、接地時は静止
+                if (this.onGround) {
+                    this.vx = 0;
+                    if (Math.random() < 0.02) {
+                        this.vy = -0.3;
+                        this.vx = this.facingRight ? this.moveSpeed * 2 : -this.moveSpeed * 2;
+                        this.onGround = false;
+                    }
+                }
+                break;
+            case 'chase':
+                // 追いかけてくる（定期的にジャンプ）
+                this.chaseWithReturn(engine);
+                if (this.isChasing && this.onGround && Math.random() < 0.02) {
                     this.vy = -0.3;
                     this.onGround = false;
                 }
                 break;
-            case 'chase':
-                this.chaseWithReturn(engine);
+            case 'rush':
+                // とっしん（地上）
+                this.rushGround(engine);
                 break;
             default:
                 this.vx = 0;
@@ -188,11 +216,11 @@ class Enemy {
                 this.vy = this.floatDirection * this.moveSpeed;
                 break;
             case 'jumpPatrol':
-                // 空中で左右移動（8タイル） + 定期落下（4タイル、2倍速） + 元に戻る（通常速度）
-                const horzMaxRange = 8;
-                const diveMaxRange = 4;
+                // 空中で左右移動（4タイル） + 定期落下（6タイル、4倍速） + 元に戻る（通常速度）
+                const horzMaxRange = 4;
+                const diveMaxRange = 6;
                 const normalSpeed = this.moveSpeed;
-                const diveSpeed = this.moveSpeed * 4; // 2倍速（より速く見えるように4倍）
+                const diveSpeed = this.moveSpeed * 4;
 
                 if (!this.isDiving && !this.isReturning) {
                     // 通常時は左右移動
@@ -219,7 +247,7 @@ class Enemy {
                         this.diveTimer = 0;
                     }
                 } else if (this.isDiving) {
-                    // 落下フェーズ（4タイルまで or 床、2倍速）
+                    // 落下フェーズ（6タイルまで or 床、4倍速）
                     this.vx = 0;
                     const diveDistY = this.y - this.originY;
                     const floorCheck = Math.floor(this.y + this.height + 0.1);
@@ -245,6 +273,10 @@ class Enemy {
             case 'chase':
                 // 空中で追いかける
                 this.aerialChaseWithReturn(engine);
+                break;
+            case 'rush':
+                // とっしん（空中）
+                this.rushAerial(engine);
                 break;
             default:
                 this.vx = 0;
@@ -375,6 +407,126 @@ class Enemy {
             this.x = this.originX;
             this.y = this.originY;
             this.isChasing = false;
+        }
+    }
+
+    // とっしん（地上）
+    rushGround(engine) {
+        const backSpeed = this.moveSpeed * 0.5; // ゆっくり後退
+        const rushSpeed = this.moveSpeed * 4;   // 4倍の速さ
+        const rushMaxDist = 4;                  // 4タイル
+
+        // プレイヤー方向を見る
+        if (engine.player && this.rushPhase === 'idle') {
+            this.facingRight = engine.player.x > this.x;
+        }
+
+        switch (this.rushPhase) {
+            case 'idle':
+                // 開始：後退フェーズへ
+                this.rushStartX = this.x;
+                this.rushPhase = 'back';
+                break;
+            case 'back':
+                // 1タイル分ゆっくり後退
+                const backDir = this.facingRight ? -1 : 1;
+                const backDist = Math.abs(this.x - this.rushStartX);
+                if (backDist < 1) {
+                    this.vx = backDir * backSpeed;
+                } else {
+                    this.vx = 0;
+                    this.rushStartX = this.x;
+                    this.rushPhase = 'rush';
+                }
+                break;
+            case 'rush':
+                // 前方へ突進
+                const rushDir = this.facingRight ? 1 : -1;
+                const rushDist = Math.abs(this.x - this.rushStartX);
+                const wallCheck = this.facingRight ? Math.floor(this.x + this.width + 0.1) : Math.floor(this.x - 0.1);
+                if (rushDist < rushMaxDist && engine.getCollision(wallCheck, Math.floor(this.y + this.height / 2)) !== 1) {
+                    this.vx = rushDir * rushSpeed;
+                } else {
+                    this.vx = 0;
+                    this.rushPhase = 'return';
+                }
+                break;
+            case 'return':
+                // 元の位置へ戻る
+                const dxReturn = this.originX - this.x;
+                if (Math.abs(dxReturn) > 0.2) {
+                    this.vx = dxReturn > 0 ? this.moveSpeed : -this.moveSpeed;
+                    this.facingRight = dxReturn > 0;
+                } else {
+                    this.x = this.originX;
+                    this.vx = 0;
+                    this.rushPhase = 'idle';
+                }
+                break;
+        }
+    }
+
+    // とっしん（空中）
+    rushAerial(engine) {
+        const backSpeed = this.moveSpeed * 0.5;
+        const rushSpeed = this.moveSpeed * 4;
+        const rushMaxDist = 4;
+
+        // プレイヤー方向を見る
+        if (engine.player && this.rushPhase === 'idle') {
+            this.facingRight = engine.player.x > this.x;
+        }
+
+        switch (this.rushPhase) {
+            case 'idle':
+                this.rushStartX = this.x;
+                this.rushPhase = 'back';
+                this.vy = 0;
+                break;
+            case 'back':
+                const backDir = this.facingRight ? -1 : 1;
+                const backDist = Math.abs(this.x - this.rushStartX);
+                if (backDist < 1) {
+                    this.vx = backDir * backSpeed;
+                    this.vy = 0;
+                } else {
+                    this.vx = 0;
+                    this.rushStartX = this.x;
+                    this.rushPhase = 'rush';
+                }
+                break;
+            case 'rush':
+                const rushDir = this.facingRight ? 1 : -1;
+                const rushDist = Math.abs(this.x - this.rushStartX);
+                const wallCheck = this.facingRight ? Math.floor(this.x + this.width + 0.1) : Math.floor(this.x - 0.1);
+                if (rushDist < rushMaxDist && engine.getCollision(wallCheck, Math.floor(this.y + this.height / 2)) !== 1) {
+                    this.vx = rushDir * rushSpeed;
+                    this.vy = 0;
+                } else {
+                    this.vx = 0;
+                    this.rushPhase = 'return';
+                }
+                break;
+            case 'return':
+                const dxReturn = this.originX - this.x;
+                const dyReturn = this.originY - this.y;
+                if (Math.abs(dxReturn) > 0.2) {
+                    this.vx = dxReturn > 0 ? this.moveSpeed : -this.moveSpeed;
+                    this.facingRight = dxReturn > 0;
+                } else {
+                    this.vx = 0;
+                }
+                if (Math.abs(dyReturn) > 0.2) {
+                    this.vy = dyReturn > 0 ? this.moveSpeed : -this.moveSpeed;
+                } else {
+                    this.vy = 0;
+                }
+                if (Math.abs(dxReturn) < 0.2 && Math.abs(dyReturn) < 0.2) {
+                    this.x = this.originX;
+                    this.y = this.originY;
+                    this.rushPhase = 'idle';
+                }
+                break;
         }
     }
 
