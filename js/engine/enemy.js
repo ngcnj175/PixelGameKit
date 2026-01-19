@@ -45,6 +45,8 @@ class Enemy {
         this.floatDirection = 1; // 1=下, -1=上
         this.floatTimer = 0;
         this.diveTimer = 0; // うろぴょん空中版用
+        this.isDiving = false;
+        this.isReturning = false;
 
         // SHOT設定
         this.shotMaxRange = template?.config?.shotMaxRange || 0;
@@ -164,40 +166,80 @@ class Enemy {
                 this.vy = 0; // 重力なし
                 break;
             case 'jump':
-                // 空中で上下移動
+                // 空中で上下移動（8タイル範囲制限、床/天井の衝突）
                 this.vx = 0;
-                this.floatTimer++;
-                if (this.floatTimer > 60) { // 1秒ごとに方向転換
-                    this.floatTimer = 0;
+                const vertMaxRange = 8;
+                const distY = this.y - this.originY;
+
+                if (this.floatDirection > 0 && distY >= vertMaxRange) {
+                    this.floatDirection = -1;
+                } else if (this.floatDirection < 0 && distY <= -vertMaxRange) {
+                    this.floatDirection = 1;
+                }
+
+                // 床/天井判定
+                const checkYJump = this.floatDirection > 0
+                    ? Math.floor(this.y + this.height + 0.1)
+                    : Math.floor(this.y - 0.1);
+                if (engine.getCollision(Math.floor(this.x + this.width / 2), checkYJump) === 1) {
                     this.floatDirection *= -1;
                 }
+
                 this.vy = this.floatDirection * this.moveSpeed;
                 break;
             case 'jumpPatrol':
-                // 空中で上下移動 + 定期的に落下
-                this.vx = 0;
-                this.diveTimer++;
-                if (this.diveTimer < 120) {
-                    // 通常時は上下
-                    this.floatTimer++;
-                    if (this.floatTimer > 60) {
-                        this.floatTimer = 0;
-                        this.floatDirection *= -1;
+                // 空中で左右移動（8タイル） + 定期落下（4タイル、2倍速） + 元に戻る（通常速度）
+                const horzMaxRange = 8;
+                const diveMaxRange = 4;
+                const normalSpeed = this.moveSpeed;
+                const diveSpeed = this.moveSpeed * 4; // 2倍速（より速く見えるように4倍）
+
+                if (!this.isDiving && !this.isReturning) {
+                    // 通常時は左右移動
+                    const distX = this.x - this.originX;
+                    if (this.facingRight && distX >= horzMaxRange) {
+                        this.facingRight = false;
+                    } else if (!this.facingRight && distX <= -horzMaxRange) {
+                        this.facingRight = true;
                     }
-                    this.vy = this.floatDirection * this.moveSpeed;
-                } else if (this.diveTimer < 180) {
-                    // 落下フェーズ
-                    this.vy = 0.15;
-                } else if (this.diveTimer < 240) {
-                    // 元に戻るフェーズ
-                    const dy = this.originY - this.y;
-                    this.vy = dy > 0 ? 0.1 : -0.1;
-                    if (Math.abs(dy) < 0.2) {
-                        this.y = this.originY;
+
+                    // 壁判定
+                    const checkXJP = this.facingRight ? Math.floor(this.x + this.width + 0.1) : Math.floor(this.x - 0.1);
+                    if (engine.getCollision(checkXJP, Math.floor(this.y + this.height / 2)) === 1) {
+                        this.facingRight = !this.facingRight;
+                    }
+
+                    this.vx = this.facingRight ? normalSpeed : -normalSpeed;
+                    this.vy = 0;
+                    this.diveTimer++;
+
+                    // 2秒ごとに落下開始
+                    if (this.diveTimer >= 120) {
+                        this.isDiving = true;
                         this.diveTimer = 0;
                     }
-                } else {
-                    this.diveTimer = 0;
+                } else if (this.isDiving) {
+                    // 落下フェーズ（4タイルまで or 床、2倍速）
+                    this.vx = 0;
+                    const diveDistY = this.y - this.originY;
+                    const floorCheck = Math.floor(this.y + this.height + 0.1);
+                    if (diveDistY < diveMaxRange && engine.getCollision(Math.floor(this.x + this.width / 2), floorCheck) !== 1) {
+                        this.vy = diveSpeed;
+                    } else {
+                        this.isDiving = false;
+                        this.isReturning = true;
+                    }
+                } else if (this.isReturning) {
+                    // 元に戻るフェーズ（通常速度）
+                    this.vx = 0;
+                    const dyReturn = this.originY - this.y;
+                    if (Math.abs(dyReturn) > 0.2) {
+                        this.vy = dyReturn > 0 ? normalSpeed : -normalSpeed;
+                    } else {
+                        this.y = this.originY;
+                        this.vy = 0;
+                        this.isReturning = false;
+                    }
                 }
                 break;
             case 'chase':
@@ -215,6 +257,16 @@ class Enemy {
     }
 
     patrol(engine) {
+        const maxRange = 8; // 移動範囲制限（タイル）
+
+        // 範囲チェック（originから8タイル以上離れたら折り返す）
+        const distFromOrigin = this.x - this.originX;
+        if (this.facingRight && distFromOrigin >= maxRange) {
+            this.facingRight = false;
+        } else if (!this.facingRight && distFromOrigin <= -maxRange) {
+            this.facingRight = true;
+        }
+
         const checkX = this.facingRight ? Math.floor(this.x + this.width + 0.1) : Math.floor(this.x - 0.1);
         const footY = Math.floor(this.y + this.height + 0.1);
 

@@ -1941,12 +1941,12 @@ const SoundEditor = {
                 // 選択モード中（縦は全選択、横のみドラッグ）
                 if (this.selectionMode) {
                     if (!this.selectionStart) {
-                        // 音程は全選択（0～60）
+                        // 音程は全選択（0～71、6オクターブ全て）
                         this.selectionStart = { step, pitch: 0 };
-                        this.selectionEnd = { step, pitch: 60 };
+                        this.selectionEnd = { step, pitch: 71 };
                     } else {
                         // stepのみ更新、pitchは全選択維持
-                        this.selectionEnd = { step, pitch: 60 };
+                        this.selectionEnd = { step, pitch: 71 };
                     }
                     this.render();
                     return;

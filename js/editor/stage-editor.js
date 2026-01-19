@@ -324,8 +324,7 @@ const StageEditor = {
 
     renderSpriteRow(slot) {
         const spriteData = this.editingTemplate.sprites[slot] || { frames: [], speed: 5, loop: true };
-        const frameCount = spriteData.frames?.length || 0;
-        const displayCount = frameCount > 0 ? frameCount : '-';
+        const speed = spriteData.speed || 5;
         const firstFrame = spriteData.frames?.[0];
 
         // スロット表示名
@@ -340,8 +339,8 @@ const StageEditor = {
                 <div class="sprite-slot" data-slot="${slot}">
                     ${firstFrame !== undefined ? `<canvas width="16" height="16" data-sprite="${firstFrame}"></canvas>` : ''}
                 </div>
-                <span class="sprite-count">${displayCount}</span>
-                <input type="range" class="sprite-speed" min="1" max="20" value="${spriteData.speed || 5}" data-slot="${slot}">
+                <span class="sprite-count" data-slot="${slot}">${speed}</span>
+                <input type="range" class="sprite-speed" min="1" max="20" value="${speed}" data-slot="${slot}">
                 <label class="sprite-loop-label">
                     <input type="checkbox" ${spriteData.loop !== false ? 'checked' : ''} data-slot="${slot}">
                     LOOP
@@ -518,7 +517,13 @@ const StageEditor = {
             slider.addEventListener('input', (e) => {
                 const slot = slider.dataset.slot;
                 if (slot && this.editingTemplate?.sprites?.[slot]) {
-                    this.editingTemplate.sprites[slot].speed = parseInt(e.target.value);
+                    const speed = parseInt(e.target.value);
+                    this.editingTemplate.sprites[slot].speed = speed;
+                    // 速度表示をリアルタイム更新
+                    const countEl = document.querySelector(`.sprite-count[data-slot="${slot}"]`);
+                    if (countEl) {
+                        countEl.textContent = speed;
+                    }
                     // アニメーションをリアルタイム更新
                     this.updateConfigAnimations();
                 }
