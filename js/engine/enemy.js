@@ -13,7 +13,7 @@ class Enemy {
         this.width = 0.8;
         this.height = 0.8;
         this.behavior = behavior;
-        this.facingRight = true;
+        this.facingRight = false; // 敵はデフォルトで左向き（プレイヤーと向き合う）
         this.onGround = false;
         this.moveSpeed = 0.05;
 
