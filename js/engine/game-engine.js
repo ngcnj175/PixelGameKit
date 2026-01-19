@@ -880,37 +880,107 @@ const GameEngine = {
 
     updateProjectiles() {
         this.projectiles = this.projectiles.filter(proj => {
-            // 移動
-            proj.x += proj.vx;
-            proj.y += proj.vy;
+            const shotType = proj.shotType || 'straight';
 
-            // 飛距離チェック
-            const distance = Math.abs(proj.x - proj.startX);
-            if (distance >= proj.maxRange) {
-                return false;
+            // タイプ別の移動処理
+            switch (shotType) {
+                case 'arc':
+                    // やまなり: 重力影響
+                    proj.x += proj.vx;
+                    proj.vy += 0.01; // 重力
+                    proj.y += proj.vy;
+                    break;
+                case 'drop':
+                    // 鳥のフン: 真下に落下
+                    proj.y += proj.vy;
+                    break;
+                case 'boomerang':
+                    // ブーメラン: 3タイルで戻る
+                    proj.x += proj.vx;
+                    proj.y += proj.vy;
+                    const boomerangDist = Math.abs(proj.x - proj.startX);
+                    if (!proj.returning && boomerangDist >= 3) {
+                        proj.returning = true;
+                        proj.vx = -proj.vx;
+                    }
+                    // 戻ってきたら消える
+                    if (proj.returning && boomerangDist < 0.5) {
+                        return false;
+                    }
+                    break;
+                case 'pinball':
+                    // ピンポン: 壁で反射
+                    proj.x += proj.vx;
+                    proj.y += proj.vy;
+                    break;
+                default:
+                    // straight, spread: 通常移動
+                    proj.x += proj.vx;
+                    proj.y += proj.vy;
+            }
+
+            // 飛距離チェック（ブーメラン以外）
+            if (shotType !== 'boomerang') {
+                const dx = proj.x - proj.startX;
+                const dy = proj.y - (proj.startY ?? proj.startX);
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                if (distance >= proj.maxRange) {
+                    return false;
+                }
             }
 
             const cx = 0.5;
             const cy = 0.5;
 
             // 壁との衝突
-            if (this.getCollision(proj.x + cx, proj.y + cy)) {
-                // 壁にダメージを与える
-                this.damageTile(Math.floor(proj.x + cx), Math.floor(proj.y + cy));
-                return false;
+            if (this.getCollision(Math.floor(proj.x + cx), Math.floor(proj.y + cy))) {
+                if (shotType === 'pinball' && proj.bounceCount < 4) {
+                    // ピンポン: 反射
+                    // 壁のどちら側に当たったか判定して反射
+                    const tileX = Math.floor(proj.x + cx);
+                    const tileY = Math.floor(proj.y + cy);
+                    const prevX = proj.x - proj.vx;
+                    const prevY = proj.y - proj.vy;
+
+                    // X方向から衝突
+                    if (this.getCollision(tileX, Math.floor(prevY + cy)) === 1) {
+                        proj.vx = -proj.vx;
+                    }
+                    // Y方向から衝突
+                    if (this.getCollision(Math.floor(prevX + cx), tileY) === 1) {
+                        proj.vy = -proj.vy;
+                    }
+                    proj.bounceCount++;
+                    proj.x += proj.vx;
+                    proj.y += proj.vy;
+                } else if (shotType === 'boomerang') {
+                    // ブーメラン: 壁で反転して戻る
+                    if (!proj.returning) {
+                        proj.returning = true;
+                        proj.vx = -proj.vx;
+                    } else {
+                        return false;
+                    }
+                } else {
+                    // 通常: 壁にダメージ
+                    this.damageTile(Math.floor(proj.x + cx), Math.floor(proj.y + cy));
+                    return false;
+                }
             }
 
-            // プレイヤーのSHOT → 敵との衝突（ダメージ無敵中は無効）
+            // プレイヤーのSHOT → 敵との衝突
             if (proj.owner === 'player') {
-                // ダメージ無敵中（starPowerでない）は敵に当たらない
                 if (this.player && this.player.invincible && !this.player.starPower) {
-                    // スキップ（ショットは残る）
+                    // ダメージ無敵中はスキップ
                 } else {
                     for (const enemy of this.enemies) {
                         if (!enemy.isDying && this.projectileHits(proj, enemy)) {
                             const fromRight = proj.vx > 0;
                             enemy.takeDamage(fromRight);
-                            return false;
+                            if (shotType !== 'pinball' && shotType !== 'boomerang') {
+                                return false;
+                            }
+                            // ピンポン・ブーメランは貫通
                         }
                     }
                 }
@@ -923,6 +993,11 @@ const GameEngine = {
                     this.player.takeDamage(fromRight);
                     return false;
                 }
+            }
+
+            // 画面外チェック（ピンポン用）
+            if (proj.y > 20 || proj.y < -5 || proj.x < -5 || proj.x > 100) {
+                return false;
             }
 
             return true;

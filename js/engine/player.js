@@ -266,22 +266,70 @@ class Player {
         // SHOTプロジェクタイル発射
         const shotSprite = this.template?.sprites?.shot?.frames?.[0];
         if (shotSprite !== undefined) {
+            const shotType = this.template?.config?.shotType || 'straight';
             const direction = this.facingRight ? 1 : -1;
-            engine.projectiles.push({
-                x: this.x + (this.facingRight ? this.width : -0.2),
-                y: this.y + this.height / 2 - 0.25,
-                vx: 0.225 * direction,
-                vy: 0,
-                width: 0.5,
-                height: 0.5,
-                spriteIdx: shotSprite,
-                templateIdx: this.templateIdx, // アニメーション用
-                animationSlot: 'shot', // 使用するスロットを指定
-                owner: 'player',
-                maxRange: this.shotMaxRange,
-                startX: this.x,
-                facingRight: this.facingRight
-            });
+            const baseSpeed = 0.225;
+            const startX = this.x + (this.facingRight ? this.width : -0.2);
+            const startY = this.y + this.height / 2 - 0.25;
+
+            if (shotType === 'spread') {
+                // 拡散: 4方向発射（交互に＋と✕パターン）
+                const isPlus = (engine.spreadShotCounter || 0) % 2 === 0;
+                engine.spreadShotCounter = (engine.spreadShotCounter || 0) + 1;
+                const angles = isPlus ? [0, 90, 180, 270] : [45, 135, 225, 315];
+                angles.forEach(angle => {
+                    const rad = angle * Math.PI / 180;
+                    engine.projectiles.push({
+                        x: startX, y: startY,
+                        vx: Math.cos(rad) * baseSpeed,
+                        vy: Math.sin(rad) * baseSpeed,
+                        width: 0.5, height: 0.5,
+                        spriteIdx: shotSprite,
+                        templateIdx: this.templateIdx,
+                        animationSlot: 'shot',
+                        owner: 'player',
+                        maxRange: this.shotMaxRange,
+                        startX: startX, startY: startY,
+                        facingRight: this.facingRight,
+                        shotType: shotType,
+                        bounceCount: 0
+                    });
+                });
+            } else if (shotType === 'drop') {
+                // 鳥のフン: 真下に落ちる
+                engine.projectiles.push({
+                    x: this.x + this.width / 2 - 0.25, y: this.y + this.height,
+                    vx: 0, vy: baseSpeed,
+                    width: 0.5, height: 0.5,
+                    spriteIdx: shotSprite,
+                    templateIdx: this.templateIdx,
+                    animationSlot: 'shot',
+                    owner: 'player',
+                    maxRange: this.shotMaxRange,
+                    startX: this.x, startY: this.y,
+                    facingRight: this.facingRight,
+                    shotType: shotType,
+                    bounceCount: 0
+                });
+            } else {
+                // その他: 通常の単発発射
+                engine.projectiles.push({
+                    x: startX, y: startY,
+                    vx: baseSpeed * direction,
+                    vy: shotType === 'arc' ? -0.15 : 0,
+                    width: 0.5, height: 0.5,
+                    spriteIdx: shotSprite,
+                    templateIdx: this.templateIdx,
+                    animationSlot: 'shot',
+                    owner: 'player',
+                    maxRange: this.shotMaxRange,
+                    startX: startX, startY: startY,
+                    facingRight: this.facingRight,
+                    shotType: shotType,
+                    returning: false,
+                    bounceCount: 0
+                });
+            }
         }
     }
 

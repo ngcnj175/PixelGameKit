@@ -363,6 +363,19 @@ const StageEditor = {
                 html += this.renderSlider('ジャンプ力', 'jumpPower', config.jumpPower ?? 10, 1, 20);
             }
             html += this.renderSlider('射程距離', 'shotMaxRange', config.shotMaxRange ?? 16, 0, 16);
+            html += `
+                <div class="param-row">
+                    <span class="param-label">飛び方</span>
+                    <select class="param-select" data-key="shotType">
+                        <option value="straight" ${config.shotType === 'straight' || !config.shotType ? 'selected' : ''}>ストレート</option>
+                        <option value="arc" ${config.shotType === 'arc' ? 'selected' : ''}>やまなり</option>
+                        <option value="drop" ${config.shotType === 'drop' ? 'selected' : ''}>鳥のフン</option>
+                        <option value="spread" ${config.shotType === 'spread' ? 'selected' : ''}>拡散</option>
+                        <option value="boomerang" ${config.shotType === 'boomerang' ? 'selected' : ''}>ブーメラン</option>
+                        <option value="pinball" ${config.shotType === 'pinball' ? 'selected' : ''}>ピンポン</option>
+                    </select>
+                </div>
+            `;
 
             // プレイヤー専用SE設定
             if (type === 'player') {
