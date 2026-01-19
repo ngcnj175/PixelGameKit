@@ -382,10 +382,15 @@ const StageEditor = {
                             <option value="idle" ${config.move === 'idle' ? 'selected' : ''}>動かない</option>
                             <option value="patrol" ${config.move === 'patrol' ? 'selected' : ''}>うろうろ</option>
                             <option value="jump" ${config.move === 'jump' ? 'selected' : ''}>ぴょんぴょん</option>
+                            <option value="jumpPatrol" ${config.move === 'jumpPatrol' ? 'selected' : ''}>うろぴょん</option>
                             <option value="chase" ${config.move === 'chase' ? 'selected' : ''}>追いかけてくる</option>
                         </select>
                     </div>
                     <div class="param-row">
+                        <label class="param-check-label">
+                            <input type="checkbox" data-key="isAerial" ${config.isAerial ? 'checked' : ''}>
+                            空中
+                        </label>
                         <label class="param-check-label">
                             <input type="checkbox" data-key="isBoss" ${config.isBoss ? 'checked' : ''}>
                             ボスてき

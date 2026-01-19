@@ -1214,16 +1214,10 @@ const SoundEditor = {
             }
 
             osc.frequency.value = freq;
-            // SQUARE全体の音量を120%増
-            let baseVol = 0.3;
-            if (trackType === 'square') {
-                if (tone === 1) {
-                    baseVol = 0.0602; // Short: 0.0502 * 1.2
-                } else if (tone === 0 || tone === 2) {
-                    baseVol = 0.0502; // Standard/FadeIn: 0.0418 * 1.2
-                } else {
-                    baseVol = 0.228; // Sharp系: 0.19 * 1.2
-                }
+            // 全トラック統一の基本音量
+            const baseVol = 0.2;
+            if (trackType === 'triangle' && tone === 2) {
+                volumeScale = 0.6; // Sawtooth
             }
             gain.gain.value = baseVol * track.volume * volumeScale;
 

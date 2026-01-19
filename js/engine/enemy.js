@@ -1,11 +1,13 @@
 /**
- * PixelGameKit - 敵（完全版）
+ * PixelGameKit - 敵（動きの種類拡張版）
  */
 
 class Enemy {
     constructor(tileX, tileY, template = null, behavior = 'idle', templateIdx = undefined) {
         this.x = tileX;
         this.y = tileY;
+        this.originX = tileX; // 元の位置（追いかけて戻る用）
+        this.originY = tileY;
         this.vx = 0;
         this.vy = 0;
         this.width = 0.8;
@@ -16,7 +18,7 @@ class Enemy {
         this.moveSpeed = 0.05;
 
         this.template = template;
-        this.templateIdx = templateIdx; // アニメーション用
+        this.templateIdx = templateIdx;
         this.animFrame = 0;
         this.animTimer = 0;
 
@@ -27,19 +29,30 @@ class Enemy {
         this.isDying = false;
         this.deathTimer = 0;
 
+        // 空中モード
+        this.isAerial = template?.config?.isAerial || false;
+
         // 状態
         this.state = 'idle';
         this.isAttacking = false;
         this.attackTimer = 0;
 
+        // 追いかけ状態
+        this.isChasing = false;
+        this.detectionRange = 8; // 検知距離
+
+        // 空中上下移動用
+        this.floatDirection = 1; // 1=下, -1=上
+        this.floatTimer = 0;
+        this.diveTimer = 0; // うろぴょん空中版用
+
         // SHOT設定
         this.shotMaxRange = template?.config?.shotMaxRange || 0;
         this.shotCooldown = 0;
-        this.shotInterval = 120; // 2秒ごとに発射
+        this.shotInterval = 120;
     }
 
     update(engine) {
-        // ボス演出中は動かない
         if (this.frozen) {
             return false;
         }
@@ -51,12 +64,10 @@ class Enemy {
             return this.deathTimer > 120;
         }
 
-        // 攻撃クールダウン
         if (this.shotCooldown > 0) {
             this.shotCooldown--;
         }
 
-        // 攻撃タイマー
         if (this.isAttacking) {
             this.attackTimer--;
             if (this.attackTimer <= 0) {
@@ -64,39 +75,17 @@ class Enemy {
             }
         }
 
-        // 行動パターン
-        switch (this.behavior) {
-            case 'idle':
-                this.vx = 0;
-                break;
-            case 'patrol':
-                this.patrol(engine);
-                break;
-            case 'chase':
-                this.chase(engine);
-                break;
-            case 'jump':
-                this.jumpPatrol(engine);
-                break;
-            default:
-                this.vx = 0;
+        // 空中か地上かで分岐
+        if (this.isAerial) {
+            this.updateAerial(engine);
+        } else {
+            this.updateGround(engine);
         }
 
         // SHOT攻撃
         if (this.shotMaxRange > 0 && this.shotCooldown <= 0) {
             this.shoot(engine);
         }
-
-        // 重力
-        this.vy += this.gravity;
-        if (this.vy > this.maxFallSpeed) {
-            this.vy = this.maxFallSpeed;
-        }
-
-        this.x += this.vx;
-        this.handleHorizontalCollision(engine);
-        this.y += this.vy;
-        this.handleVerticalCollision(engine);
 
         // 状態更新
         this.updateState();
@@ -117,10 +106,230 @@ class Enemy {
         return false;
     }
 
+    // ========== 地上モード ==========
+    updateGround(engine) {
+        switch (this.behavior) {
+            case 'idle':
+                this.vx = 0;
+                break;
+            case 'patrol':
+                this.patrol(engine);
+                break;
+            case 'jump':
+                // その場ジャンプ
+                this.vx = 0;
+                if (this.onGround && Math.random() < 0.02) {
+                    this.vy = -0.3;
+                    this.onGround = false;
+                }
+                break;
+            case 'jumpPatrol':
+                // 移動しながらジャンプ
+                this.patrol(engine);
+                if (this.onGround && Math.random() < 0.02) {
+                    this.vy = -0.3;
+                    this.onGround = false;
+                }
+                break;
+            case 'chase':
+                this.chaseWithReturn(engine);
+                break;
+            default:
+                this.vx = 0;
+        }
+
+        // 重力
+        this.vy += this.gravity;
+        if (this.vy > this.maxFallSpeed) {
+            this.vy = this.maxFallSpeed;
+        }
+
+        this.x += this.vx;
+        this.handleHorizontalCollision(engine);
+        this.y += this.vy;
+        this.handleVerticalCollision(engine);
+    }
+
+    // ========== 空中モード ==========
+    updateAerial(engine) {
+        switch (this.behavior) {
+            case 'idle':
+                // 空中で動かない
+                this.vx = 0;
+                this.vy = 0;
+                break;
+            case 'patrol':
+                // 空中で左右移動
+                this.patrol(engine);
+                this.vy = 0; // 重力なし
+                break;
+            case 'jump':
+                // 空中で上下移動
+                this.vx = 0;
+                this.floatTimer++;
+                if (this.floatTimer > 60) { // 1秒ごとに方向転換
+                    this.floatTimer = 0;
+                    this.floatDirection *= -1;
+                }
+                this.vy = this.floatDirection * this.moveSpeed;
+                break;
+            case 'jumpPatrol':
+                // 空中で上下移動 + 定期的に落下
+                this.vx = 0;
+                this.diveTimer++;
+                if (this.diveTimer < 120) {
+                    // 通常時は上下
+                    this.floatTimer++;
+                    if (this.floatTimer > 60) {
+                        this.floatTimer = 0;
+                        this.floatDirection *= -1;
+                    }
+                    this.vy = this.floatDirection * this.moveSpeed;
+                } else if (this.diveTimer < 180) {
+                    // 落下フェーズ
+                    this.vy = 0.15;
+                } else if (this.diveTimer < 240) {
+                    // 元に戻るフェーズ
+                    const dy = this.originY - this.y;
+                    this.vy = dy > 0 ? 0.1 : -0.1;
+                    if (Math.abs(dy) < 0.2) {
+                        this.y = this.originY;
+                        this.diveTimer = 0;
+                    }
+                } else {
+                    this.diveTimer = 0;
+                }
+                break;
+            case 'chase':
+                // 空中で追いかける
+                this.aerialChaseWithReturn(engine);
+                break;
+            default:
+                this.vx = 0;
+                this.vy = 0;
+        }
+
+        // 空中モードは重力なし、移動のみ
+        this.x += this.vx;
+        this.y += this.vy;
+    }
+
+    patrol(engine) {
+        const checkX = this.facingRight ? Math.floor(this.x + this.width + 0.1) : Math.floor(this.x - 0.1);
+        const footY = Math.floor(this.y + this.height + 0.1);
+
+        // 空中モードでない場合のみ崖判定
+        if (!this.isAerial && this.onGround) {
+            if (engine.getCollision(checkX, footY) === 0) {
+                this.facingRight = !this.facingRight;
+            }
+        }
+
+        // 壁判定
+        const wallY = Math.floor(this.y + this.height / 2);
+        if (engine.getCollision(checkX, wallY) === 1) {
+            this.facingRight = !this.facingRight;
+        }
+
+        this.vx = this.facingRight ? this.moveSpeed : -this.moveSpeed;
+    }
+
+    chaseWithReturn(engine) {
+        if (!engine.player) {
+            this.returnToOrigin();
+            return;
+        }
+
+        const dx = engine.player.x - this.x;
+        const dy = engine.player.y - this.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance < this.detectionRange) {
+            // プレイヤー発見
+            this.isChasing = true;
+            if (Math.abs(dx) > 0.5) {
+                this.vx = dx > 0 ? this.moveSpeed : -this.moveSpeed;
+                this.facingRight = dx > 0;
+            } else {
+                this.vx = 0;
+            }
+        } else if (this.isChasing) {
+            // 見失った → 元の位置へ戻る
+            this.returnToOrigin();
+        } else {
+            this.vx = 0;
+        }
+    }
+
+    aerialChaseWithReturn(engine) {
+        if (!engine.player) {
+            this.returnToOriginAerial();
+            return;
+        }
+
+        const dx = engine.player.x - this.x;
+        const dy = engine.player.y - this.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance < this.detectionRange) {
+            this.isChasing = true;
+            // 重力なしで接近
+            if (Math.abs(dx) > 0.3) {
+                this.vx = dx > 0 ? this.moveSpeed : -this.moveSpeed;
+                this.facingRight = dx > 0;
+            } else {
+                this.vx = 0;
+            }
+            if (Math.abs(dy) > 0.3) {
+                this.vy = dy > 0 ? this.moveSpeed : -this.moveSpeed;
+            } else {
+                this.vy = 0;
+            }
+        } else if (this.isChasing) {
+            this.returnToOriginAerial();
+        } else {
+            this.vx = 0;
+            this.vy = 0;
+        }
+    }
+
+    returnToOrigin() {
+        const dx = this.originX - this.x;
+        if (Math.abs(dx) > 0.2) {
+            this.vx = dx > 0 ? this.moveSpeed : -this.moveSpeed;
+            this.facingRight = dx > 0;
+        } else {
+            this.vx = 0;
+            this.x = this.originX;
+            this.isChasing = false;
+        }
+    }
+
+    returnToOriginAerial() {
+        const dx = this.originX - this.x;
+        const dy = this.originY - this.y;
+        if (Math.abs(dx) > 0.2) {
+            this.vx = dx > 0 ? this.moveSpeed : -this.moveSpeed;
+            this.facingRight = dx > 0;
+        } else {
+            this.vx = 0;
+        }
+        if (Math.abs(dy) > 0.2) {
+            this.vy = dy > 0 ? this.moveSpeed : -this.moveSpeed;
+        } else {
+            this.vy = 0;
+        }
+        if (Math.abs(dx) < 0.2 && Math.abs(dy) < 0.2) {
+            this.x = this.originX;
+            this.y = this.originY;
+            this.isChasing = false;
+        }
+    }
+
     updateState() {
         if (this.isAttacking) {
             this.state = 'attack';
-        } else if (!this.onGround) {
+        } else if (!this.onGround && !this.isAerial) {
             this.state = 'jump';
         } else if (this.vx !== 0) {
             this.state = 'walk';
@@ -160,8 +369,8 @@ class Enemy {
             width: 0.5,
             height: 0.5,
             spriteIdx: shotSprite,
-            templateIdx: this.templateIdx, // アニメーション用
-            animationSlot: 'shot', // 使用するスロットを指定
+            templateIdx: this.templateIdx,
+            animationSlot: 'shot',
             owner: 'enemy',
             maxRange: this.shotMaxRange,
             startX: this.x,
@@ -181,42 +390,6 @@ class Enemy {
         this.vy = -0.3;
         this.vx = fromRight ? -0.1 : 0.1;
         this.onGround = false;
-    }
-
-    patrol(engine) {
-        const checkX = this.facingRight ? Math.floor(this.x + this.width + 0.1) : Math.floor(this.x - 0.1);
-        const footY = Math.floor(this.y + this.height + 0.1);
-
-        // 接地している場合のみ崖判定を行う（ジャンプ中の高速振動防止）
-        if (this.onGround) {
-            if (engine.getCollision(checkX, footY) === 0) {
-                this.facingRight = !this.facingRight;
-            }
-        }
-
-        this.vx = this.facingRight ? this.moveSpeed : -this.moveSpeed;
-    }
-
-    chase(engine) {
-        if (!engine.player) {
-            this.vx = 0;
-            return;
-        }
-        const dx = engine.player.x - this.x;
-        if (Math.abs(dx) > 0.5) {
-            this.vx = dx > 0 ? this.moveSpeed : -this.moveSpeed;
-            this.facingRight = dx > 0;
-        } else {
-            this.vx = 0;
-        }
-    }
-
-    jumpPatrol(engine) {
-        this.patrol(engine);
-        if (this.onGround && Math.random() < 0.02) {
-            this.vy = -0.3;
-            this.onGround = false;
-        }
     }
 
     handleHorizontalCollision(engine) {
@@ -276,14 +449,12 @@ class Enemy {
 
         if (sprite) {
             const palette = App.nesPalette;
-            // スプライトサイズを判定
             const spriteSize = sprite.size || 1;
             const dimension = spriteSize === 2 ? 32 : 16;
             const tileCount = spriteSize === 2 ? 2 : 1;
             const renderSize = tileSize * tileCount;
             const pixelSize = renderSize / dimension;
 
-            // 32x32スプライトは足元を基準に描画（1タイル分上にオフセット）
             const yOffset = spriteSize === 2 ? -tileSize : 0;
             const adjustedScreenY = screenY + yOffset;
 
