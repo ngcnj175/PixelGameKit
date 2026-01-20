@@ -960,7 +960,8 @@ const GameEngine = {
                     proj.x += proj.vx;
                     proj.y += proj.vy;
                 } else if (shotType === 'boomerang') {
-                    // ブーメラン: 壁で反転して戻る
+                    // ブーメラン: 壁にダメージを与えて反転
+                    this.damageTile(Math.floor(proj.x + cx), Math.floor(proj.y + cy));
                     if (!proj.returning) {
                         proj.returning = true;
                         proj.vx = -proj.vx;

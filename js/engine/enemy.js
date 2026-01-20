@@ -69,6 +69,19 @@ class Enemy {
         }
 
         if (this.isDying) {
+            // 死亡点滅フェーズ
+            if (this.deathFlashPhase) {
+                if (this.damageFlashTimer > 0) {
+                    this.damageFlashTimer--;
+                    return false; // まだ点滅中
+                }
+                // 点滅終了→落下開始
+                this.deathFlashPhase = false;
+                this.vy = -0.3;
+                this.vx = this.deathFromRight ? -0.1 : 0.1;
+                this.onGround = false;
+            }
+            // 落下演出
             this.vy += this.gravity;
             this.y += this.vy;
             this.deathTimer++;
@@ -687,10 +700,11 @@ class Enemy {
 
     die(fromRight) {
         this.isDying = true;
-        this.damageFlashTimer = 0; // 死亡時は点滅リセット
-        this.vy = -0.3;
-        this.vx = fromRight ? -0.1 : 0.1;
-        this.onGround = false;
+        this.damageFlashTimer = 10; // 死亡時も白点滅
+        this.deathFlashPhase = true; // 点滅中は落下しない
+        this.deathFromRight = fromRight;
+        this.vy = 0;
+        this.vx = 0;
     }
 
     handleHorizontalCollision(engine) {
