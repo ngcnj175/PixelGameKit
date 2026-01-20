@@ -14,6 +14,7 @@ const GameEngine = {
     enemies: [],
     projectiles: [],
     items: [],
+    gimmickBlocks: [],
 
     GRAVITY: 0.5,
     TILE_SIZE: 16,
@@ -399,11 +400,40 @@ const GameEngine = {
                 }
             }
         }
+        // ギミックブロック初期化
+        this.gimmickBlocks = [];
+        if (stage && stage.layers && stage.layers.fg) {
+            for (let y = 0; y < stage.height; y++) {
+                for (let x = 0; x < stage.width; x++) {
+                    const tileId = stage.layers.fg[y][x];
+                    if (tileId >= 0) {
+                        const { template, templateIdx } = getTemplateFromTileId(tileId);
+                        if (template && template.type === 'material' && template.config?.gimmick && template.config.gimmick !== 'none') {
+                            this.gimmickBlocks.push({
+                                tileX: x,
+                                tileY: y,
+                                x: x, // 実際の位置（小数）
+                                y: y,
+                                tileId: tileId,
+                                template: template,
+                                templateIdx: templateIdx,
+                                gimmick: template.config.gimmick,
+                                vx: template.config.gimmick === 'moveH' ? 0.02 : 0,
+                                vy: template.config.gimmick === 'moveV' ? 0.02 : 0,
+                                state: 'normal', // 'normal', 'triggered', 'shaking', 'falling'
+                                timer: 0
+                            });
+                        }
+                    }
+                }
+            }
+        }
 
         // デバッグログ
         console.log('=== Game Initialized ===');
         console.log('totalClearItems:', this.totalClearItems);
         console.log('items array length:', this.items.length);
+        console.log('gimmickBlocks:', this.gimmickBlocks.length);
         console.log('Clear items detail:');
         this.items.filter(i => i.itemType === 'clear').forEach((item, idx) => {
             console.log(`  [${idx}] x=${item.x}, y=${item.y}, type=${item.itemType}`);
@@ -650,6 +680,24 @@ const GameEngine = {
 
         this.renderStage();
 
+        // ギミックブロック描画
+        this.gimmickBlocks.forEach(block => {
+            const sprites = App.projectData.sprites;
+            const palette = App.nesPalette;
+            const template = block.template;
+            const spriteIdx = template?.sprites?.main?.frames?.[0];
+            const sprite = sprites[spriteIdx];
+            if (!sprite) return;
+
+            // 震えエフェクト
+            let offsetX = 0;
+            if (block.state === 'shaking') {
+                offsetX = (Math.random() - 0.5) * 0.1;
+            }
+
+            this.renderSprite(sprite, block.x + offsetX, block.y, palette);
+        });
+
         // アイテム描画
         this.items.forEach(item => {
             if (!item.collected) {
@@ -874,6 +922,9 @@ const GameEngine = {
         // アイテム衝突判定
         this.checkItemCollisions();
 
+        // ギミックブロック更新
+        this.updateGimmickBlocks();
+
         this.checkCollisions();
         this.checkClearCondition();
     },
@@ -1016,6 +1067,80 @@ const GameEngine = {
             proj.x + proj.width > target.x &&
             proj.y < target.y + target.height &&
             proj.y + proj.height > target.y;
+    },
+
+    updateGimmickBlocks() {
+        const stage = App.projectData.stage;
+        if (!stage) return;
+
+        this.gimmickBlocks = this.gimmickBlocks.filter(block => {
+            const gimmick = block.gimmick;
+
+            // 横移動
+            if (gimmick === 'moveH') {
+                block.x += block.vx;
+                // 障害物チェック
+                const nextTileX = block.vx > 0 ? Math.floor(block.x + 1) : Math.floor(block.x);
+                if (nextTileX < 0 || nextTileX >= stage.width || this.getCollision(nextTileX, Math.floor(block.y)) === 1) {
+                    block.vx = -block.vx;
+                    block.x += block.vx * 2;
+                }
+            }
+
+            // 縦移動
+            if (gimmick === 'moveV') {
+                block.y += block.vy;
+                // 障害物チェック
+                const nextTileY = block.vy > 0 ? Math.floor(block.y + 1) : Math.floor(block.y);
+                if (nextTileY < 0 || nextTileY >= stage.height || this.getCollision(Math.floor(block.x), nextTileY) === 1) {
+                    block.vy = -block.vy;
+                    block.y += block.vy * 2;
+                }
+            }
+
+            // 落下ブロック
+            if (gimmick === 'fall') {
+                // プレイヤーが上に乗っているかチェック
+                if (block.state === 'normal' && this.player) {
+                    const playerOnTop =
+                        this.player.x + this.player.width > block.x &&
+                        this.player.x < block.x + 1 &&
+                        Math.abs((this.player.y + this.player.height) - block.y) < 0.15 &&
+                        this.player.vy >= 0;
+                    if (playerOnTop) {
+                        block.state = 'triggered';
+                        block.timer = 60; // 1秒待機
+                    }
+                }
+
+                if (block.state === 'triggered') {
+                    block.timer--;
+                    if (block.timer <= 0) {
+                        block.state = 'shaking';
+                        block.timer = 30; // 0.5秒震える
+                    }
+                }
+
+                if (block.state === 'shaking') {
+                    block.timer--;
+                    if (block.timer <= 0) {
+                        block.state = 'falling';
+                        block.vy = 0;
+                    }
+                }
+
+                if (block.state === 'falling') {
+                    block.vy += 0.02; // 重力
+                    block.y += block.vy;
+                    // 画面外で削除
+                    if (block.y > stage.height + 5) {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        });
     },
 
     checkItemCollisions() {

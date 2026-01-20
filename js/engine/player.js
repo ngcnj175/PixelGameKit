@@ -155,6 +155,12 @@ class Player {
         this.y += this.vy;
         this.handleVerticalCollision(engine);
 
+        // ギミックブロックに乗っている場合、ブロックと一緒に移動
+        if (this.ridingGimmickBlock) {
+            this.x += this.ridingGimmickBlock.vx;
+            this.y = this.ridingGimmickBlock.y - this.height;
+        }
+
         // 画面外落下で即死（パーティクルなし）
         const stageHeight = App.projectData.stage?.height || 16;
         if (this.y > stageHeight + 1) {
@@ -497,6 +503,7 @@ class Player {
 
     handleVerticalCollision(engine) {
         this.onGround = false;
+        this.ridingGimmickBlock = null; // ギミックブロックに乗っているか
         const left = Math.floor(this.x);
         const right = Math.floor(this.x + this.width - 0.01);
         const top = Math.floor(this.y);
@@ -519,6 +526,37 @@ class Player {
                 if (this.isKnockback) {
                     this.isKnockback = false;
                     this.vx = 0;
+                }
+            }
+        }
+
+        // ギミックブロックとの衝突チェック（落下中のみ）
+        if (this.vy >= 0 && engine.gimmickBlocks) {
+            for (const block of engine.gimmickBlocks) {
+                // 落下中のブロックはすり抜ける
+                if (block.state === 'falling') continue;
+
+                // ブロックの上に乗っているか判定
+                const playerBottom = this.y + this.height;
+                const playerLeft = this.x;
+                const playerRight = this.x + this.width;
+                const blockTop = block.y;
+                const blockLeft = block.x;
+                const blockRight = block.x + 1;
+
+                // 横方向に重なっていて、足元がブロック上面付近
+                if (playerRight > blockLeft && playerLeft < blockRight &&
+                    playerBottom >= blockTop && playerBottom < blockTop + 0.3 &&
+                    this.vy >= 0) {
+                    this.y = blockTop - this.height;
+                    this.vy = 0;
+                    this.onGround = true;
+                    this.ridingGimmickBlock = block;
+                    if (this.isKnockback) {
+                        this.isKnockback = false;
+                        this.vx = 0;
+                    }
+                    break;
                 }
             }
         }

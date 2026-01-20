@@ -422,6 +422,17 @@ const StageEditor = {
                 </div>
             `;
             html += this.renderSlider('耐久性', 'life', config.life ?? -1, -1, 10);
+            html += `
+                <div class="param-row">
+                    <span class="param-label">ギミック</span>
+                    <select class="param-select" data-key="gimmick">
+                        <option value="none" ${!config.gimmick || config.gimmick === 'none' ? 'selected' : ''}>なし</option>
+                        <option value="moveH" ${config.gimmick === 'moveH' ? 'selected' : ''}>横移動</option>
+                        <option value="moveV" ${config.gimmick === 'moveV' ? 'selected' : ''}>縦移動</option>
+                        <option value="fall" ${config.gimmick === 'fall' ? 'selected' : ''}>落下</option>
+                    </select>
+                </div>
+            `;
         } else if (type === 'item') {
             html += `
                 <div class="param-row">
