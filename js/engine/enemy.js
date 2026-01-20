@@ -619,6 +619,43 @@ class Enemy {
                 shotType: shotType,
                 bounceCount: 0
             });
+        } else if (shotType === 'melee') {
+            // 近接: 目の前に1タイル表示
+            engine.projectiles.push({
+                x: this.x + (this.facingRight ? 1 : -1),
+                y: this.y,
+                vx: 0, vy: 0,
+                width: 1, height: 1,
+                spriteIdx: shotSprite,
+                templateIdx: this.templateIdx,
+                animationSlot: 'shot',
+                owner: 'enemy',
+                maxRange: 999,
+                startX: this.x, startY: this.y,
+                facingRight: this.facingRight,
+                shotType: shotType,
+                duration: 15,
+                bounceCount: 0
+            });
+        } else if (shotType === 'pinball') {
+            // ピンポン: 斜め45度発射
+            const angle = this.facingRight ? -45 : -135;
+            const rad = angle * Math.PI / 180;
+            engine.projectiles.push({
+                x: startX, y: startY,
+                vx: Math.cos(rad) * baseSpeed,
+                vy: Math.sin(rad) * baseSpeed,
+                width: 0.5, height: 0.5,
+                spriteIdx: shotSprite,
+                templateIdx: this.templateIdx,
+                animationSlot: 'shot',
+                owner: 'enemy',
+                maxRange: this.shotMaxRange,
+                startX: startX, startY: startY,
+                facingRight: this.facingRight,
+                shotType: shotType,
+                bounceCount: 0
+            });
         } else {
             // その他: 通常発射
             engine.projectiles.push({

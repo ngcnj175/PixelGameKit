@@ -365,8 +365,9 @@ const StageEditor = {
             html += this.renderSlider('射程距離', 'shotMaxRange', config.shotMaxRange ?? 16, 0, 16);
             html += `
                 <div class="param-row">
-                    <span class="param-label">飛び方</span>
+                    <span class="param-label">攻撃タイプ</span>
                     <select class="param-select" data-key="shotType">
+                        <option value="melee" ${config.shotType === 'melee' ? 'selected' : ''}>近接</option>
                         <option value="straight" ${config.shotType === 'straight' || !config.shotType ? 'selected' : ''}>ストレート</option>
                         <option value="arc" ${config.shotType === 'arc' ? 'selected' : ''}>やまなり</option>
                         <option value="drop" ${config.shotType === 'drop' ? 'selected' : ''}>鳥のフン</option>

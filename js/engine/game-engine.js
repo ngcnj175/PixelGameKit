@@ -882,6 +882,12 @@ const GameEngine = {
         this.projectiles = this.projectiles.filter(proj => {
             const shotType = proj.shotType || 'straight';
 
+            // 寿命(duration)があれば減少
+            if (proj.duration !== undefined) {
+                proj.duration--;
+                if (proj.duration <= 0) return false;
+            }
+
             // タイプ別の移動処理
             switch (shotType) {
                 case 'arc':
