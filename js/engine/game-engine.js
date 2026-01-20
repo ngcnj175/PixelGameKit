@@ -1763,6 +1763,14 @@ const GameEngine = {
             return { template: null, sprite: null, spriteIdx: -1 };
         };
 
+        // ギミックブロック位置をセットに登録
+        const gimmickPositions = new Set();
+        if (this.gimmickBlocks) {
+            this.gimmickBlocks.forEach(block => {
+                gimmickPositions.add(`${block.tileX},${block.tileY}`);
+            });
+        }
+
         // 全タイルを描画（player/enemy/itemタイプは除外）
         for (let y = 0; y < stage.height; y++) {
             for (let x = 0; x < stage.width; x++) {
@@ -1772,6 +1780,11 @@ const GameEngine = {
 
                 // 破壊されたタイルは描画しない
                 if (this.destroyedTiles && this.destroyedTiles.has(`${x},${y}`)) {
+                    continue;
+                }
+
+                // ギミックブロックは別途描画するのでスキップ
+                if (gimmickPositions.has(`${x},${y}`)) {
                     continue;
                 }
 
