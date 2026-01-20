@@ -206,7 +206,9 @@ const GameEngine = {
     },
 
     initGame() {
-        const stage = App.projectData.stage;
+        // ステージデータのディープコピーを作成（実行中の変更が元データに影響しないように）
+        this.stageData = JSON.parse(JSON.stringify(App.projectData.stage));
+        const stage = this.stageData;
         const templates = App.projectData.templates || [];
 
         console.log('=== initGame Debug ===');
@@ -423,6 +425,9 @@ const GameEngine = {
                                 state: 'normal', // 'normal', 'triggered', 'shaking', 'falling'
                                 timer: 0
                             });
+                            // 実行用ステージデータから元タイルを削除（二重当たり判定防止）
+                            stage.layers.fg[y][x] = -1;
+                            console.log(`Gimmick block initialized at ${x},${y}. Original tile cleared.`);
                         }
                     }
                 }
@@ -906,7 +911,7 @@ const GameEngine = {
             this.camera.y = this.player.y - viewHeight / 2 + 0.5;
 
             // カメラ範囲制限
-            const stage = App.projectData.stage;
+            const stage = this.stageData || App.projectData.stage;
             this.camera.x = Math.max(0, Math.min(this.camera.x, stage.width - viewWidth));
             this.camera.y = Math.max(0, Math.min(this.camera.y, stage.height - viewHeight));
         }
@@ -1070,7 +1075,7 @@ const GameEngine = {
     },
 
     updateGimmickBlocks() {
-        const stage = App.projectData.stage;
+        const stage = this.stageData || App.projectData.stage;
         if (!stage) return;
 
         this.gimmickBlocks = this.gimmickBlocks.filter(block => {
@@ -1394,7 +1399,8 @@ const GameEngine = {
     },
 
     getCollision(x, y) {
-        const stage = App.projectData.stage;
+        // ステージデータ参照（ギミックブロック削除済みコピーを使用）
+        const stage = this.stageData || App.projectData.stage;
         const templates = App.projectData.templates || [];
         const tileX = Math.floor(x);
         const tileY = Math.floor(y);
@@ -1710,7 +1716,7 @@ const GameEngine = {
     },
 
     renderStage() {
-        const stage = App.projectData.stage;
+        const stage = this.stageData || App.projectData.stage;
         const sprites = App.projectData.sprites;
         const palette = App.nesPalette;
 
@@ -1721,7 +1727,7 @@ const GameEngine = {
     },
 
     renderLayer(layer, sprites, palette) {
-        const stage = App.projectData.stage;
+        const stage = this.stageData || App.projectData.stage;
         const templates = App.projectData.templates || [];
 
         // ヘルパー: tileIdからスプライトとテンプレートを取得（アニメーション対応）
