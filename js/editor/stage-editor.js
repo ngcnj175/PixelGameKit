@@ -341,10 +341,6 @@ const StageEditor = {
                 </div>
                 <span class="sprite-count" data-slot="${slot}">${speed}</span>
                 <input type="range" class="sprite-speed" min="1" max="20" value="${speed}" data-slot="${slot}">
-                <label class="sprite-loop-label">
-                    <input type="checkbox" ${spriteData.loop !== false ? 'checked' : ''} data-slot="${slot}">
-                    LOOP
-                </label>
             </div>
         `;
     },
@@ -400,27 +396,12 @@ const StageEditor = {
                             <option value="rush" ${config.move === 'rush' ? 'selected' : ''}>とっしん</option>
                         </select>
                     </div>
-                    <div class="param-row">
-                        <label class="param-check-label">
-                            <input type="checkbox" data-key="isAerial" ${config.isAerial ? 'checked' : ''}>
-                            空中
-                        </label>
-                        <label class="param-check-label">
-                            <input type="checkbox" data-key="isBoss" ${config.isBoss ? 'checked' : ''}>
-                            ボスてき
-                        </label>
-                    </div>
                 `;
+                html += this.renderToggle('空中', 'isAerial', config.isAerial);
+                html += this.renderToggle('ボスてき', 'isBoss', config.isBoss);
             }
         } else if (type === 'material') {
-            html += `
-                <div class="param-row">
-                    <label class="param-check-label">
-                        <input type="checkbox" data-key="collision" ${config.collision !== false ? 'checked' : ''}>
-                        当たり判定
-                    </label>
-                </div>
-            `;
+            html += this.renderToggle('当たり判定', 'collision', config.collision !== false);
             html += this.renderSlider('耐久性', 'life', config.life ?? -1, -1, 10);
             html += `
                 <div class="param-row">
@@ -450,38 +431,86 @@ const StageEditor = {
     },
 
     renderSlider(label, key, value, min, max) {
-        let sliderValue = value;
-        let sliderMax = max;
+        // ブロックゲージに変更（5個固定、タップ形式）
+        return this.renderBlockGauge(label, key, value, min, max);
+    },
 
-        // MaterialのLIFE設定の場合、0をスキップするためのマッピング
-        // 実際: -1, 1, 2, 3...
-        // UI:   -1, 0, 1, 2...
+    renderBlockGauge(label, key, value, min, max) {
+        // 値を0-5の範囲にマッピング
+        let mappedValue = value;
+
+        // 特殊ケース: lifeで-1は無限
         if (key === 'life' && min === -1) {
-            if (value > 0) sliderValue = value - 1;
-            sliderMax = max - 1; // 最大値スライダー位置も調整
+            if (value === -1) mappedValue = 0; // 無限=0番目
+            else mappedValue = Math.min(value, 5);
+        } else {
+            // 通常のマッピング: min-max を 1-5 にマッピング
+            const range = max - min;
+            mappedValue = Math.round(((value - min) / range) * 4) + 1;
+            mappedValue = Math.max(1, Math.min(5, mappedValue));
         }
 
-        const displayVal = value === -1 ? '∞' : value;
+        let blocks = '';
+        for (let i = 1; i <= 5; i++) {
+            const active = i <= mappedValue ? 'active' : '';
+            blocks += `<span class="block-gauge-item ${active}" data-key="${key}" data-index="${i}"></span>`;
+        }
+
         return `
-            <div class="param-row">
-                <span class="param-label">${label}:</span>
-                <span class="param-value" data-key="${key}">${displayVal}</span>
-                <input type="range" class="param-slider" min="${min}" max="${sliderMax}" value="${sliderValue}" data-key="${key}">
+            <div class="param-row param-row-gauge">
+                <span class="param-label">${label}</span>
+                <div class="block-gauge" data-key="${key}" data-min="${min}" data-max="${max}">
+                    ${blocks}
+                </div>
             </div>
         `;
     },
 
     renderSliderWithCheck(label, sliderKey, sliderValue, min, max, checkLabel, checkKey, checkValue) {
+        // ブロックゲージ + トグルスイッチに変更
         return `
-            <div class="param-row">
-                <span class="param-label">${label}:</span>
-                <span class="param-value" data-key="${sliderKey}">${sliderValue}</span>
-                <input type="range" class="param-slider" min="${min}" max="${max}" value="${sliderValue}" data-key="${sliderKey}">
-                <label class="param-check-label">
-                    <input type="checkbox" data-key="${checkKey}" ${checkValue ? 'checked' : ''}>
-                    ${checkLabel}
+            <div class="param-row param-row-gauge">
+                <span class="param-label">${label}</span>
+                <div class="block-gauge" data-key="${sliderKey}" data-min="${min}" data-max="${max}">
+                    ${this.renderBlockGaugeItems(sliderKey, sliderValue, min, max)}
+                </div>
+                ${this.renderToggleInline(checkLabel, checkKey, checkValue)}
+            </div>
+        `;
+    },
+
+    renderBlockGaugeItems(key, value, min, max) {
+        const range = max - min;
+        let mappedValue = Math.round(((value - min) / range) * 4) + 1;
+        mappedValue = Math.max(1, Math.min(5, mappedValue));
+
+        let blocks = '';
+        for (let i = 1; i <= 5; i++) {
+            const active = i <= mappedValue ? 'active' : '';
+            blocks += `<span class="block-gauge-item ${active}" data-key="${key}" data-index="${i}"></span>`;
+        }
+        return blocks;
+    },
+
+    renderToggle(label, key, value) {
+        return `
+            <div class="param-row param-row-toggle">
+                <span class="param-label">${label}</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" data-key="${key}" ${value ? 'checked' : ''}>
+                    <span class="toggle-slider"></span>
                 </label>
             </div>
+        `;
+    },
+
+    renderToggleInline(label, key, value) {
+        return `
+            <label class="toggle-switch toggle-inline" title="${label}">
+                <input type="checkbox" data-key="${key}" ${value ? 'checked' : ''}>
+                <span class="toggle-slider"></span>
+                <span class="toggle-label">${label}</span>
+            </label>
         `;
     },
 
@@ -566,7 +595,7 @@ const StageEditor = {
             });
         });
 
-        // パラメータスライダー
+        // パラメータスライダー (legacy support)
         document.querySelectorAll('.param-slider').forEach(slider => {
             slider.addEventListener('input', (e) => {
                 const key = slider.dataset.key;
@@ -588,8 +617,43 @@ const StageEditor = {
             });
         });
 
-        // パラメータチェックボックス
-        document.querySelectorAll('.param-check-label input[type="checkbox"]').forEach(cb => {
+        // ブロックゲージクリック
+        document.querySelectorAll('.block-gauge-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const key = item.dataset.key;
+                const index = parseInt(item.dataset.index);
+                const gaugeContainer = item.closest('.block-gauge');
+                const min = parseInt(gaugeContainer.dataset.min);
+                const max = parseInt(gaugeContainer.dataset.max);
+
+                if (key && this.editingTemplate?.config) {
+                    // インデックス(1-5)を実際の値にマッピング
+                    let value;
+                    if (key === 'life' && min === -1) {
+                        // 特殊ケース: 0=無限(-1), 1-5=1-5
+                        value = index === 0 ? -1 : index;
+                    } else {
+                        // 通常マッピング
+                        const range = max - min;
+                        value = Math.round(((index - 1) / 4) * range + min);
+                    }
+
+                    this.editingTemplate.config[key] = value;
+
+                    // ゲージUIを更新
+                    gaugeContainer.querySelectorAll('.block-gauge-item').forEach((g, i) => {
+                        if (i + 1 <= index) {
+                            g.classList.add('active');
+                        } else {
+                            g.classList.remove('active');
+                        }
+                    });
+                }
+            });
+        });
+
+        // トグルスイッチ / チェックボックス
+        document.querySelectorAll('.toggle-switch input[type="checkbox"], .param-check-label input[type="checkbox"]').forEach(cb => {
             cb.addEventListener('change', () => {
                 const key = cb.dataset.key;
                 if (key && this.editingTemplate?.config) {
