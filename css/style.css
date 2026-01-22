@@ -808,8 +808,10 @@ body {
 }
 
 .sprite-row-label {
-    width: 55px;
-    font-size: 11px;
+    width: 60px;
+    /* 少し広げる */
+    font-size: 12px;
+    /* 11px -> 12pxに拡大 */
     font-weight: bold;
     color: var(--text-dark);
 }
@@ -3616,8 +3618,8 @@ body {
 .se-select {
     width: 50%;
     flex: none;
-    margin: 0 8px;
-    /* ボタンとの間隔 */
+    margin: 0 8px 0 0;
+    /* 左マージンを削除して揃える */
 }
 
 .se-preview-btn:active {
@@ -3638,6 +3640,10 @@ body {
     color: var(--border-color);
     font-size: 20px;
     font-weight: 300;
+    line-height: 1;
+    /* 高さのズレを防ぐ */
+    padding-bottom: 2px;
+    /* 微調整 */
 }
 
 /* 繝代Λ繝｡繝ｼ繧ｿ陦� */
@@ -3713,6 +3719,8 @@ body {
 .toggle-inline {
     /* margin-left: auto;  <- 右寄せを解除 */
     margin-right: 0;
+    margin-left: 12px;
+    /* 少しスペースを空ける */
 }
 
 /* 繝代Λ繝｡繝ｼ繧ｿ繧ｻ繧ｯ繧ｷ繝ｧ繝ｳ */
