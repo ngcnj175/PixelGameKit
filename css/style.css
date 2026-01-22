@@ -797,11 +797,12 @@ body {
     margin-bottom: 12px;
 }
 
-/* 繧ｹ繝励Λ繧､繝郁｡� */
+/* スプライト行 */
 .sprite-row {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 0;
+    /* gapは0にして個別にマージン設定 */
     margin-bottom: 6px;
     padding: 4px 0;
 }
@@ -813,7 +814,7 @@ body {
     color: var(--text-dark);
 }
 
-/* 繧ｹ繝励Λ繧､繝育匳骭ｲ譫� */
+/* スプライトスロット */
 .sprite-slot {
     width: 36px;
     height: 36px;
@@ -825,6 +826,8 @@ body {
     justify-content: center;
     cursor: pointer;
     flex-shrink: 0;
+    margin-right: 12px;
+    /* ゲージとの間隔を空ける */
 }
 
 .sprite-slot:active {
@@ -3537,34 +3540,79 @@ body {
    ======================================== */
 
 /* 繝悶Ο繝�け繧ｲ繝ｼ繧ｸ��5蛟九�繧ｿ繝��蜿ｯ閭ｽ縺ｪ繝悶Ο繝�け�� */
+/* ブロックゲージ（5個のタップ可能なブロック） */
 .block-gauge {
     display: flex;
-    gap: 4px;
+    gap: 6px;
+    /* 間隔を少し広げる */
     align-items: center;
 }
 
 .block-gauge-item {
     width: 14px;
-    /* 少し細く */
     height: 24px;
-    /* 縦長に */
+    /* 縦長 */
     background: #ffffff;
-    /* 白抜き（データなし） */
-    border: 2px solid var(--color-medium);
-    /* 外枠グレー */
-    border-radius: 3px;
+    border: 2px solid var(--border-color);
+    /* スプライト枠と同じ色 */
+    border-radius: 0;
+    /* 角丸なし */
     cursor: pointer;
-    transition: all 0.15s;
+    transition: background 0.15s;
 }
 
 .block-gauge-item.active {
-    background: var(--color-dark);
-    border-color: var(--color-dark);
+    background: #4eff4e;
+    /* 明るい緑 */
+    border-color: var(--border-color);
 }
 
 .block-gauge-item:hover {
-    transform: translateY(-2px);
-    /* ホバー時は上に少し動く */
+    opacity: 0.8;
+    /* シンプルなホバー効果 */
+}
+
+/* SEプレビューボタン */
+.se-preview-btn {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 1px solid var(--border-color);
+    background: transparent;
+    color: var(--color-medium);
+    font-size: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-left: 2px;
+    /* アイコン位置調整 */
+    transition: all 0.2s;
+}
+
+.se-preview-btn:hover {
+    border-color: var(--color-dark);
+    color: var(--color-dark);
+}
+
+.se-preview-btn:active {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+/* スプライトスロットの空状態（+表示） */
+.sprite-slot:empty {
+    position: relative;
+}
+
+.sprite-slot:empty::before {
+    content: '+';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--border-color);
+    font-size: 20px;
+    font-weight: 300;
 }
 
 /* 繝代Λ繝｡繝ｼ繧ｿ陦� */
