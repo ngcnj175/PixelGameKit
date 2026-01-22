@@ -335,7 +335,7 @@ const StageEditor = {
 
         return `
             <div class="sprite-row" data-slot="${slot}">
-                <span class="sprite-row-label">${labels[slot] || slot.toUpperCase()}:</span>
+                <span class="sprite-row-label">${labels[slot] || slot.toUpperCase()}</span>
                 <div class="sprite-slot" data-slot="${slot}">
                     ${firstFrame !== undefined ? `<canvas width="16" height="16" data-sprite="${firstFrame}"></canvas>` : ''}
                 </div>
@@ -540,7 +540,7 @@ const StageEditor = {
         });
         return `
             <div class="param-row se-row">
-                <span class="param-label">${label}:</span>
+                <span class="param-label">${label}</span>
                 <select class="param-select se-select" data-key="${key}">
                     ${options}
                 </select>

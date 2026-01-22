@@ -3572,6 +3572,11 @@ body {
     /* シンプルなホバー効果 */
 }
 
+.block-gauge-item:hover {
+    opacity: 0.8;
+    /* シンプルなホバー効果 */
+}
+
 .block-gauge-item.active:hover {
     opacity: 1;
     /* アクティブ時は薄くしない */
@@ -3606,11 +3611,11 @@ body {
 
 .se-row {
     width: 100%;
-    justify-content: space-between;
 }
 
 .se-select {
-    flex-grow: 1;
+    width: 50%;
+    flex: none;
     margin: 0 8px;
     /* ボタンとの間隔 */
 }
@@ -3706,7 +3711,8 @@ body {
 }
 
 .toggle-inline {
-    margin-left: auto;
+    /* margin-left: auto;  <- 右寄せを解除 */
+    margin-right: 0;
 }
 
 /* 繝代Λ繝｡繝ｼ繧ｿ繧ｻ繧ｯ繧ｷ繝ｧ繝ｳ */
