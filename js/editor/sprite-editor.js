@@ -137,7 +137,11 @@ const SpriteEditor = {
                 isLongPress = false;
                 longPressTimer = setTimeout(() => {
                     isLongPress = true;
-                    this.deleteColor(index);
+                    App.showActionMenu('カラー操作', [
+                        { text: '複製', action: () => this.duplicateColor(index) },
+                        { text: '削除', style: 'destructive', action: () => this.deleteColor(index) },
+                        { text: 'キャンセル', style: 'cancel' }
+                    ]);
                 }, 600);
             };
 
@@ -283,18 +287,28 @@ const SpriteEditor = {
     },
 
     // 色を削除（確認あり）
-    deleteColor(index) {
+    deleteColor(index, needConfirm = true) {
         if (App.nesPalette.length <= 1) {
             alert('最低1色は必要です');
             return;
         }
-        if (!confirm('この色を削除しますか？')) {
+        if (needConfirm && !confirm('この色を削除しますか？')) {
             return;
         }
         App.nesPalette.splice(index, 1);
         if (this.selectedColor >= App.nesPalette.length) {
             this.selectedColor = App.nesPalette.length - 1;
         }
+        this.initColorPalette();
+    },
+
+    // 色を複製
+    duplicateColor(index) {
+        const color = App.nesPalette[index];
+        // 該当色の後ろに追加
+        App.nesPalette.splice(index + 1, 0, color);
+        // 追加した色を選択状態にする
+        this.selectedColor = index + 1;
         this.initColorPalette();
     },
 
@@ -656,7 +670,12 @@ const SpriteEditor = {
                 isLongPress = false;
                 longPressTimer = setTimeout(() => {
                     isLongPress = true;
-                    this.deleteSprite(index);
+                    // アクションメニュー表示
+                    App.showActionMenu('スプライト操作', [
+                        { text: '複製', action: () => this.duplicateSprite(index) },
+                        { text: '削除', style: 'destructive', action: () => this.deleteSprite(index) },
+                        { text: 'キャンセル', style: 'cancel' }
+                    ]);
                 }, 800);
             };
 
@@ -1024,13 +1043,13 @@ const SpriteEditor = {
         this.render();
     },
 
-    deleteSprite(index) {
+    deleteSprite(index, needConfirm = true) {
         if (App.projectData.sprites.length <= 1) {
             alert('これ以上削除できません');
             return;
         }
 
-        if (!confirm('このスプライトを削除しますか？')) {
+        if (needConfirm && !confirm('このスプライトを削除しますか？')) {
             return;
         }
 
@@ -1038,6 +1057,29 @@ const SpriteEditor = {
         App.projectData.sprites.forEach((s, i) => s.id = i);
 
         this.currentSprite = Math.max(0, index - 1);
+        this.history = [];
+        this.initSpriteGallery();
+        this.render();
+    },
+
+    // スプライトを複製
+    duplicateSprite(index) {
+        const srcSprite = App.projectData.sprites[index];
+        // ディープコピー
+        const newSprite = JSON.parse(JSON.stringify(srcSprite));
+
+        // IDは一時的にダミー（ID振り直しで更新される）
+        newSprite.id = -1;
+        newSprite.name = srcSprite.name + '_copy';
+
+        // 該当スプライトの後ろに追加
+        App.projectData.sprites.splice(index + 1, 0, newSprite);
+
+        // ID振り直し
+        App.projectData.sprites.forEach((s, i) => s.id = i);
+
+        // 複製したスプライトを選択
+        this.currentSprite = index + 1;
         this.history = [];
         this.initSpriteGallery();
         this.render();

@@ -613,6 +613,89 @@ const App = {
         saveBtn.addEventListener('click', () => { closeModal(); onSave(); });
         noSaveBtn.addEventListener('click', () => { closeModal(); onNoSave(); });
         cancelBtn.addEventListener('click', () => { closeModal(); onCancel(); });
+    },
+
+    // アクションメニュー（iOS風）
+    showActionMenu(title, actions) {
+        const overlay = document.createElement('div');
+        overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:flex-end;justify-content:center;z-index:9999;';
+
+        const modal = document.createElement('div');
+        modal.className = 'action-sheet';
+        modal.style.cssText = 'background:transparent;width:95%;max-width:400px;margin-bottom:20px;display:flex;flex-direction:column;gap:8px;';
+
+        // メニューグループ
+        const menuGroup = document.createElement('div');
+        menuGroup.style.cssText = 'background:rgba(255,255,255,0.9);backdrop-filter:blur(10px);border-radius:14px;overflow:hidden;transform:translateY(100%);transition:transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);';
+
+        // タイトル
+        if (title) {
+            const titleEl = document.createElement('div');
+            titleEl.textContent = title;
+            titleEl.style.cssText = 'padding:12px;text-align:center;font-size:13px;color:#888;border-bottom:1px solid rgba(0,0,0,0.1);font-weight:600;';
+            menuGroup.appendChild(titleEl);
+        }
+
+        actions.forEach((action, index) => {
+            if (action.style === 'cancel') return; // キャンセルは別枠
+
+            const btn = document.createElement('button');
+            btn.textContent = action.text;
+            let btnStyle = 'width:100%;padding:16px;border:none;background:transparent;font-size:16px;color:#007aff;cursor:pointer;';
+
+            if (action.style === 'destructive') {
+                btnStyle += 'color:#ff3b30;';
+            }
+            if (index < actions.length - 1 && !(index === actions.length - 2 && actions[actions.length - 1].style === 'cancel')) {
+                btnStyle += 'border-bottom:1px solid rgba(0,0,0,0.1);';
+            }
+
+            btn.style.cssText = btnStyle;
+            btn.addEventListener('click', () => {
+                closeModal();
+                if (action.action) action.action();
+            });
+            menuGroup.appendChild(btn);
+        });
+
+        modal.appendChild(menuGroup);
+
+        // キャンセルボタン
+        const cancelAction = actions.find(a => a.style === 'cancel');
+        const cancelBtn = document.createElement('button');
+        cancelBtn.textContent = cancelAction ? cancelAction.text : 'キャンセル';
+        cancelBtn.style.cssText = 'width:100%;padding:16px;border:none;background:rgba(255,255,255,0.9);backdrop-filter:blur(10px);border-radius:14px;font-size:16px;font-weight:600;color:#007aff;cursor:pointer;box-shadow:0 4px 10px rgba(0,0,0,0.1);transform:translateY(100%);transition:transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);';
+
+        cancelBtn.addEventListener('click', () => {
+            closeModal();
+            if (cancelAction && cancelAction.action) cancelAction.action();
+        });
+
+        modal.appendChild(cancelBtn);
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+
+        // アニメーション
+        requestAnimationFrame(() => {
+            menuGroup.style.transform = 'translateY(0)';
+            cancelBtn.style.transform = 'translateY(0)';
+        });
+
+        const closeModal = () => {
+            menuGroup.style.transform = 'translateY(100%)';
+            cancelBtn.style.transform = 'translateY(100%)';
+            overlay.style.transition = 'opacity 0.2s';
+            overlay.style.opacity = '0';
+            setTimeout(() => {
+                if (document.body.contains(overlay)) {
+                    document.body.removeChild(overlay);
+                }
+            }, 300);
+        };
+
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) closeModal();
+        });
     }
 };
 

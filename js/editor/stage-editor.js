@@ -1041,29 +1041,15 @@ const StageEditor = {
 
             div.addEventListener('click', handleTap);
 
-            // 長押しで削除
+            // 長押しでメニュー表示
             let longPressTimer = null;
             div.addEventListener('touchstart', () => {
                 longPressTimer = setTimeout(() => {
-                    if (confirm('このタイルを削除しますか？')) {
-                        // キャンバスから該当タイルをクリア
-                        this.clearTileFromCanvas(index);
-
-                        // テンプレートを削除
-                        App.projectData.templates.splice(index, 1);
-
-                        // 削除後のインデックス調整（キャンバス上の参照を更新）
-                        this.updateCanvasTileIndices(index);
-
-                        if (this.selectedTemplate === index) {
-                            this.selectedTemplate = null;
-                            this.closeConfigPanel();
-                        } else if (this.selectedTemplate > index) {
-                            this.selectedTemplate--;
-                        }
-                        this.initTemplateList();
-                        this.render();
-                    }
+                    App.showActionMenu('タイル操作', [
+                        { text: '複製', action: () => this.duplicateTemplate(index) },
+                        { text: '削除', style: 'destructive', action: () => this.deleteTemplate(index) },
+                        { text: 'キャンセル', style: 'cancel' }
+                    ]);
                 }, 800);
             }, { passive: true });
 
@@ -1072,6 +1058,51 @@ const StageEditor = {
 
             container.appendChild(div);
         });
+    },
+
+    // タイルテンプレートを削除
+    deleteTemplate(index, needConfirm = true) {
+        if (needConfirm && !confirm('このタイルを削除しますか？')) {
+            return;
+        }
+        // キャンバスから該当タイルをクリア
+        this.clearTileFromCanvas(index);
+
+        // テンプレートを削除
+        App.projectData.templates.splice(index, 1);
+
+        // 削除後のインデックス調整
+        this.updateCanvasTileIndices(index);
+
+        if (this.selectedTemplate === index) {
+            this.selectedTemplate = null;
+            this.closeConfigPanel();
+        } else if (this.selectedTemplate > index) {
+            this.selectedTemplate--;
+        }
+        this.initTemplateList();
+        this.render();
+    },
+
+    // タイルテンプレートを複製
+    duplicateTemplate(index) {
+        const src = App.projectData.templates[index];
+        const newTmpl = JSON.parse(JSON.stringify(src));
+
+        // 該当タイルの後ろに追加
+        App.projectData.templates.splice(index + 1, 0, newTmpl);
+
+        // 選択状態の調整
+        if (this.selectedTemplate !== null) {
+            if (this.selectedTemplate > index) {
+                this.selectedTemplate++;
+            } else if (this.selectedTemplate === index) {
+                this.selectedTemplate = index + 1; // 複製を選択
+            }
+        }
+
+        this.initTemplateList();
+        this.render();
     },
 
     // キャンバスから指定インデックスのタイルをすべてクリア
