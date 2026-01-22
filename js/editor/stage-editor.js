@@ -339,8 +339,10 @@ const StageEditor = {
                 <div class="sprite-slot" data-slot="${slot}">
                     ${firstFrame !== undefined ? `<canvas width="16" height="16" data-sprite="${firstFrame}"></canvas>` : ''}
                 </div>
-                <span class="sprite-count" data-slot="${slot}">${speed}</span>
-                <input type="range" class="sprite-speed" min="1" max="20" value="${speed}" data-slot="${slot}">
+                <!-- 速度設定ブロックゲージ (1-20 -> 5段階) -->
+                <div class="block-gauge" data-type="speed" data-slot="${slot}" data-min="1" data-max="20">
+                    ${this.renderBlockGaugeItems(slot, speed, 1, 20)}
+                </div>
             </div>
         `;
     },
@@ -625,6 +627,31 @@ const StageEditor = {
                 const gaugeContainer = item.closest('.block-gauge');
                 const min = parseInt(gaugeContainer.dataset.min);
                 const max = parseInt(gaugeContainer.dataset.max);
+
+                // data-type="speed" の場合 (スプライト速度)
+                if (gaugeContainer.dataset.type === 'speed') {
+                    const slot = gaugeContainer.dataset.slot;
+                    if (slot && this.editingTemplate?.sprites?.[slot]) {
+                        // 速度マッピング (1-20 -> 5段階)
+                        const range = max - min;
+                        const value = Math.round(((index - 1) / 4) * range + min);
+
+                        this.editingTemplate.sprites[slot].speed = value;
+
+                        // ゲージUI更新
+                        gaugeContainer.querySelectorAll('.block-gauge-item').forEach((g, i) => {
+                            if (i + 1 <= index) {
+                                g.classList.add('active');
+                            } else {
+                                g.classList.remove('active');
+                            }
+                        });
+
+                        // アニメーション更新
+                        this.updateConfigAnimations();
+                    }
+                    return;
+                }
 
                 if (key && this.editingTemplate?.config) {
                     // インデックス(1-5)を実際の値にマッピング
