@@ -509,9 +509,9 @@ const StageEditor = {
     renderToggleInline(label, key, value) {
         return `
             <label class="toggle-switch toggle-inline" title="${label}">
+                <span class="toggle-label" style="margin-right: 6px;">${label}</span>
                 <input type="checkbox" data-key="${key}" ${value ? 'checked' : ''}>
                 <span class="toggle-slider"></span>
-                <span class="toggle-label">${label}</span>
             </label>
         `;
     },
@@ -587,15 +587,19 @@ const StageEditor = {
             });
         });
 
-        // スプライトLOOPチェック
-        document.querySelectorAll('.sprite-loop-label input[type="checkbox"]').forEach(cb => {
-            cb.addEventListener('change', () => {
-                const slot = cb.dataset.slot;
-                if (slot && this.editingTemplate?.sprites?.[slot]) {
-                    this.editingTemplate.sprites[slot].loop = cb.checked;
+        // スプライト設定の初期化・修正
+        if (this.editingTemplate?.sprites) {
+            Object.keys(this.editingTemplate.sprites).forEach(slot => {
+                const sprite = this.editingTemplate.sprites[slot];
+                // 攻撃アニメーションはループさせない
+                if (slot === 'attack') {
+                    sprite.loop = false;
+                } else if (sprite.loop === undefined) {
+                    // 他はデフォルトでループ
+                    sprite.loop = true;
                 }
             });
-        });
+        }
 
         // パラメータスライダー (legacy support)
         document.querySelectorAll('.param-slider').forEach(slider => {
@@ -1587,16 +1591,16 @@ const StageEditor = {
         const spriteSize = sprite.size || 1;
         const dimension = spriteSize === 2 ? 32 : 16;
 
-        // キャンバスサイズを固定（16x16表示）
-        canvas.width = 16;
-        canvas.height = 16;
+        // キャンバスサイズをスプライトサイズに合わせる
+        canvas.width = dimension;
+        canvas.height = dimension;
 
         // 背景色を描画（動的に設定可能）
         ctx.fillStyle = bgColor;
-        ctx.fillRect(0, 0, 16, 16);
+        ctx.fillRect(0, 0, dimension, dimension);
 
-        // スケール係数（32x32は0.5に縮小）
-        const scale = 16 / dimension;
+        // スケール係数（1:1で描画）
+        const scale = 1;
 
         for (let y = 0; y < dimension; y++) {
             for (let x = 0; x < dimension; x++) {

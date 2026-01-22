@@ -3572,6 +3572,11 @@ body {
     /* シンプルなホバー効果 */
 }
 
+.block-gauge-item.active:hover {
+    opacity: 1;
+    /* アクティブ時は薄くしない */
+}
+
 /* SEプレビューボタン */
 .se-preview-btn {
     width: 24px;
@@ -3593,6 +3598,21 @@ body {
 .se-preview-btn:hover {
     border-color: var(--color-dark);
     color: var(--color-dark);
+}
+
+.se-preview-btn:active {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.se-row {
+    width: 100%;
+    justify-content: space-between;
+}
+
+.se-select {
+    flex-grow: 1;
+    margin: 0 8px;
+    /* ボタンとの間隔 */
 }
 
 .se-preview-btn:active {
