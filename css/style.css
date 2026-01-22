@@ -3562,9 +3562,9 @@ body {
 }
 
 .block-gauge-item.active {
-    background: #4eff4e;
-    /* 明るい緑 */
-    border-color: var(--border-color);
+    background: var(--color-dark);
+    /* スイッチON色と統一 */
+    border-color: var(--color-dark);
 }
 
 .block-gauge-item:hover {
@@ -3600,11 +3600,11 @@ body {
 }
 
 /* スプライトスロットの空状態（+表示） */
-.sprite-slot:empty {
+.sprite-slot:not(:has(canvas)) {
     position: relative;
 }
 
-.sprite-slot:empty::before {
+.sprite-slot:not(:has(canvas))::before {
     content: '+';
     position: absolute;
     top: 50%;
