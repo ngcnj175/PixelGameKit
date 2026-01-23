@@ -346,98 +346,65 @@ const App = {
         // 現在のプロジェクト名
         this.currentProjectName = null;
 
-        // 新規プロジェクト
+        // 新規プロジェクト（NEW）
         document.getElementById('new-icon-btn')?.addEventListener('click', () => {
-            if (!confirm('新規プロジェクトを開きます。')) {
-                return; // キャンセル
+            // 未保存確認は簡易的に
+            if (this.hasUnsavedChanges()) {
+                if (!confirm('現在の編集内容は保存されません（保存ボタンを押していない場合）。\n新しいプロジェクトを作成しますか？')) {
+                    return;
+                }
             }
-            // OKの場合 → 保存確認
-            const defaultName = this.projectData?.meta?.name || 'MyGame';
-            const name = prompt('現在のプロジェクトを保存します。\nファイル名を入力してください。', defaultName);
-            if (name) {
-                // OKの場合 → 保存後に初期化
-                this.currentProjectName = name;
-                this.projectData.palette = this.nesPalette.slice();
-                Storage.save('currentProject', this.projectData);
-                this.downloadProject(name);
-            }
-            // キャンセルでもOKでも初期化
-            this.projectData = this.createDefaultProject();
-            this.nesPalette = ['#000000'];
-            this.currentProjectName = null;
-            this.updateGameInfo();
-            this.refreshCurrentScreen();
-        });
 
-        // ファイル読み込み（ファイル選択ダイアログ）
-        const fileInput = document.getElementById('file-input');
-        document.getElementById('load-icon-btn')?.addEventListener('click', () => {
-            if (confirm('既存のプロジェクトを開きます。')) {
-                fileInput?.click();
-            }
-        });
+            const startNew = () => {
+                const now = new Date();
+                const defaultName = '新しいゲーム ' + (now.getMonth() + 1) + '/' + now.getDate() + ' ' + now.getHours() + ':' + ('0' + now.getMinutes()).slice(-2);
 
-        fileInput?.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    try {
-                        const data = JSON.parse(event.target.result);
-                        this.projectData = data;
-                        // パレットを復元
-                        if (this.projectData.palette) {
-                            this.nesPalette = this.projectData.palette;
-                        }
-                        this.currentProjectName = file.name.replace(/\.(json|pgk)$/i, '');
-                        this.updateGameInfo();
-                        this.refreshCurrentScreen();
-                        alert(`${file.name} を読み込みました`);
-                    } catch (err) {
-                        alert('ファイルの読み込みに失敗しました');
+                const name = prompt('プロジェクト名を入力してください', defaultName);
+                if (name) {
+                    if (Storage.projectExists(name)) {
+                        alert('同名のプロジェクトが既に存在します。別の名前を入力してください。');
+                        return;
                     }
-                };
-                reader.readAsText(file);
-            }
-            e.target.value = ''; // リセット
+                    // 新規作成
+                    this.projectData = this.createDefaultProject();
+                    this.nesPalette = ['#000000'];
+                    this.projectData.meta.name = name;
+                    this.currentProjectName = name;
+
+                    // 初期保存
+                    Storage.saveProject(name, this.projectData);
+                    Storage.save('currentProject', this.projectData);
+
+                    this.updateGameInfo();
+                    this.refreshCurrentScreen();
+
+                    this.showToast('新しいプロジェクトを作成しました');
+                }
+            };
+            startNew();
         });
 
-        // 保存：ワンタップで上書き、長押しで名前を付けて保存
-        let saveTimer;
+        // 開く（OPEN） -> プロジェクトリスト
+        document.getElementById('load-icon-btn')?.addEventListener('click', () => {
+            this.showProjectList();
+        });
+
+        // 保存（SAVE）
         const saveBtn = document.getElementById('save-icon-btn');
-
-        const startSavePress = () => {
-            saveTimer = setTimeout(() => {
-                // 長押し：名前を付けて保存
-                this.saveAsNewFile();
-            }, 800);
-        };
-
-        const cancelSavePress = () => {
-            clearTimeout(saveTimer);
-        };
-
-        saveBtn?.addEventListener('mousedown', startSavePress);
-        saveBtn?.addEventListener('mouseup', cancelSavePress);
-        saveBtn?.addEventListener('mouseleave', cancelSavePress);
-        saveBtn?.addEventListener('touchstart', startSavePress, { passive: true });
-        saveBtn?.addEventListener('touchend', cancelSavePress);
-
+        // クリックイベントのみ
         saveBtn?.addEventListener('click', () => {
-            // 長押しでなければ通常保存
             this.saveProject();
         });
 
         // 共有ボタン
-        document.getElementById('share-icon-btn')?.addEventListener('click', () => {
-            console.log('Share button clicked');
-            // プロジェクトデータを共有ダイアログで開く
+        const shareBtn = document.getElementById('share-icon-btn');
+        shareBtn?.addEventListener('click', () => {
             this.projectData.palette = this.nesPalette.slice();
-            console.log('Opening share dialog...');
             Share.openDialog(this.projectData);
+            this.bindShareModalEvents();
         });
 
-        // 共有ダイアログのイベント初期化
+        // 共有ダイアログのイベント初期化（SNSボタン等）
         Share.initDialogEvents();
 
         // ナビゲーション切り替え
@@ -531,43 +498,38 @@ const App = {
     },
 
     saveProject() {
-        // パレットをプロジェクトデータに同期
+        // パレット同期
         this.projectData.palette = this.nesPalette.slice();
 
-        // LocalStorageにも保存
+        if (!this.currentProjectName) {
+            this.currentProjectName = this.projectData.meta.name || 'MyGame';
+        }
+
+        // メタデータ更新
+        this.projectData.meta.name = this.currentProjectName;
+        this.projectData.meta.updatedAt = Date.now();
+
+        // 内部ストレージへ保存
+        Storage.saveProject(this.currentProjectName, this.projectData);
         Storage.save('currentProject', this.projectData);
 
-        if (this.currentProjectName) {
-            // 上書き保存（ダウンロード）
-            this.downloadProject(this.currentProjectName);
-            alert(`${this.currentProjectName}.json を保存しました`);
-        } else {
-            // 新規の場合は名前を付けて保存
-            this.saveAsNewFile();
-        }
+        // 静かに通知
+        this.showToast('保存しました');
     },
 
-    saveAsNewFile() {
-        const defaultName = this.projectData?.meta?.name || 'MyGame';
-        const name = prompt('現在のプロジェクトを保存します。\nファイル名を入力してください。', defaultName);
-        if (name) {
-            this.currentProjectName = name;
-            // パレットをプロジェクトデータに同期
-            this.projectData.palette = this.nesPalette.slice();
-            Storage.save('currentProject', this.projectData);
-            this.downloadProject(name);
+    showToast(message) {
+        let toast = document.getElementById('app-toast');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.id = 'app-toast';
+            toast.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.7);color:white;padding:8px 16px;border-radius:20px;font-size:12px;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:9999;';
+            document.body.appendChild(toast);
         }
-    },
-
-    downloadProject(filename) {
-        const data = JSON.stringify(this.projectData, null, 2);
-        const blob = new Blob([data], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${filename}.json`;
-        a.click();
-        URL.revokeObjectURL(url);
+        toast.textContent = message;
+        toast.style.opacity = '1';
+        setTimeout(() => {
+            toast.style.opacity = '0';
+        }, 2000);
     },
 
     showThreeChoiceDialog(message, onSave, onNoSave, onCancel) {
@@ -696,6 +658,219 @@ const App = {
         overlay.addEventListener('click', (e) => {
             if (e.target === overlay) closeModal();
         });
+    },
+
+    // プロジェクトリストを表示（OPEN用）
+    showProjectList() {
+        const modal = document.getElementById('project-list-modal');
+        const listContainer = document.getElementById('project-list');
+        const closeBtn = document.getElementById('project-list-close');
+
+        if (!modal || !listContainer) return;
+
+        // リスト描画
+        const renderList = () => {
+            listContainer.innerHTML = '';
+            const list = Storage.getProjectList();
+
+            // 更新日時順（新しい順）
+            list.sort((a, b) => b.updatedAt - a.updatedAt);
+
+            if (list.length === 0) {
+                listContainer.innerHTML = '<div style="padding:20px;text-align:center;color:#888;">保存されたプロジェクトはありません</div>';
+                return;
+            }
+
+            list.forEach(p => {
+                const item = document.createElement('div');
+                item.className = 'project-item';
+                if (p.name === this.currentProjectName) {
+                    item.classList.add('active');
+                }
+
+                const dateStr = new Date(p.updatedAt).toLocaleString('ja-JP');
+
+                const info = document.createElement('div');
+                info.className = 'project-info';
+                info.innerHTML = `
+                    <div class="project-name">${p.name}</div>
+                    <div class="project-date">${dateStr}</div>
+                `;
+
+                const actions = document.createElement('div');
+                actions.className = 'project-actions';
+
+                // 開くボタン
+                const openBtn = document.createElement('button');
+                openBtn.className = 'project-btn primary';
+                openBtn.textContent = '開く';
+                openBtn.onclick = () => {
+                    if (this.currentProjectName && this.currentProjectName !== p.name) {
+                        if (!confirm('現在のプロジェクトを閉じて、選択したプロジェクトを開きますか？\n（未保存の変更は失われます）')) return;
+                    }
+                    this.loadProject(p.name);
+                    modal.classList.add('hidden');
+                };
+
+                // 複製ボタン
+                const copyBtn = document.createElement('button');
+                copyBtn.className = 'project-btn';
+                copyBtn.textContent = '複製';
+                copyBtn.onclick = () => {
+                    const newName = prompt(`「${p.name}」の複製を作成します。\n新しいプロジェクト名を入力してください:`, p.name + ' のコピー');
+                    if (newName) {
+                        if (Storage.projectExists(newName)) {
+                            alert('その名前は既に使用されています');
+                            return;
+                        }
+                        if (Storage.duplicateProject(p.name, newName)) {
+                            renderList(); // リスト更新
+                        } else {
+                            alert('複製に失敗しました');
+                        }
+                    }
+                };
+
+                // 削除ボタン
+                const delBtn = document.createElement('button');
+                delBtn.className = 'project-btn danger';
+                delBtn.textContent = '削除';
+                delBtn.onclick = () => {
+                    if (confirm(`「${p.name}」を削除してもよろしいですか？\nこの操作は取り消せません。`)) {
+                        Storage.deleteProject(p.name);
+                        renderList(); // リスト更新
+                        if (this.currentProjectName === p.name) {
+                            this.currentProjectName = null; // 現在開いているものを削除した場合
+                        }
+                    }
+                };
+
+                actions.appendChild(openBtn);
+                actions.appendChild(copyBtn);
+                actions.appendChild(delBtn);
+
+                item.appendChild(info);
+                item.appendChild(actions);
+                listContainer.appendChild(item);
+            });
+        };
+
+        renderList();
+        modal.classList.remove('hidden');
+
+        // イベントバインド（一度だけにする制御が必要だが、簡易的に毎回上書きまた除去）
+        const closeHandler = () => {
+            modal.classList.add('hidden');
+        };
+        closeBtn.onclick = closeHandler;
+
+        // モーダル外クリック
+        modal.onclick = (e) => {
+            if (e.target === modal) closeHandler();
+        };
+    },
+
+    // プロジェクトをロードして反映
+    loadProject(name) {
+        const data = Storage.loadProject(name);
+        if (data) {
+            this.projectData = data;
+            this.currentProjectName = name;
+
+            // パレット復元
+            if (this.projectData.palette) {
+                this.nesPalette = this.projectData.palette;
+            } else {
+                this.nesPalette = ['#000000'];
+            }
+
+            this.updateGameInfo();
+            this.refreshCurrentScreen();
+            Storage.save('currentProject', this.projectData);
+            alert(`「${name}」を開きました`);
+        } else {
+            alert('プロジェクトの読み込みに失敗しました');
+        }
+    },
+
+    // シェアモーダルのイベントバインド（Export/Import用）
+    bindShareModalEvents() {
+        const exportBtn = document.getElementById('export-btn');
+        const importBtn = document.getElementById('import-btn');
+        const fileInput = document.getElementById('import-file-input');
+
+        // 書き出し
+        exportBtn.onclick = () => {
+            const name = this.currentProjectName || this.projectData.meta.name || 'MyGame';
+            this.exportProject(name);
+        };
+
+        // 読み込み（ファイル選択）
+        importBtn.onclick = () => {
+            fileInput.click();
+        };
+
+        // ファイル選択時
+        fileInput.onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                this.importProject(file);
+            }
+            e.target.value = '';
+        };
+    },
+
+    // プロジェクト書き出し（旧ダウンロード）
+    exportProject(filename) {
+        // パレット同期
+        this.projectData.palette = this.nesPalette.slice();
+
+        const data = JSON.stringify(this.projectData, null, 2);
+        const blob = new Blob([data], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${filename}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+    },
+
+    // プロジェクト読み込み（インポート）
+    importProject(file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const data = JSON.parse(event.target.result);
+                // 名前決定
+                let baseName = file.name.replace(/\.(json|pgk)$/i, '');
+                let importName = baseName;
+                let counter = 1;
+
+                // 重複回避
+                while (Storage.projectExists(importName)) {
+                    importName = `${baseName} (${counter})`;
+                    counter++;
+                }
+
+                // 保存
+                data.meta.name = importName;
+                data.meta.createdAt = Date.now();
+                Storage.saveProject(importName, data);
+
+                if (confirm(`「${importName}」としてインポートしました。\n今すぐ開きますか？`)) {
+                    this.loadProject(importName);
+                    // モーダル閉じる
+                    document.getElementById('share-dialog').classList.add('hidden');
+                } else {
+                    alert('インポートしました。「開く」メニューから選択できます。');
+                }
+
+            } catch (err) {
+                console.error(err);
+                alert('ファイルの読み込みに失敗しました');
+            }
+        };
+        reader.readAsText(file);
     }
 };
 

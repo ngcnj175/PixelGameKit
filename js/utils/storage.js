@@ -74,5 +74,38 @@ const Storage = {
             this.save('projectList', list);
             this.remove('project_' + name);
         }
+    },
+
+    // プロジェクトの存在確認
+    projectExists(name) {
+        const list = this.getProjectList();
+        return list.some(p => p.name === name);
+    },
+
+    // プロジェクトを複製
+    duplicateProject(srcName, newName) {
+        const data = this.loadProject(srcName);
+        if (!data) return false;
+
+        // メタデータ更新
+        data.meta.name = newName;
+        data.meta.createdAt = Date.now(); // 複製時は作成日時を更新
+
+        this.saveProject(newName, data);
+        return true;
+    },
+
+    // プロジェクト名変更（リネーム）
+    renameProject(oldName, newName) {
+        const data = this.loadProject(oldName);
+        if (!data) return false;
+
+        // 新しい名前で保存
+        data.meta.name = newName;
+        this.saveProject(newName, data);
+
+        // 古いデータを削除
+        this.deleteProject(oldName);
+        return true;
     }
 };
