@@ -1045,9 +1045,9 @@ const StageEditor = {
             let longPressTimer = null;
             div.addEventListener('touchstart', () => {
                 longPressTimer = setTimeout(() => {
-                    App.showActionMenu('タイル操作', [
+                    App.showActionMenu(null, [
                         { text: '複製', action: () => this.duplicateTemplate(index) },
-                        { text: '削除', style: 'destructive', action: () => this.deleteTemplate(index) },
+                        { text: '削除', style: 'destructive', action: () => this.deleteTemplate(index, false) },
                         { text: 'キャンセル', style: 'cancel' }
                     ]);
                 }, 800);

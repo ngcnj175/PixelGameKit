@@ -1696,22 +1696,21 @@ const GameEngine = {
             this.ctx.fillText(timeText, this.canvas.width - 10, 10);
         }
 
-        // スコア表示（中央上）
+        // スコア表示（右上）
         if (App.projectData.stage.showScore) {
-            const scoreText = `SCORE: ${this.score.toString().padStart(6, '0')}`;
-            // const hiText = `HI: ${this.highScore.toString().padStart(6, '0')}`; // スペースがあれば表示
+            const scoreText = this.score.toString().padStart(6, '0');
 
-            this.ctx.font = 'bold 16px Arial';
-            this.ctx.textAlign = 'center';
+            this.ctx.font = 'bold 12px Arial';
+            this.ctx.textAlign = 'right';
             this.ctx.textBaseline = 'top';
 
             // 影
             this.ctx.fillStyle = '#000000';
-            this.ctx.fillText(scoreText, this.canvas.width / 2 + 1, 11);
+            this.ctx.fillText(scoreText, this.canvas.width - 9, 11);
 
             // 本体
             this.ctx.fillStyle = '#ffffff';
-            this.ctx.fillText(scoreText, this.canvas.width / 2, 10);
+            this.ctx.fillText(scoreText, this.canvas.width - 10, 10);
         }
     },
 

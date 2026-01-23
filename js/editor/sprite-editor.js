@@ -137,9 +137,9 @@ const SpriteEditor = {
                 isLongPress = false;
                 longPressTimer = setTimeout(() => {
                     isLongPress = true;
-                    App.showActionMenu('カラー操作', [
+                    App.showActionMenu(null, [
                         { text: '複製', action: () => this.duplicateColor(index) },
-                        { text: '削除', style: 'destructive', action: () => this.deleteColor(index) },
+                        { text: '削除', style: 'destructive', action: () => this.deleteColor(index, false) },
                         { text: 'キャンセル', style: 'cancel' }
                     ]);
                 }, 600);
@@ -671,9 +671,9 @@ const SpriteEditor = {
                 longPressTimer = setTimeout(() => {
                     isLongPress = true;
                     // アクションメニュー表示
-                    App.showActionMenu('スプライト操作', [
+                    App.showActionMenu(null, [
                         { text: '複製', action: () => this.duplicateSprite(index) },
-                        { text: '削除', style: 'destructive', action: () => this.deleteSprite(index) },
+                        { text: '削除', style: 'destructive', action: () => this.deleteSprite(index, false) },
                         { text: 'キャンセル', style: 'cancel' }
                     ]);
                 }, 800);
