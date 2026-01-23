@@ -1015,6 +1015,14 @@ const SpriteEditor = {
         if (!sprite) return;
 
         const currentSize = sprite.size || 1;
+
+        // 32x32 -> 16x16 の場合、警告
+        if (currentSize === 2) {
+            if (!confirm('サイズを縮小すると、16x16サイズに収まらないデータは削除されます。\nよろしいですか？')) {
+                return;
+            }
+        }
+
         const newSize = currentSize === 1 ? 2 : 1;
         const currentDim = currentSize === 2 ? 32 : 16;
         const newDim = newSize === 2 ? 32 : 16;
