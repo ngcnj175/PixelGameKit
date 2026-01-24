@@ -496,6 +496,18 @@ const App = {
     },
 
     showToast(message) {
+        // 特別なセーブトースト
+        if (message === 'セーブしました') {
+            const saveToast = document.getElementById('save-toast');
+            if (saveToast) {
+                saveToast.classList.add('visible');
+                setTimeout(() => {
+                    saveToast.classList.remove('visible');
+                }, 1500);
+                return;
+            }
+        }
+
         let toast = document.getElementById('app-toast');
         if (!toast) {
             toast = document.createElement('div');

@@ -3875,192 +3875,286 @@ body {
 }
 
 /* ========================================
-   シンプルUI（ゲーム風）
+   シンプルUI（ゲーム風 - 画像再現）
    ======================================== */
+
+/* モーダル共通カードスタイル */
+.modal-content,
+.share-modal-content {
+    background: white;
+    border-radius: 24px;
+    /* 大きめの角丸 */
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    padding: 32px;
+    width: 320px;
+    max-width: 90%;
+    text-align: center;
+    border: none;
+    font-family: inherit;
+}
+
 .modal-header-simple,
 .modal-title-simple {
-    font-size: 16px;
-    font-weight: bold;
+    font-size: 20px;
+    font-weight: 800;
+    /* 太字 */
     text-align: center;
-    margin-bottom: 20px;
-    color: var(--text-dark);
+    margin-bottom: 24px;
+    color: #222;
 }
 
 .modal-title-simple.sub {
     font-size: 14px;
-    color: var(--color-medium);
-    margin-top: 10px;
-    margin-bottom: 10px;
+    color: #666;
+    margin-top: 16px;
+    margin-bottom: 8px;
+    font-weight: normal;
 }
 
-/* シェアモーダル（シンプル） */
-.share-simple-list {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.share-simple-btn {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 16px;
-    background: white;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    font-size: 14px;
-    color: var(--text-dark);
-    cursor: pointer;
-    text-align: left;
-}
-
-.share-simple-btn:hover {
-    background: #f8f9fa;
-}
-
-.share-simple-btn .icon {
-    font-size: 18px;
-}
-
-.share-divider {
-    border: none;
-    border-top: 1px solid var(--border-color);
-    margin: 20px 0;
-}
-
-.modal-footer-simple {
-    margin-top: 24px;
-    text-align: center;
-}
-
-.modal-btn-simple {
-    background: transparent;
-    border: none;
-    color: var(--color-medium);
-    font-size: 14px;
-    cursor: pointer;
-    padding: 8px 16px;
-}
-
-.modal-btn-simple:hover {
-    color: var(--text-dark);
-}
-
-/* プロジェクトリスト（選択式） */
-.modal-body.no-padding {
-    padding: 0;
-    margin-left: -20px;
-    margin-right: -20px;
-}
-
-.simple-list-scroll {
-    max-height: 250px;
-    overflow-y: auto;
-    border-top: 1px solid var(--border-color);
-    border-bottom: 1px solid var(--border-color);
-    background: #f9f9f9;
-}
-
-.selectable-list {
-    display: flex;
-    flex-direction: column;
-}
-
-.list-item {
-    padding: 12px 20px;
-    cursor: pointer;
-    font-size: 14px;
-    border-bottom: 1px solid #eee;
-    background: white;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    transition: background 0.1s;
-}
-
-.list-item:hover {
-    background: #f0f0f5;
-}
-
-.list-item.selected {
-    background: #4a4a4a;
-    /* Game-like selection color */
-    color: white;
-}
-
-.list-item .arrow {
-    display: inline-block;
-    width: 16px;
-    text-align: center;
-    color: transparent;
-}
-
-.list-item.selected .arrow {
-    color: white;
-}
-
-/* フッターアクションバー */
-.modal-footer-actions {
-    display: flex;
-    justify-content: center;
-    gap: 12px;
-    margin-top: 20px;
-    flex-wrap: wrap;
-}
-
-.action-btn {
-    padding: 8px 20px;
-    border: 1px solid var(--border-color);
-    border-radius: 20px;
-    background: white;
-    color: var(--text-dark);
-    font-size: 13px;
-    font-weight: bold;
-    cursor: pointer;
-    min-width: 80px;
-}
-
-.action-btn:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-}
-
-.action-btn:not(:disabled):hover {
-    transform: translateY(-2px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.action-btn.primary {
-    background: var(--color-dark);
-    color: white;
-    border-color: var(--color-dark);
-}
-
-.action-btn.cancel {
-    border: none;
-    background: transparent;
-    color: var(--color-medium);
-}
-
-/* 新規作成入力 */
+/* 入力フィールド */
 .input-group {
     display: flex;
     flex-direction: column;
     gap: 8px;
     align-items: center;
+    width: 100%;
 }
 
 .simple-input {
     width: 100%;
-    max-width: 240px;
-    padding: 12px;
-    font-size: 16px;
-    text-align: center;
-    border: 2px solid var(--border-color);
+    background: #d4d4d4;
+    /* グレー背景 */
+    border: none;
     border-radius: 8px;
+    padding: 16px;
+    font-size: 18px;
+    text-align: center;
+    color: #333;
+    outline: none;
+    font-weight: bold;
 }
 
 .simple-input:focus {
-    border-color: var(--color-dark);
-    outline: none;
+    background: #ccc;
+}
+
+/* フッターボタンエリア */
+.modal-footer-actions {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    margin-top: 24px;
+    flex-wrap: wrap;
+}
+
+/* 共通ボタン（ダークピル型） */
+.modal-action-btn {
+    padding: 12px 32px;
+    border: none;
+    border-radius: 30px;
+    /* 丸み */
+    background: #555;
+    /* 濃いグレー */
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    min-width: 100px;
+    box-shadow: 0 4px 0 #333;
+    /* 立体感 */
+    transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.modal-action-btn:active {
+    transform: translateY(4px);
+    box-shadow: none;
+}
+
+.modal-action-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: translateY(4px);
+}
+
+.modal-action-btn.primary {
+    background: #555;
+    box-shadow: 0 4px 0 #333;
+}
+
+.modal-action-btn.cancel {
+    background: #555;
+    color: white;
+    box-shadow: 0 4px 0 #333;
+}
+
+/* SHARE画面のボタンリスト */
+.share-simple-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+}
+
+.share-simple-btn {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 12px;
+    padding: 12px 20px;
+    background: #666;
+    /* 少し明るめのグレー */
+    border: none;
+    border-radius: 30px;
+    font-size: 15px;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    width: 100%;
+    box-shadow: 0 3px 0 #444;
+}
+
+.share-simple-btn:hover {
+    background: #777;
+}
+
+.share-simple-btn:active {
+    transform: translateY(3px);
+    box-shadow: none;
+}
+
+.share-divider {
+    border: none;
+    border-top: 2px dashed #ccc;
+    margin: 20px 0;
+    position: relative;
+}
+
+.share-divider::after {
+    content: 'データいどう';
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: white;
+    padding: 0 10px;
+    color: #888;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.modal-footer-simple {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.modal-btn-simple.cancel {
+    background: #555;
+    color: white;
+    padding: 8px 24px;
+    border-radius: 20px;
+    font-weight: bold;
+    box-shadow: 0 3px 0 #333;
+}
+
+.modal-btn-simple.cancel:active {
+    transform: translateY(3px);
+    box-shadow: none;
+}
+
+
+/* プロジェクトリスト（選択UI） */
+.modal-body.no-padding {
+    padding: 0;
+    margin: -10px -20px 0;
+    /* マージン調整 */
+}
+
+.simple-list-scroll {
+    max-height: 200px;
+    overflow-y: auto;
+    background: transparent;
+    border: none;
+}
+
+.selectable-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.list-item {
+    padding: 12px 16px;
+    margin: 0 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    background: transparent;
+    border: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: bold;
+    color: #333;
+}
+
+.list-item:hover {
+    background: #f0f0f0;
+}
+
+.list-item.selected {
+    background: #ccc;
+    /* 選択時はグレー背景 */
+    color: #222;
+}
+
+.list-item .arrow {
+    display: inline-block;
+    width: 20px;
+    font-size: 14px;
+    color: transparent;
+}
+
+.list-item.selected .arrow {
+    color: #333;
+}
+
+/* SAVEトースト（カスタム） */
+#save-toast {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 30px 50px;
+    border-radius: 24px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    text-align: center;
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+#save-toast.visible {
+    opacity: 1;
+}
+
+#save-toast .save-icon-large {
+    font-size: 64px;
+    color: #4a4a4a;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    justify-content: center;
+}
+
+#save-toast .save-msg-large {
+    font-size: 24px;
+    font-weight: 800;
+    color: #4a4a4a;
 }
