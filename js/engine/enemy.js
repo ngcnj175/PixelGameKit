@@ -707,6 +707,7 @@ class Enemy {
 
     die(fromRight) {
         this.isDying = true;
+        this.frozen = false; // 死亡時は休眠解除（描画されるように）
         this.damageFlashTimer = 10; // 死亡時も白点滅
         this.deathFlashPhase = true; // 点滅中は落下しない
         this.deathFromRight = fromRight;

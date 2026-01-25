@@ -776,15 +776,9 @@ const GameEngine = {
             let isHidden = false;
 
             if (stage.layers.bg) {
-                const bgTileId = stage.layers.bg[itemTileY]?.[itemTileX];
-                // BGにタイルがあり、かつまだ破壊されていない場合
-                if (bgTileId !== undefined && bgTileId >= 0) {
-                    // 破壊済みでないか確認（destroyTileはdestroyedTilesに追加する）
-                    // 破壊済みなら隠さない
-                    // destroyTile関数を見ると、destroyedTilesに追加されていた
-                    if (!this.destroyedTiles.has(`${itemTileX},${itemTileY}`)) {
-                        isHidden = true;
-                    }
+                // 壁（衝突判定あり）がある場合のみ隠す
+                if (this.getCollision(itemTileX, itemTileY) === 1) {
+                    isHidden = true;
                 }
             }
 
@@ -827,12 +821,9 @@ const GameEngine = {
                 // BGブロックがあるか確認
                 let covered = false;
                 if (stage.layers.bg) {
-                    const bgTile = stage.layers.bg[ey]?.[ex];
-                    if (bgTile !== undefined && bgTile >= 0) {
-                        // 破壊済みなら隠さない
-                        if (!this.destroyedTiles.has(`${ex},${ey}`)) {
-                            covered = true;
-                        }
+                    // 壁（衝突判定あり）がある場合のみ隠す
+                    if (this.getCollision(ex, ey) === 1) {
+                        covered = true;
                     }
                 }
                 if (covered) return;
@@ -1486,6 +1477,52 @@ const GameEngine = {
         });
 
         // 死亡判定はgameLoopで処理（ここでは何もしない）
+    },
+
+    getCollision(tileX, tileY) {
+        const stage = this.stageData || App.projectData.stage;
+
+        // 画面外（下は穴、それ以外は壁）
+        if (tileY >= stage.height) return 0;
+        if (tileX < 0 || tileX >= stage.width || tileY < 0) return 1;
+
+        // 破壊済みチェック
+        if (this.destroyedTiles && this.destroyedTiles.has(`${tileX},${tileY}`)) {
+            return 0;
+        }
+
+        const templates = App.projectData.templates || [];
+
+        // ヘルパー: IDからテンプレート取得
+        const getTemplate = (tileId) => {
+            if (tileId >= 100) return templates[tileId - 100];
+            return templates.find(t =>
+                t.sprites?.idle?.frames?.[0] === tileId ||
+                t.sprites?.main?.frames?.[0] === tileId
+            );
+        };
+
+        // BGレイヤーチェック（破壊可能ブロック等）
+        if (stage.layers.bg) {
+            const tileId = stage.layers.bg[tileY]?.[tileX];
+            if (tileId !== undefined && tileId >= 0) {
+                const template = getTemplate(tileId);
+                // type='material' の場合のみ衝突判定
+                if (template && template.type === 'material') return 1;
+                // テンプレートがない場合は背景扱いとして0を返す（背景絵との衝突防止）
+            }
+        }
+
+        // FGレイヤーチェック
+        if (stage.layers.fg) {
+            const tileId = stage.layers.fg[tileY]?.[tileX];
+            if (tileId !== undefined && tileId >= 0) {
+                const template = getTemplate(tileId);
+                if (template && template.type === 'material') return 1;
+            }
+        }
+
+        return 0;
     },
 
     // 敵がドロップするアイテムを出現させる
