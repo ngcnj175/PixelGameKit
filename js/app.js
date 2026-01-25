@@ -348,12 +348,6 @@ const App = {
 
         // 新規プロジェクト（NEW）
         document.getElementById('new-icon-btn')?.addEventListener('click', () => {
-            // 未保存確認は簡易的に
-            if (this.hasUnsavedChanges()) {
-                if (!confirm('現在の編集内容は保存されません（保存ボタンを押していない場合）。\n新しいプロジェクトを作成しますか？')) {
-                    return;
-                }
-            }
             this.showNewGameModal();
         });
 
