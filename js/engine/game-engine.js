@@ -2109,6 +2109,64 @@ const GameEngine = {
         }
     },
 
+    renderLayer(layer, startX, startY, endX, endY) {
+        if (!layer) return;
+        const templates = App.projectData.templates || [];
+        const stage = App.projectData.stage;
+
+        for (let y = startY; y < endY; y++) {
+            if (y < 0 || y >= stage.height) continue;
+            for (let x = startX; x < endX; x++) {
+                if (x < 0 || x >= stage.width) continue;
+
+                // 破壊済みタイルはスキップ
+                if (this.destroyedTiles.has(`${x},${y}`)) continue;
+
+                const tileId = layer[y][x];
+                if (tileId >= 0) {
+                    let spriteIdx = -1;
+                    if (tileId >= 100) {
+                        const template = templates[tileId - 100];
+                        // アイテム、敵、プレイヤーは個別のループで描画するためここではスキップ
+                        if (template && (template.type === 'item' || template.type === 'enemy' || template.type === 'player')) continue;
+
+                        // マテリアル（ブロック）などはここで描画
+                        spriteIdx = template?.sprites?.idle?.frames?.[0] ?? template?.sprites?.main?.frames?.[0];
+                    } else {
+                        // 旧形式または単純タイル
+                        spriteIdx = tileId;
+                    }
+
+                    if (spriteIdx !== undefined && spriteIdx >= 0) {
+                        const screenX = (x - this.camera.x) * this.TILE_SIZE;
+                        const screenY = (y - this.camera.y) * this.TILE_SIZE;
+                        this.renderSprite(App.projectData.sprites[spriteIdx], screenX, screenY, App.nesPalette);
+                    }
+                }
+            }
+        }
+    },
+
+    renderSprite(sprite, x, y, palette) {
+        if (!sprite) return;
+        const pixelSize = this.TILE_SIZE / 16;
+
+        for (let py = 0; py < 16; py++) {
+            for (let px = 0; px < 16; px++) {
+                const colorIndex = sprite.data[py][px];
+                if (colorIndex >= 0) {
+                    this.ctx.fillStyle = palette[colorIndex];
+                    this.ctx.fillRect(
+                        x + px * pixelSize,
+                        y + py * pixelSize,
+                        pixelSize + 0.5,
+                        pixelSize + 0.5
+                    );
+                }
+            }
+        }
+    },
+
     // ========== BGM再生 ==========
     playBgm(type, loop = true) {
         // 同じBGMが再生中なら何もしない
