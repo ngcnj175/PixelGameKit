@@ -1099,7 +1099,7 @@ const GameEngine = {
         // ギミックブロック更新
         this.updateGimmickBlocks();
 
-        // checkItemCollisionsはupdateItemsに統合、checkCollisionsは存在しないため削除
+        this.checkCollisions();
         this.checkClearCondition();
     },
 
@@ -1632,6 +1632,66 @@ const GameEngine = {
             this.titleState = 'result';
             this.renderResultScreen();
         }
+    },
+
+    spawnDropItem(enemy) {
+        // 敵の設定からドロップアイテムを取得
+        // sprite-editor stores dropItem in config
+        const dropItem = enemy.template?.config?.dropItem;
+        if (dropItem && dropItem !== 'none') {
+            const item = {
+                x: enemy.x + (enemy.width - 0.8) / 2, // 中央に
+                y: enemy.y,
+                width: 0.8,
+                height: 0.8,
+                itemType: dropItem,
+                template: enemy.template, // アイテム描画用テンプレートは...
+                // 実はitem用のtemplateが必要だが、items配列に追加するのはオブジェクト。
+                // renderProjectileOrItemは obj.templateIdx を参照する。
+                // ドロップアイテムの場合、専用のtemplateIdxがない。
+                // 既存のitemsロジックを見ると、stage entitiesから items を生成している。
+                // アイテムtemplateを検索する必要がある。
+                // しかし簡易のために itemType に応じた固定スプライトを使うか？
+                // あるいは「アイテム」テンプレートを検索する。
+                isDropped: true,
+                vx: 0,
+                vy: -0.2 // 少し跳ねる
+            };
+
+            // itemTypeに一致するテンプレートを探す
+            // config.itemTypeを持っているテンプレート
+            const templates = App.projectData.templates || [];
+            const itemTemplateIdx = templates.findIndex(t => t.type === 'item' && t.config?.itemType === dropItem);
+
+            if (itemTemplateIdx >= 0) {
+                item.templateIdx = itemTemplateIdx;
+                item.template = templates[itemTemplateIdx];
+                // spriteIdxも設定
+                item.spriteIdx = item.template.sprites?.idle?.frames?.[0] ?? item.template.sprites?.main?.frames?.[0];
+
+                this.items.push(item);
+                console.log('Spawned drop item:', dropItem);
+            } else {
+                console.warn('Drop item template not found:', dropItem);
+            }
+        }
+    },
+
+    wakeEnemiesAt(tileX, tileY) {
+        // 指定したタイルの位置に重なっている休眠中の敵を起こす
+        this.enemies.forEach(enemy => {
+            if (enemy.frozen) {
+                const ex = Math.floor(enemy.x);
+                const ey = Math.floor(enemy.y);
+                // 完全に一致、あるいは少し緩く判定
+                if (ex === tileX && ey === tileY) {
+                    enemy.frozen = false;
+                    // ブロック破壊で起きた敵は少し跳ねるとか？
+                    enemy.vy = -0.2;
+                    console.log('Enemy woke up at', tileX, tileY);
+                }
+            }
+        });
     },
 
     renderGameOver() {
