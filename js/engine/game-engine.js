@@ -1450,11 +1450,19 @@ const GameEngine = {
                         this.bossEnemy = null;
                         this.bossSpawned = false;
                         this.playBgm('stage');
-                    } else if (!this.bossDefeatPhase && !this.isCleared) {
-                        // 最終ボス撃破：クリアシーケンス開始
-                        console.log('Final boss fell off stage. Triggering clear.');
-                        this.bossEnemy = null;
-                        this.triggerClear();
+                    } else {
+                        // 最終ボス撃破
+                        const stage = App.projectData.stage;
+                        const clearCondition = stage.clearCondition || 'none';
+                        // クリア条件が'boss'の場合のみクリアシーケンス開始
+                        if (clearCondition === 'boss' && !this.bossDefeatPhase && !this.isCleared) {
+                            console.log('Final boss fell off stage. Triggering clear.');
+                            this.bossEnemy = null;
+                            this.triggerClear();
+                        } else {
+                            console.log('Final boss fell off stage. (clear condition not boss)');
+                            this.bossEnemy = null;
+                        }
                     }
                 }
                 // ボスもドロップアイテムを出す
@@ -1466,7 +1474,14 @@ const GameEngine = {
                 this.spawnDropItem(e);
                 return false;
             }
-            if (e.y > App.projectData.stage.height + 5) return false;
+            // 画面外に落下した敵
+            if (e.y > App.projectData.stage.height + 5) {
+                // 死亡中の敵が落下した場合もドロップアイテムを出す
+                if (e.isDying) {
+                    this.spawnDropItem(e);
+                }
+                return false;
+            }
             return true;
         });
 
@@ -1476,32 +1491,61 @@ const GameEngine = {
     // 敵がドロップするアイテムを出現させる
     spawnDropItem(enemy) {
         const dropItem = enemy.template?.config?.dropItem;
-        if (!dropItem || dropItem === 'none') return;
-
-        // アイテムテンプレートを探す
-        const templates = App.projectData.templates || [];
-        const itemTemplate = templates.find(t =>
-            t.type === 'item' && t.config?.itemType === dropItem
-        );
-
-        if (!itemTemplate) {
-            console.log('Drop item template not found for:', dropItem);
+        console.log('spawnDropItem called for enemy:', enemy.template?.name, 'dropItem:', dropItem);
+        if (!dropItem || dropItem === 'none') {
+            console.log('No drop item configured');
             return;
         }
 
-        const spriteIdx = itemTemplate.sprites?.idle?.frames?.[0] ?? itemTemplate.sprites?.main?.frames?.[0];
+        // アイテムテンプレートを探す
+        const templates = App.projectData.templates || [];
+        console.log('Searching for item template with itemType:', dropItem);
 
-        this.items.push({
+        let itemTemplate = templates.find(t =>
+            t.type === 'item' && t.config?.itemType === dropItem
+        );
+
+        // 見つからない場合、名前で検索
+        if (!itemTemplate) {
+            itemTemplate = templates.find(t =>
+                t.type === 'item' && t.name?.toLowerCase().includes(dropItem.toLowerCase())
+            );
+        }
+
+        // 見つからない場合、任意のitemタイプテンプレートを使う
+        if (!itemTemplate) {
+            itemTemplate = templates.find(t => t.type === 'item');
+        }
+
+        let templateIdx = -1;
+        let spriteIdx = 0; // デフォルトスプライト
+
+        if (itemTemplate) {
+            templateIdx = templates.indexOf(itemTemplate);
+            spriteIdx = itemTemplate.sprites?.idle?.frames?.[0] ?? itemTemplate.sprites?.main?.frames?.[0] ?? 0;
+        } else {
+            // アイテムテンプレートがない場合、最初のスプライトを使用（フォールバック）
+            console.log('No item template found, using fallback sprite for:', dropItem);
+            // スプライト0番を使用（通常は何かが存在する）
+            spriteIdx = 0;
+        }
+
+        const item = {
             x: enemy.x,
             y: enemy.y,
             width: 0.8,
             height: 0.8,
             template: itemTemplate,
+            templateIdx: templateIdx,
             spriteIdx: spriteIdx,
             itemType: dropItem,
             collected: false,
-            isDropped: true // ドロップアイテムフラグ（重力適用用）
-        });
+            isDropped: true, // ドロップアイテムフラグ（重力適用用）
+            vy: -0.15 // 少し跳ねる
+        };
+
+        this.items.push(item);
+        console.log('Spawned drop item:', dropItem, 'at', enemy.x, enemy.y, 'spriteIdx:', spriteIdx);
 
         // クリアアイテムの場合はカウント
         if (dropItem === 'clear') {
