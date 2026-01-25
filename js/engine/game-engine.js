@@ -789,7 +789,7 @@ const GameEngine = {
             }
 
             if (!isHidden) {
-                this.renderObject(item);
+                this.renderProjectileOrItem(item);
             }
         });
 
@@ -857,24 +857,24 @@ const GameEngine = {
 
         // 7. ギミックブロック（動くブロック）
         this.gimmickBlocks.forEach(block => {
-            this.renderObject(block);
+            if (block.template) {
+                // gimmickBlocks have template property, use main sprite
+                const spriteIdx = block.template.sprites?.main?.frames?.[0];
+                if (spriteIdx !== undefined) {
+                    const obj = {
+                        x: block.x, y: block.y,
+                        spriteIdx: spriteIdx,
+                        facingRight: true
+                    };
+                    // renderProjectileOrItem (renderObject replacement)
+                    this.renderProjectileOrItem(obj);
+                }
+            }
         });
 
         // 8. プロジェクタイル
         this.projectiles.forEach(proj => {
-            if (proj.animationSlot) {
-                // アニメーション対応
-                const template = App.projectData.templates[proj.templateIdx];
-                if (template) {
-                    // 簡易的なprojオブジェクトを作成してrenderObjectに渡すか、個別に描画
-                    // ここでは簡易実装
-                    let spriteIdx = proj.spriteIdx;
-                    // アニメーション（必要なら）
-                    this.renderObject(proj);
-                }
-            } else {
-                this.renderObject(proj);
-            }
+            this.renderProjectileOrItem(proj);
         });
 
         // 死亡した敵（落下中など）
@@ -1093,13 +1093,13 @@ const GameEngine = {
         // パーティクル更新
         this.updateParticles();
 
-        // アイテム衝突判定
-        this.checkItemCollisions();
+        // アイテム更新（衝突判定含む）
+        this.updateItems();
 
         // ギミックブロック更新
         this.updateGimmickBlocks();
 
-        this.checkCollisions();
+        // checkItemCollisionsはupdateItemsに統合、checkCollisionsは存在しないため削除
         this.checkClearCondition();
     },
 
