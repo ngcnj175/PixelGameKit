@@ -298,10 +298,22 @@ const GameEngine = {
         this.bossDefeatTimer = 0;
         this.bossEnemy = null;
         this.enemies.forEach(enemy => {
+            // ボスは初期状態frozen（出現演出で解除）
             if (enemy.template?.config?.isBoss) {
-                enemy.frozen = true; // ボスは最初動かない
-                // this.bossEnemy = enemy; // ここでは設定しない（出現時に設定）
+                enemy.frozen = true;
+            } else {
+                // 通常敵：BGレイヤーにブロックがある場合はfrozen（ブロック破壊で起きる）
+                const ex = Math.floor(enemy.x);
+                const ey = Math.floor(enemy.y);
+                if (ex >= 0 && ex < stage.width && ey >= 0 && ey < stage.height) {
+                    const bgTile = stage.layers.bg?.[ey]?.[ex];
+                    if (bgTile !== undefined && bgTile >= 0) {
+                        enemy.frozen = true;
+                        console.log('Enemy frozen at', ex, ey, '(covered by block)');
+                    }
+                }
             }
+            // this.bossEnemy = enemy; // ここでは設定しない（出現時に設定）
         });
 
         // プロジェクタイルとアイテムをリセット
@@ -1247,14 +1259,70 @@ const GameEngine = {
                         this.triggerClear();
                     }
                 }
+                // ボスもドロップアイテムを出す
+                this.spawnDropItem(e);
                 return false; // このボスを配列から削除
             }
-            if (e.isDying && e.deathTimer > 120) return false;
+            if (e.isDying && e.deathTimer > 120) {
+                // 死亡演出完了時にドロップアイテムを出現
+                this.spawnDropItem(e);
+                return false;
+            }
             if (e.y > App.projectData.stage.height + 5) return false;
             return true;
         });
 
         // 死亡判定はgameLoopで処理（ここでは何もしない）
+    },
+
+    // 敵がドロップするアイテムを出現させる
+    spawnDropItem(enemy) {
+        const dropItem = enemy.template?.config?.dropItem;
+        if (!dropItem || dropItem === 'none') return;
+
+        // アイテムテンプレートを探す
+        const templates = App.projectData.templates || [];
+        const itemTemplate = templates.find(t =>
+            t.type === 'item' && t.config?.itemType === dropItem
+        );
+
+        if (!itemTemplate) {
+            console.log('Drop item template not found for:', dropItem);
+            return;
+        }
+
+        const spriteIdx = itemTemplate.sprites?.idle?.frames?.[0] ?? itemTemplate.sprites?.main?.frames?.[0];
+
+        this.items.push({
+            x: enemy.x,
+            y: enemy.y,
+            width: 0.8,
+            height: 0.8,
+            template: itemTemplate,
+            spriteIdx: spriteIdx,
+            itemType: dropItem,
+            collected: false,
+            isDropped: true // ドロップアイテムフラグ（重力適用用）
+        });
+
+        // クリアアイテムの場合はカウント
+        if (dropItem === 'clear') {
+            this.totalClearItems++;
+        }
+    },
+
+    // 指定位置の休眠敵を起こす（ブロック破壊時に呼ばれる）
+    wakeEnemiesAt(tileX, tileY) {
+        this.enemies.forEach(e => {
+            if (e.frozen) {
+                const ex = Math.floor(e.x);
+                const ey = Math.floor(e.y);
+                if (ex === tileX && ey === tileY) {
+                    e.frozen = false;
+                    console.log('Enemy woke up at', tileX, tileY);
+                }
+            }
+        });
     },
 
     checkClearCondition() {
@@ -1523,6 +1591,9 @@ const GameEngine = {
 
         // スコア加算
         this.addScore(10);
+
+        // 重なっている敵がいれば起こす
+        this.wakeEnemiesAt(tileX, tileY);
     },
 
     createTileParticles(tileX, tileY, tileId) {

@@ -401,6 +401,17 @@ const StageEditor = {
                 `;
                 html += this.renderToggle('空中', 'isAerial', config.isAerial);
                 html += this.renderToggle('ボスてき', 'isBoss', config.isBoss);
+                html += `
+                    <div class="param-row">
+                        <span class="param-label">ドロップ</span>
+                        <select class="param-select" data-key="dropItem">
+                            <option value="none" ${!config.dropItem || config.dropItem === 'none' ? 'selected' : ''}>なし</option>
+                            <option value="lifeup" ${config.dropItem === 'lifeup' ? 'selected' : ''}>ライフ</option>
+                            <option value="star" ${config.dropItem === 'star' ? 'selected' : ''}>むてき</option>
+                            <option value="clear" ${config.dropItem === 'clear' ? 'selected' : ''}>クリア</option>
+                        </select>
+                    </div>
+                `;
             }
         } else if (type === 'material') {
             html += this.renderToggle('当たり判定', 'collision', config.collision !== false);
