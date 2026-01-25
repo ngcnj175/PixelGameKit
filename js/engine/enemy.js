@@ -711,6 +711,9 @@ class Enemy {
         this.damageFlashTimer = 10; // 死亡時も白点滅
         this.deathFlashPhase = true; // 点滅中は落下しない
         this.deathFromRight = fromRight;
+        // ドロップアイテム用に死亡時の位置を記録
+        this.deathX = this.x;
+        this.deathY = this.y;
         this.vy = 0;
         this.vx = 0;
     }

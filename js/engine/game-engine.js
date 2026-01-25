@@ -812,8 +812,11 @@ const GameEngine = {
         // ユーザーは「ブロックの後ろにアイテム」と言っている。
         // なので、アイテムを描画する際に「その位置にBGブロックがあれば描画しない」というロジックで対応する（隠蔽）。
 
-        // 4. エネミー
+        // 4. エネミー（生存中のみ、死亡中はFGの後で描画）
         this.enemies.forEach(enemy => {
+            // 死亡中の敵は後で描画（FGレイヤーの手前に表示するため）
+            if (enemy.isDying) return;
+
             // 隠れているエネミー（frozenかつブロックがある）は描画しない
             if (enemy.frozen) {
                 const ex = Math.floor(enemy.x);
@@ -863,18 +866,22 @@ const GameEngine = {
             }
         });
 
-        // 8. プロジェクタイル
+        // 8. 死亡中の敵（FGレイヤーより手前に表示）
+        this.enemies.forEach(enemy => {
+            if (enemy.isDying) {
+                enemy.render(this.ctx, this.TILE_SIZE, this.camera);
+            }
+        });
+
+        // 9. プロジェクタイル
         this.projectiles.forEach(proj => {
             this.renderProjectileOrItem(proj);
         });
 
-        // 死亡した敵（落下中など）
-        // this.enemies配列に含まれているので上記ループで描画される
-
-        // 9. パーティクル
+        // 10. パーティクル
         this.renderParticles();
 
-        // 10. UI
+        // 11. UI
         this.renderUI();
     },
 
@@ -1492,8 +1499,13 @@ const GameEngine = {
         const templates = App.projectData.templates || [];
         console.log('Searching for item template with itemType:', dropItem);
 
+        // muteki/star の互換性対応
+        const searchTypes = [dropItem];
+        if (dropItem === 'muteki') searchTypes.push('star');
+        if (dropItem === 'star') searchTypes.push('muteki');
+
         let itemTemplate = templates.find(t =>
-            t.type === 'item' && t.config?.itemType === dropItem
+            t.type === 'item' && searchTypes.includes(t.config?.itemType)
         );
 
         // 見つからない場合、名前で検索
@@ -1521,9 +1533,13 @@ const GameEngine = {
             spriteIdx = 0;
         }
 
+        // 死亡時の位置を使用（記録されていなければ現在位置）
+        const spawnX = enemy.deathX !== undefined ? enemy.deathX : enemy.x;
+        const spawnY = enemy.deathY !== undefined ? enemy.deathY : enemy.y;
+
         const item = {
-            x: enemy.x,
-            y: enemy.y,
+            x: spawnX,
+            y: spawnY,
             width: 0.8,
             height: 0.8,
             template: itemTemplate,
@@ -1536,7 +1552,7 @@ const GameEngine = {
         };
 
         this.items.push(item);
-        console.log('Spawned drop item:', dropItem, 'at', enemy.x, enemy.y, 'spriteIdx:', spriteIdx);
+        console.log('Spawned drop item:', dropItem, 'at', spawnX, spawnY, 'spriteIdx:', spriteIdx);
 
         // クリアアイテムの場合はカウント
         if (dropItem === 'clear') {
