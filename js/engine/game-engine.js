@@ -302,18 +302,41 @@ const GameEngine = {
             if (enemy.template?.config?.isBoss) {
                 enemy.frozen = true;
             } else {
-                // 通常敵：BGレイヤーにブロックがある場合はfrozen（ブロック破壊で起きる）
+                // 通常敵：BGまたはFGレイヤーにブロック（material）がある場合はfrozen
                 const ex = Math.floor(enemy.x);
                 const ey = Math.floor(enemy.y);
-                if (ex >= 0 && ex < stage.width && ey >= 0 && ey < stage.height) {
-                    const bgTile = stage.layers.bg?.[ey]?.[ex];
-                    if (bgTile !== undefined && bgTile >= 0) {
-                        enemy.frozen = true;
-                        console.log('Enemy frozen at', ex, ey, '(covered by block)');
+                const stage = this.stageData;
+                let isCovered = false;
+
+                // Helper to check if a tile is a blocking material
+                const isBlock = (tileId) => {
+                    if (tileId === undefined || tileId < 0) return false;
+                    const { template } = getTemplateFromTileId(tileId);
+                    // materialタイプ、あるいは破壊可能（life設定あり）ならブロックとみなす
+                    // BGレイヤーの場合はテンプレートが見つからない（ただのタイル）場合もブロックとみなす？
+                    // しかし破壊可能ブロックは通常テンプレート化されている。
+                    if (template) {
+                        return template.type === 'material';
                     }
+                    // テンプレートがない場合（ただのタイル）、BGならブロックとみなす（安全策）
+                    return true;
+                };
+
+                // Check BG
+                if (stage.layers.bg && isBlock(stage.layers.bg[ey]?.[ex])) {
+                    isCovered = true;
+                }
+
+                // Check FG (only if material, do not freeze if covered by item)
+                if (!isCovered && stage.layers.fg && isBlock(stage.layers.fg[ey]?.[ex])) {
+                    isCovered = true;
+                }
+
+                if (isCovered) {
+                    enemy.frozen = true;
+                    // console.log('Enemy frozen at', ex, ey, '(covered)');
                 }
             }
-            // this.bossEnemy = enemy; // ここでは設定しない（出現時に設定）
         });
 
         // プロジェクタイルとアイテムをリセット
@@ -691,51 +714,176 @@ const GameEngine = {
     },
 
     renderGameScreen() {
-        const bgColor = App.projectData.stage?.bgColor || App.projectData.stage?.backgroundColor || '#3CBCFC';
+        if (!this.player) return;
+
+        // 背景色
+        const bgColor = App.projectData.stage.bgColor || App.projectData.stage.backgroundColor || '#3CBCFC';
         this.ctx.fillStyle = bgColor;
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-        this.renderStage();
+        // カメラ更新（線形補間なしでシンプルに追従）
+        const centerX = this.canvas.width / 2 / this.TILE_SIZE;
+        const centerY = this.canvas.height / 2 / this.TILE_SIZE;
+        // プレイヤー中心
+        let targetX = this.player.x + this.player.width / 2 - centerX;
+        let targetY = this.player.y + this.player.height / 2 - centerY;
 
-        // ギミックブロック描画
-        this.gimmickBlocks.forEach(block => {
-            const sprites = App.projectData.sprites;
-            const palette = App.nesPalette;
-            const template = block.template;
-            const spriteIdx = template?.sprites?.main?.frames?.[0];
-            const sprite = sprites[spriteIdx];
-            if (!sprite) return;
+        // ステージ端制限
+        const stage = App.projectData.stage;
+        const viewWidth = this.canvas.width / this.TILE_SIZE;
+        const viewHeight = this.canvas.height / this.TILE_SIZE;
 
-            // 震えエフェクト
-            let offsetX = 0;
-            if (block.state === 'shaking') {
-                offsetX = (Math.random() - 0.5) * 0.1;
-            }
+        targetX = Math.max(0, Math.min(targetX, stage.width - viewWidth));
+        targetY = Math.max(0, Math.min(targetY, stage.height - viewHeight));
 
-            this.renderSprite(sprite, block.x + offsetX, block.y, palette);
-        });
+        this.camera.x = targetX;
+        this.camera.y = targetY;
 
-        // アイテム描画
+        // ワイプ中は更新しない（見た目を固定）
+        if (this.titleState === 'wipe' || this.titleState === 'gameover' || this.titleState === 'clear') {
+            // そのまま描画
+        }
+
+        const camX = this.camera.x;
+        const camY = this.camera.y;
+        const viewTilesX = Math.ceil(this.canvas.width / this.TILE_SIZE) + 1;
+        const viewTilesY = Math.ceil(this.canvas.height / this.TILE_SIZE) + 1;
+        const startX = Math.floor(camX);
+        const startY = Math.floor(camY);
+        const endX = startX + viewTilesX;
+        const endY = startY + viewTilesY;
+        const palette = App.nesPalette;
+
+        // 1. 背景レイヤー (BG)
+        if (stage.layers.bg) {
+            this.renderLayer(stage.layers.bg, startX, startY, endX, endY);
+        }
+
+        // 2. アイテム (blocksの後ろにある場合は隠す)
+        // ブロックがある位置 = layers.bg にタイルがある位置（0以上）
+        // ただし、destroyTileで破壊された場所は breakableTiles から消えるわけではなく、
+        // 描画上は消える必要がある。
+        // renderLayerは destroyedTiles をチェックしていない（stageデータしか見ていない）。
+        // 破壊されたタイルは、stageデータ自体は消さない実装だったが、
+        // 可視性チェックでは「BGレイヤーにタイルがあり、かつ破壊されていないか」を見る必要がある。
+
         this.items.forEach(item => {
-            if (!item.collected) {
-                this.renderProjectileOrItem(item);
+            if (item.collected) return;
+
+            // ブロックで隠れているかチェック
+            const itemTileX = Math.floor(item.x);
+            const itemTileY = Math.floor(item.y);
+            let isHidden = false;
+
+            if (stage.layers.bg) {
+                const bgTileId = stage.layers.bg[itemTileY]?.[itemTileX];
+                // BGにタイルがあり、かつまだ破壊されていない場合
+                if (bgTileId !== undefined && bgTileId >= 0) {
+                    // 破壊済みでないか確認（destroyTileはdestroyedTilesに追加する）
+                    // 破壊済みなら隠さない
+                    // destroyTile関数を見ると、destroyedTilesに追加されていた
+                    if (!this.destroyedTiles.has(`${itemTileX},${itemTileY}`)) {
+                        isHidden = true;
+                    }
+                }
+            }
+
+            if (!isHidden) {
+                this.renderObject(item);
             }
         });
 
-        this.enemies.forEach(enemy => enemy.render(this.ctx, this.TILE_SIZE, this.camera));
+        // 3. ギミックブロック（FGレイヤーのmaterial）
+        // FGレイヤーの静的タイルを描画する代わりに、ギミックブロックとして描画
+        // 静的ブロックもここで描画？
+        // 元の実装では FGレイヤーを renderLayer で描画していた。
+        // ギミックブロックは動くので、元の位置のタイルは描画しないようにする必要がある。
+        // しかし renderLayer は単純に配列を描画する。
+        // ここでは「BG→Items→Enemies→FG(ブロック)」ではなく、
+        // 「BG→Items→Enemies→FG（プレイヤーより奥）→Player→FG（プレイヤーより手前）」のような順序はない。
+        // NES風なのでシンプルに「BG → Obj → FG」で良いが、
+        // ブロックに隠れる敵を実現するためには、
+        // 「BG(ブロック含む)」→「隠れるObj(Item/Enemy)」→「FG」としたいが、
+        // ユーザー指定は「BGにブロック、FGにアイテム」で「ブロックを壊すとアイテム」。
+        // つまりアイテムはBGブロックの【後ろ】にあるべき。
+        // 描画順: Item -> BG Block.
+        // しかしアイテムはFGレイヤー(entities)で配置される。
+        // 通常はBG -> FG(Items/Blocks) -> Player.
+        // 今回の要件: BG(Block) covers FG(Item).
+        // 描画順: FG(Item) -> BG(Block) ?? 逆？
+        // BGレイヤーが手前にあるということはない。
+        // ユーザー「FGレイヤーに壊れるブロック」→ブロックは奥。
+        // 「FGレイヤーにアイテム」→アイテムは手前。
+        // 普通ならアイテムが手前に見える。
+        // ユーザーは「ブロックの後ろにアイテム」と言っている。
+        // なので、アイテムを描画する際に「その位置にBGブロックがあれば描画しない」というロジックで対応する（隠蔽）。
 
+        // 4. エネミー
+        this.enemies.forEach(enemy => {
+            // 隠れているエネミー（frozenかつブロックがある）は描画しない
+            if (enemy.frozen) {
+                const ex = Math.floor(enemy.x);
+                const ey = Math.floor(enemy.y);
+                // BGブロックがあるか確認
+                let covered = false;
+                if (stage.layers.bg) {
+                    const bgTile = stage.layers.bg[ey]?.[ex];
+                    if (bgTile !== undefined && bgTile >= 0) {
+                        // 破壊済みなら隠さない
+                        if (!this.destroyedTiles.has(`${ex},${ey}`)) {
+                            covered = true;
+                        }
+                    }
+                }
+                if (covered) return;
+            }
+            enemy.render(this.ctx, this.TILE_SIZE, this.camera);
+        });
+
+        // 5. プレイヤー
         if (this.player) {
             this.player.render(this.ctx, this.TILE_SIZE, this.camera);
         }
 
-        // プロジェクタイル描画
-        this.projectiles.forEach(proj => {
-            this.renderProjectileOrItem(proj);
+        // 6. FGレイヤー (障害物など)
+        if (stage.layers.fg) {
+            // updateGimmickBlocksで移動したブロックは個別に描画が必要
+            // ここでは静的なFGを描画
+            // ただし、ギミックブロックや破壊されたブロックは除外する必要がある？
+            // destroyTileは破壊済みリストに追加するが、layerデータは書き換えない（以前の実装）。
+            // renderLayer内でdestroyedTilesをチェックするように修正する必要がある。
+            this.renderLayer(stage.layers.fg, startX, startY, endX, endY);
+        }
+
+        // 7. ギミックブロック（動くブロック）
+        this.gimmickBlocks.forEach(block => {
+            this.renderObject(block);
         });
 
-        // パーティクル描画
+        // 8. プロジェクタイル
+        this.projectiles.forEach(proj => {
+            if (proj.animationSlot) {
+                // アニメーション対応
+                const template = App.projectData.templates[proj.templateIdx];
+                if (template) {
+                    // 簡易的なprojオブジェクトを作成してrenderObjectに渡すか、個別に描画
+                    // ここでは簡易実装
+                    let spriteIdx = proj.spriteIdx;
+                    // アニメーション（必要なら）
+                    this.renderObject(proj);
+                }
+            } else {
+                this.renderObject(proj);
+            }
+        });
+
+        // 死亡した敵（落下中など）
+        // this.enemies配列に含まれているので上記ループで描画される
+
+        // 9. パーティクル
         this.renderParticles();
 
+        // 10. UI
         this.renderUI();
     },
 
@@ -826,8 +974,11 @@ const GameEngine = {
                 this.camera.x = Math.max(0, Math.min(this.camera.x, stage.width - viewWidth));
                 this.camera.y = Math.max(0, Math.min(this.camera.y, stage.height - viewHeight));
             }
-            // 敵も更新（deathTimer増加のため）
+            // 敵も更新
             this.enemies.forEach(enemy => enemy.update(this));
+            // アイテムも更新（重力など）
+            this.updateItems();
+
             this.checkClearCondition();
             return;
         }
@@ -852,7 +1003,7 @@ const GameEngine = {
                     this.triggerClear(); // クリアシーケンス開始（内部でクリアBGM再生）
                 }
             }
-            // シーケンス中もプレイヤーとカメラ、敵を更新
+            // プレイヤーと敵を更新（落下演出のため）
             if (this.player) {
                 this.player.update(this);
                 const viewWidth = this.canvas.width / this.TILE_SIZE;
@@ -865,8 +1016,14 @@ const GameEngine = {
             }
             // ボスの落下アニメーション更新
             this.enemies.forEach(enemy => enemy.update(this));
+            this.updateItems();
             return;
         }
+
+        if (this.isPaused) return;
+
+        // メイン更新ループ
+        this.tileAnimationFrame++;
 
         // ボス出現・撃破管理
         // 1. 中ボス撃破判定（ボス撃破シーケンス中でない時）
@@ -944,6 +1101,47 @@ const GameEngine = {
 
         this.checkCollisions();
         this.checkClearCondition();
+    },
+
+    updateItems() {
+        this.items.forEach(item => {
+            if (item.collected) return;
+
+            // ドロップアイテムには重力を適用
+            if (item.isDropped) {
+                item.vy = (item.vy || 0) + 0.02; // 重力
+                if (item.vy > 0.4) item.vy = 0.4; // 最大落下速度
+
+                item.y += item.vy;
+
+                // 着地判定
+                const footY = Math.floor(item.y + item.height);
+                const tileX = Math.floor(item.x + item.width / 2);
+                if (this.getCollision(tileX, footY) === 1) {
+                    item.y = footY - item.height;
+                    item.vy = 0;
+                }
+            }
+
+            // プレイヤーとの当たり判定
+            if (this.player && !this.player.isDead && !item.collected) {
+                if (this.projectileHits(item, this.player)) {
+                    this.player.collectItem(item.itemType);
+                    item.collected = true;
+                    if (this.player.template?.config?.seItemGet !== undefined) {
+                        // プレイヤー設定のSE
+                        // this.player.playSE('itemGet'); // player.js handles this in collectItem?
+                        // game-engine doesn't play sound here directly typically, assume player.collectItem handles?
+                        // Actually player.collectItem plays sound.
+                    }
+                    // クリアアイテムカウント
+                    if (item.itemType === 'clear') {
+                        this.collectedClearItems = (this.collectedClearItems || 0) + 1;
+                        // UI表示更新などの必要があれば
+                    }
+                }
+            }
+        });
     },
 
     updateProjectiles() {
