@@ -775,9 +775,11 @@ class Enemy {
             const dimension = spriteSize === 2 ? 32 : 16;
             const tileCount = spriteSize === 2 ? 2 : 1;
             const renderSize = tileSize * tileCount;
-            const pixelSize = renderSize / dimension;
-
-            const yOffset = spriteSize === 2 ? -tileSize : 0;
+            // 32x32スプライトの描画オフセット調整
+            // 衝突判定は高さ1.6（底面はY+1.6）
+            // 描画は高さ2.0（底面はY+オフセット+2.0）
+            // 底面を合わせるため: オフセット = 1.6 - 2.0 = -0.4
+            const yOffset = spriteSize === 2 ? -0.4 * tileSize : 0;
             const adjustedScreenY = screenY + yOffset;
 
             if (this.isDying) {

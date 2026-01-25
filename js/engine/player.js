@@ -406,6 +406,7 @@ class Player {
 
     collectItem(itemType) {
         switch (itemType) {
+            case 'muteki': // 'star' is legacy
             case 'star':
                 this.starPower = true;
                 this.starTimer = this.starDuration;
