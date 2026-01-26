@@ -435,9 +435,21 @@ const StageEditor = {
                         <option value="muteki" ${config.itemType === 'muteki' ? 'selected' : ''}>むてき</option>
                         <option value="lifeup" ${config.itemType === 'lifeup' ? 'selected' : ''}>ライフアップ</option>
                         <option value="clear" ${config.itemType === 'clear' ? 'selected' : ''}>クリア</option>
+                        <option value="easter" ${config.itemType === 'easter' ? 'selected' : ''}>イースターエッグ</option>
                     </select>
                 </div>
             `;
+            // イースターエッグの場合はメッセージ入力欄を表示
+            if (config.itemType === 'easter') {
+                html += `
+                    <div class="param-row">
+                        <span class="param-label">メッセージ</span>
+                        <input type="text" class="param-input" data-key="easterMessage" 
+                               value="${config.easterMessage || ''}" 
+                               maxlength="20" placeholder="最大20文字">
+                    </div>
+                `;
+            }
         }
 
         return html;
