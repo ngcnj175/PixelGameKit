@@ -91,11 +91,10 @@ const App = {
             },
             // プリセットSE
             sounds: [
-                { id: 0, name: 'JUMP', type: 'jump' },
-                { id: 1, name: 'ATTACK', type: 'attack' },
-                { id: 2, name: 'DAMAGE', type: 'damage' },
-                { id: 3, name: 'ITEM GET', type: 'itemGet' },
-                { id: 4, name: 'ENEMY DEFEAT', type: 'enemyDefeat' }
+                { id: 0, name: 'ジャンプ', type: 'jump' },
+                { id: 1, name: '攻撃', type: 'attack' },
+                { id: 2, name: 'ダメージ', type: 'damage' },
+                { id: 3, name: 'ゲット', type: 'itemGet' }
             ]
         };
     },
@@ -323,6 +322,24 @@ const App = {
                     }
                 }
             }
+        }
+
+        // SE名のマイグレーション（英語→日本語、ENEMY DEFEAT削除）
+        if (this.projectData.sounds) {
+            const seNameMap = {
+                'JUMP': 'ジャンプ',
+                'ATTACK': '攻撃',
+                'DAMAGE': 'ダメージ',
+                'ITEM GET': 'ゲット'
+            };
+            // ENEMY DEFEATを削除し、名前を更新
+            this.projectData.sounds = this.projectData.sounds
+                .filter(se => se.type !== 'enemyDefeat')
+                .map((se, idx) => ({
+                    ...se,
+                    id: idx,
+                    name: seNameMap[se.name] || se.name
+                }));
         }
     },
 
