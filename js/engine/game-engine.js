@@ -492,9 +492,9 @@ const GameEngine = {
         console.log('totalClearItems:', this.totalClearItems);
         console.log('items array length:', this.items.length);
         console.log('gimmickBlocks:', this.gimmickBlocks.length);
-        console.log('Clear items detail:');
-        this.items.filter(i => i.itemType === 'clear').forEach((item, idx) => {
-            console.log(`  [${idx}] x=${item.x}, y=${item.y}, type=${item.itemType}`);
+        console.log('All items detail:');
+        this.items.forEach((item, idx) => {
+            console.log(`  [${idx}] x=${item.x}, y=${item.y}, type=${item.itemType}, template=${item.template?.name}, easterMessage=${item.template?.config?.easterMessage}`);
         });
         console.log('processedItemPositions:', [...processedItemPositions]);
     },
@@ -1192,19 +1192,28 @@ const GameEngine = {
 
             // プレイヤーとの当たり判定
             if (this.player && !this.player.isDead && !item.collected) {
+                // イースターエッグウィンドウが表示中は収集しない
+                if (this.easterMessageActive) return;
+
                 if (this.projectileHits(item, this.player)) {
-                    this.player.collectItem(item.itemType);
+                    console.log(`>>> Collecting item: type=${item.itemType}, easterMessage=${item.template?.config?.easterMessage}`);
                     item.collected = true;
-                    if (this.player.template?.config?.seItemGet !== undefined) {
-                        // プレイヤー設定のSE
-                        // this.player.playSE('itemGet'); // player.js handles this in collectItem?
-                        // game-engine doesn't play sound here directly typically, assume player.collectItem handles?
-                        // Actually player.collectItem plays sound.
+
+                    // イースターエッグの場合はメッセージウィンドウを表示
+                    if (item.itemType === 'easter') {
+                        console.log('>>> Easter egg detected! Showing message window');
+                        const message = item.template?.config?.easterMessage || 'ひみつのメッセージ';
+                        console.log('>>> Easter message:', message);
+                        this.showEasterMessage(message);
+                        // アイテムゲット音を鳴らす
+                        this.player.playSE('itemGet');
+                        return;
                     }
+
+                    this.player.collectItem(item.itemType);
                     // クリアアイテムカウント
                     if (item.itemType === 'clear') {
                         this.collectedClearItems = (this.collectedClearItems || 0) + 1;
-                        // UI表示更新などの必要があれば
                     }
                 }
             }
@@ -1433,14 +1442,25 @@ const GameEngine = {
         this.items.forEach((item, idx) => {
             if (item.collected) return;
 
+            // 毎フレームログは多すぎるので、近くにいる時だけ
+            const dx = Math.abs(this.player.x - item.x);
+            const dy = Math.abs(this.player.y - item.y);
+            if (dx < 3 && dy < 3) {
+                console.log(`Player near item[${idx}]: player(${this.player.x.toFixed(2)}, ${this.player.y.toFixed(2)}) item(${item.x}, ${item.y}) dx=${dx.toFixed(2)} dy=${dy.toFixed(2)}`);
+            }
+
             if (this.player.collidesWith(item)) {
-                console.log(`>>> Collecting item[${idx}] at (${item.x}, ${item.y}), type=${item.itemType}, player at (${this.player.x.toFixed(2)}, ${this.player.y.toFixed(2)})`);
+                console.log(`>>> Collecting item[${idx}] at (${item.x}, ${item.y}), type=${item.itemType}, template=${item.template?.name}, easterMessage=${item.template?.config?.easterMessage}`);
                 item.collected = true;
 
                 // イースターエッグの場合はメッセージウィンドウを表示
                 if (item.itemType === 'easter') {
+                    console.log('>>> Easter egg detected! Showing message window');
                     const message = item.template?.config?.easterMessage || 'ひみつのメッセージ';
+                    console.log('>>> Easter message:', message);
                     this.showEasterMessage(message);
+                    // イースターエッグもアイテムゲット音を鳴らす
+                    this.player.playSE('itemGet');
                     // イースターエッグはスコア加算なし
                     return;
                 }
