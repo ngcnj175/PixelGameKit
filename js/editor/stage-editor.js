@@ -2550,85 +2550,15 @@ const StageEditor = {
         if (seIndex < 0 || seIndex >= sounds.length) return;
 
         const se = sounds[seIndex];
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
 
-        switch (se.type) {
-            case 'jump':
-                this.playSe_Jump(ctx);
-                break;
-            case 'attack':
-                this.playSe_Attack(ctx);
-                break;
-            case 'damage':
-                this.playSe_Damage(ctx);
-                break;
-            case 'itemGet':
-                this.playSe_ItemGet(ctx);
-                break;
+        // グローバルオーディオエンジンを使用
+        const audio = window.NesAudio || window.AudioManager;
+        if (audio) {
+            console.log('Previewing SE:', se.name, se.type);
+            audio.playSE(se.type);
+        } else {
+            console.error('Audio engine (NesAudio/AudioManager) not found.');
         }
-    },
-
-    // SE: ジャンプ（上昇する音）
-    playSe_Jump(ctx) {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'square';
-        osc.frequency.setValueAtTime(200, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(600, ctx.currentTime + 0.1);
-        gain.gain.setValueAtTime(0.3, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.15);
-    },
-
-    // SE: 攻撃（短い衝撃音）
-    playSe_Attack(ctx) {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(400, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.1);
-        gain.gain.setValueAtTime(0.4, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.1);
-    },
-
-    // SE: ダメージ（下降する音）
-    playSe_Damage(ctx) {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'square';
-        osc.frequency.setValueAtTime(400, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.3);
-        gain.gain.setValueAtTime(0.3, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.3);
-    },
-
-    // SE: アイテム取得（キラキラ音）
-    playSe_ItemGet(ctx) {
-        const playNote = (freq, startTime, duration) => {
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.type = 'triangle';
-            osc.frequency.value = freq;
-            gain.gain.setValueAtTime(0.3, startTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            osc.start(startTime);
-            osc.stop(startTime + duration);
-        };
-        playNote(523, ctx.currentTime, 0.1);       // C5
-        playNote(659, ctx.currentTime + 0.08, 0.1); // E5
-        playNote(784, ctx.currentTime + 0.16, 0.15); // G5
     }
 };
+
