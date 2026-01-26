@@ -2166,6 +2166,8 @@ const GameEngine = {
         if (!layer) return;
         const templates = App.projectData.templates || [];
         const stage = App.projectData.stage;
+        const sprites = App.projectData.sprites;
+        const frameSpeed = 10; // アニメーション速度: 10フレームごとにスプライトを切り替え
 
         for (let y = startY; y < endY; y++) {
             if (y < 0 || y >= stage.height) continue;
@@ -2184,7 +2186,23 @@ const GameEngine = {
                         if (template && (template.type === 'item' || template.type === 'enemy' || template.type === 'player')) continue;
 
                         // マテリアル（ブロック）などはここで描画
-                        spriteIdx = template?.sprites?.idle?.frames?.[0] ?? template?.sprites?.main?.frames?.[0];
+                        // アニメーション対応: 全フレームから現在のフレームを計算
+                        const spriteSlots = template?.sprites || {};
+                        const slotNames = ['idle', 'main', 'walk', 'jump', 'attack', 'shot', 'life'];
+                        let frames = [];
+                        for (const slotName of slotNames) {
+                            if (spriteSlots[slotName]?.frames?.length > 0) {
+                                frames = spriteSlots[slotName].frames;
+                                break;
+                            }
+                        }
+                        if (frames.length > 1) {
+                            // 複数フレームがある場合はアニメーション
+                            const frameIndex = Math.floor(this.tileAnimationFrame / frameSpeed) % frames.length;
+                            spriteIdx = frames[frameIndex];
+                        } else if (frames.length === 1) {
+                            spriteIdx = frames[0];
+                        }
                     } else {
                         // 旧形式または単純タイル
                         spriteIdx = tileId;
@@ -2193,7 +2211,7 @@ const GameEngine = {
                     if (spriteIdx !== undefined && spriteIdx >= 0) {
                         const screenX = (x - this.camera.x) * this.TILE_SIZE;
                         const screenY = (y - this.camera.y) * this.TILE_SIZE;
-                        this.renderSprite(App.projectData.sprites[spriteIdx], screenX, screenY, App.nesPalette);
+                        this.renderSprite(sprites[spriteIdx], screenX, screenY, App.nesPalette);
                     }
                 }
             }
