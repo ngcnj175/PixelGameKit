@@ -36,6 +36,7 @@ const StageEditor = {
         this.initAddTileButton();
         this.initConfigPanel();
         this.initSpriteSelectPopup();
+        this.initSeSelectPopup();
         this.initTemplateList();
         this.initCanvasEvents();
         this.initStageSettings();
@@ -557,18 +558,18 @@ const StageEditor = {
             }
         }
 
-        let options = '<option value="-1">OFF</option>';
-        sounds.forEach((se, idx) => {
-            const selected = selectedValue === idx ? 'selected' : '';
-            options += `<option value="${idx}" ${selected}>${se.name}</option>`;
-        });
+        // 選択中のSE名を取得
+        let selectedName = 'OFF';
+        if (selectedValue >= 0 && selectedValue < sounds.length) {
+            selectedName = sounds[selectedValue].name;
+        }
+
         return `
             <div class="param-row se-row">
                 <span class="param-label">${label}</span>
-                <select class="param-select se-select" data-key="${key}">
-                    ${options}
-                </select>
-                <button class="se-preview-btn" data-key="${key}">▶</button>
+                <button class="se-select-btn param-select" data-key="${key}" data-value="${selectedValue}">
+                    ${selectedName}
+                </button>
             </div>
         `;
     },
@@ -763,6 +764,15 @@ const StageEditor = {
             });
         });
 
+        // SE選択ボタン
+        document.querySelectorAll('.se-select-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const key = btn.dataset.key;
+                const currentValue = parseInt(btn.dataset.value) || -1;
+                this.openSeSelectPopup(key, currentValue);
+            });
+        });
+
         // アニメーションを初期化
         this.updateConfigAnimations();
     },
@@ -811,6 +821,120 @@ const StageEditor = {
                 this.configAnimationIntervals.push(animInterval);
             }
         });
+    },
+
+    // SEプレビュー再生
+    playSePreview(seIndex) {
+        const sounds = App.projectData?.sounds;
+        if (!sounds || seIndex < 0 || seIndex >= sounds.length) return;
+
+        const se = sounds[seIndex];
+        if (se && se.type) {
+            // AudioManagerを使って再生
+            if (typeof AudioManager !== 'undefined' && AudioManager.playSE) {
+                AudioManager.playSE(se.type);
+            } else {
+                console.log('SE Preview:', se.type);
+            }
+        }
+    },
+
+    // ========== SE選択ポップアップ ==========
+    currentSeSelectKey: null,
+    selectedSeIndex: -1,
+
+    initSeSelectPopup() {
+        const cancelBtn = document.getElementById('se-select-cancel');
+        const doneBtn = document.getElementById('se-select-done');
+
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', () => this.closeSeSelectPopup());
+        }
+
+        if (doneBtn) {
+            doneBtn.addEventListener('click', () => this.confirmSeSelection());
+        }
+    },
+
+    openSeSelectPopup(key, currentValue) {
+        this.currentSeSelectKey = key;
+        this.selectedSeIndex = currentValue;
+
+        const popup = document.getElementById('se-select-popup');
+        const list = popup.querySelector('.se-select-list');
+
+        // SE一覧を生成
+        let sounds = App.projectData?.sounds;
+        if (!sounds || sounds.length === 0) {
+            sounds = [
+                { id: 0, name: 'JUMP', type: 'jump' },
+                { id: 1, name: 'ATTACK', type: 'attack' },
+                { id: 2, name: 'DAMAGE', type: 'damage' },
+                { id: 3, name: 'ITEM GET', type: 'itemGet' },
+                { id: 4, name: 'ENEMY DEFEAT', type: 'enemyDefeat' }
+            ];
+        }
+
+        let html = `
+            <div class="se-select-item" data-se-index="-1">
+                <span class="se-name">OFF</span>
+            </div>
+        `;
+        sounds.forEach((se, idx) => {
+            html += `
+                <div class="se-select-item" data-se-index="${idx}">
+                    <span class="se-name">${se.name}</span>
+                    <button class="se-preview-btn" data-se-index="${idx}">▶</button>
+                </div>
+            `;
+        });
+
+        list.innerHTML = html;
+
+        // イベントを設定
+        list.querySelectorAll('.se-select-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                // プレビューボタンクリック時は選択しない
+                if (e.target.classList.contains('se-preview-btn')) return;
+
+                // 即座に選択を確定
+                this.selectedSeIndex = parseInt(item.dataset.seIndex);
+                this.confirmSeSelection();
+            });
+        });
+
+        list.querySelectorAll('.se-preview-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const idx = parseInt(btn.dataset.seIndex);
+                this.playSePreview(idx);
+            });
+        });
+
+        // ポップアップ外クリックで閉じる
+        popup.addEventListener('click', (e) => {
+            if (e.target === popup) {
+                this.closeSeSelectPopup();
+            }
+        }, { once: true });
+
+        popup.classList.remove('hidden');
+    },
+
+    closeSeSelectPopup() {
+        const popup = document.getElementById('se-select-popup');
+        popup.classList.add('hidden');
+        this.currentSeSelectKey = null;
+    },
+
+    confirmSeSelection() {
+        if (this.currentSeSelectKey && this.editingTemplate?.config) {
+            this.editingTemplate.config[this.currentSeSelectKey] = this.selectedSeIndex;
+            // UIを更新
+            this.renderConfigContent();
+            this.initConfigEvents();
+        }
+        this.closeSeSelectPopup();
     },
 
     // ========== スプライト選択ポップアップ ==========

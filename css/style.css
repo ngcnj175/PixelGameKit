@@ -1134,6 +1134,68 @@ body {
     opacity: 0.8;
 }
 
+/* SE選択ポップアップ */
+.se-select-content {
+    width: 240px;
+    max-width: 80%;
+    padding: 0;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.se-select-list {
+    max-height: 280px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.se-select-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+    transition: background 0.1s;
+}
+
+.se-select-item:last-child {
+    border-bottom: none;
+}
+
+.se-select-item:active {
+    background: #f0f0f0;
+}
+
+.se-select-item .se-name {
+    font-size: 15px;
+    font-weight: 500;
+    color: #333;
+}
+
+.se-select-item .se-preview-btn {
+    width: 36px;
+    height: 36px;
+    border: none;
+    background: #4a4a4a;
+    color: #fff;
+    border-radius: 50%;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.se-select-item .se-preview-btn:active {
+    opacity: 0.7;
+    transform: scale(0.95);
+}
+
 .num-value {
     width: 32px;
     text-align: center;
