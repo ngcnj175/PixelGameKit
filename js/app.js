@@ -91,10 +91,36 @@ const App = {
             },
             // プリセットSE
             sounds: [
-                { id: 0, name: 'ジャンプ', type: 'jump' },
-                { id: 1, name: '攻撃', type: 'attack' },
-                { id: 2, name: 'ダメージ', type: 'damage' },
-                { id: 3, name: 'ゲット', type: 'itemGet' }
+                // ジャンプ系
+                { id: 0, name: 'ジャンプ_01', type: 'jump_01' },
+                { id: 1, name: 'ジャンプ_02', type: 'jump_02' },
+                { id: 2, name: 'ジャンプ_03', type: 'jump_03' },
+                { id: 3, name: 'ジャンプ_04', type: 'jump_04' },
+                { id: 4, name: 'ジャンプ_05', type: 'jump_05' },
+                // 攻撃系
+                { id: 5, name: '攻撃_01', type: 'attack_01' },
+                { id: 6, name: '攻撃_02', type: 'attack_02' },
+                { id: 7, name: '攻撃_03', type: 'attack_03' },
+                { id: 8, name: '攻撃_04', type: 'attack_04' },
+                { id: 9, name: '攻撃_05', type: 'attack_05' },
+                // ダメージ系
+                { id: 10, name: 'ダメージ_01', type: 'damage_01' },
+                { id: 11, name: 'ダメージ_02', type: 'damage_02' },
+                { id: 12, name: 'ダメージ_03', type: 'damage_03' },
+                { id: 13, name: 'ダメージ_04', type: 'damage_04' },
+                { id: 14, name: 'ダメージ_05', type: 'damage_05' },
+                // ゲット系
+                { id: 15, name: 'ゲット_01', type: 'itemGet_01' },
+                { id: 16, name: 'ゲット_02', type: 'itemGet_02' },
+                { id: 17, name: 'ゲット_03', type: 'itemGet_03' },
+                { id: 18, name: 'ゲット_04', type: 'itemGet_04' },
+                { id: 19, name: 'ゲット_05', type: 'itemGet_05' },
+                // その他
+                { id: 20, name: 'その他_01(決定)', type: 'other_01' },
+                { id: 21, name: 'その他_02(キャンセル)', type: 'other_02' },
+                { id: 22, name: 'その他_03(カーソル)', type: 'other_03' },
+                { id: 23, name: 'その他_04(ポーズ)', type: 'other_04' },
+                { id: 24, name: 'その他_05(爆発)', type: 'other_05' }
             ]
         };
     },
@@ -324,22 +350,56 @@ const App = {
             }
         }
 
-        // SE名のマイグレーション（英語→日本語、ENEMY DEFEAT削除）
-        if (this.projectData.sounds) {
-            const seNameMap = {
-                'JUMP': 'ジャンプ',
-                'ATTACK': '攻撃',
-                'DAMAGE': 'ダメージ',
-                'ITEM GET': 'ゲット'
-            };
-            // ENEMY DEFEATを削除し、名前を更新
-            this.projectData.sounds = this.projectData.sounds
-                .filter(se => se.type !== 'enemyDefeat')
-                .map((se, idx) => ({
-                    ...se,
-                    id: idx,
-                    name: seNameMap[se.name] || se.name
-                }));
+        // SEリストの拡張とマイグレーション
+        if (this.projectData.sounds && this.projectData.sounds.length <= 5) {
+            // 1. 新しいサウンドリストで上書き
+            this.projectData.sounds = [
+                // ジャンプ系
+                { id: 0, name: 'ジャンプ_01', type: 'jump_01' },
+                { id: 1, name: 'ジャンプ_02', type: 'jump_02' },
+                { id: 2, name: 'ジャンプ_03', type: 'jump_03' },
+                { id: 3, name: 'ジャンプ_04', type: 'jump_04' },
+                { id: 4, name: 'ジャンプ_05', type: 'jump_05' },
+                // 攻撃系
+                { id: 5, name: '攻撃_01', type: 'attack_01' },
+                { id: 6, name: '攻撃_02', type: 'attack_02' },
+                { id: 7, name: '攻撃_03', type: 'attack_03' },
+                { id: 8, name: '攻撃_04', type: 'attack_04' },
+                { id: 9, name: '攻撃_05', type: 'attack_05' },
+                // ダメージ系
+                { id: 10, name: 'ダメージ_01', type: 'damage_01' },
+                { id: 11, name: 'ダメージ_02', type: 'damage_02' },
+                { id: 12, name: 'ダメージ_03', type: 'damage_03' },
+                { id: 13, name: 'ダメージ_04', type: 'damage_04' },
+                { id: 14, name: 'ダメージ_05', type: 'damage_05' },
+                // ゲット系
+                { id: 15, name: 'ゲット_01', type: 'itemGet_01' },
+                { id: 16, name: 'ゲット_02', type: 'itemGet_02' },
+                { id: 17, name: 'ゲット_03', type: 'itemGet_03' },
+                { id: 18, name: 'ゲット_04', type: 'itemGet_04' },
+                { id: 19, name: 'ゲット_05', type: 'itemGet_05' },
+                // その他
+                { id: 20, name: 'その他_01(決定)', type: 'other_01' },
+                { id: 21, name: 'その他_02(キャンセル)', type: 'other_02' },
+                { id: 22, name: 'その他_03(カーソル)', type: 'other_03' },
+                { id: 23, name: 'その他_04(ポーズ)', type: 'other_04' },
+                { id: 24, name: 'その他_05(爆発)', type: 'other_05' }
+            ];
+
+            // 2. テンプレート設定のマイグレーション（IDの振り直し）
+            if (this.projectData.templates) {
+                const seMap = { 0: 0, 1: 5, 2: 10, 3: 15 };
+                this.projectData.templates.forEach(tmpl => {
+                    if (tmpl.type === 'player' && tmpl.config) {
+                        ['seJump', 'seAttack', 'seDamage', 'seItemGet'].forEach(key => {
+                            const oldVal = tmpl.config[key];
+                            if (oldVal !== undefined && seMap[oldVal] !== undefined) {
+                                tmpl.config[key] = seMap[oldVal];
+                            }
+                        });
+                    }
+                });
+            }
         }
     },
 

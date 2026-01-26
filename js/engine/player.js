@@ -68,10 +68,10 @@ class Player {
 
         // SE設定（-1はOFF）
         this.seJump = template?.config?.seJump ?? 0;
-        this.seAttack = template?.config?.seAttack ?? 1;
-        this.seDamage = template?.config?.seDamage ?? 2;
-        this.seItemGet = template?.config?.seItemGet ?? 3;
-        this.seEnemyDefeat = template?.config?.seEnemyDefeat ?? 4;
+        this.seAttack = template?.config?.seAttack ?? 5;
+        this.seDamage = template?.config?.seDamage ?? 10;
+        this.seItemGet = template?.config?.seItemGet ?? 15;
+        this.seEnemyDefeat = template?.config?.seEnemyDefeat ?? 24;
 
         // 喜びジャンプ（クリア演出用）
         this.joyJumpActive = false;
