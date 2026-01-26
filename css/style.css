@@ -1145,8 +1145,8 @@ body {
 }
 
 .se-select-list {
-    max-height: 280px;
-    overflow-y: scroll;
+    max-height: 50vh;
+    overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
     touch-action: pan-y;

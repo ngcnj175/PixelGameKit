@@ -856,11 +856,11 @@ const StageEditor = {
 
         const se = sounds[seIndex];
         if (se && se.type) {
-            // AudioManagerを使って再生
-            if (typeof AudioManager !== 'undefined' && AudioManager.playSE) {
-                AudioManager.playSE(se.type);
+            // NesAudioを使って再生
+            if (typeof NesAudio !== 'undefined' && NesAudio.playSE) {
+                NesAudio.playSE(se.type);
             } else {
-                console.log('SE Preview:', se.type);
+                console.log('SE Preview (No Audio):', se.type);
             }
         }
     },
