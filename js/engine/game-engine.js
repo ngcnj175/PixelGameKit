@@ -405,6 +405,8 @@ const GameEngine = {
                         y: ent.y,
                         width: 1,
                         height: 1,
+                        template: template,
+                        templateIdx: ent.templateId,
                         spriteIdx: spriteIdx,
                         itemType: itemType,
                         collected: false

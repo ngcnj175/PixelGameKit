@@ -406,9 +406,10 @@ const StageEditor = {
                         <span class="param-label">ドロップ</span>
                         <select class="param-select" data-key="dropItem">
                             <option value="none" ${!config.dropItem || config.dropItem === 'none' ? 'selected' : ''}>なし</option>
-                            <option value="lifeup" ${config.dropItem === 'lifeup' ? 'selected' : ''}>ライフ</option>
                             <option value="muteki" ${config.dropItem === 'muteki' ? 'selected' : ''}>むてき</option>
+                            <option value="lifeup" ${config.dropItem === 'lifeup' ? 'selected' : ''}>ライフアップ</option>
                             <option value="clear" ${config.dropItem === 'clear' ? 'selected' : ''}>クリア</option>
+                            <option value="easter" ${config.dropItem === 'easter' ? 'selected' : ''}>イースターエッグ</option>
                         </select>
                     </div>
                 `;
