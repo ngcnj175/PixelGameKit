@@ -858,9 +858,12 @@ const StageEditor = {
         if (se && se.type) {
             // NesAudioを使って再生
             if (typeof NesAudio !== 'undefined' && NesAudio.playSE) {
+                // コンテキスト再開を試みる（iOS対応）
+                NesAudio.ensureContext();
                 NesAudio.playSE(se.type);
+                console.log('Playing sound:', se.type);
             } else {
-                console.log('SE Preview (No Audio):', se.type);
+                console.log('SE Preview (No Audio Engine):', se.type);
             }
         }
     },
@@ -916,6 +919,10 @@ const StageEditor = {
 
         list.innerHTML = html;
 
+        // リスト内のタッチイベント伝播を停止（グローバルスクロールブロックの回避）
+        list.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: true });
+        list.addEventListener('touchmove', (e) => e.stopPropagation(), { passive: true });
+
         // イベントを設定
         list.querySelectorAll('.se-select-item').forEach(item => {
             item.addEventListener('click', (e) => {
@@ -930,10 +937,15 @@ const StageEditor = {
 
         list.querySelectorAll('.se-preview-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
+                e.preventDefault(); // タッチ環境でのダブルファイア防止
                 e.stopPropagation();
                 const idx = parseInt(btn.dataset.seIndex);
                 this.playSePreview(idx);
             });
+            // タッチイベントも追加（反応性向上）
+            btn.addEventListener('touchstart', (e) => {
+                e.stopPropagation(); // リストのスクロール以外への伝播防止
+            }, { passive: true });
         });
 
         // ポップアップ外クリックで閉じる
