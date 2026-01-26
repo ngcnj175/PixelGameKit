@@ -546,11 +546,10 @@ const StageEditor = {
         let sounds = App.projectData?.sounds;
         if (!sounds || sounds.length === 0) {
             sounds = [
-                { id: 0, name: 'JUMP', type: 'jump' },
-                { id: 1, name: 'ATTACK', type: 'attack' },
-                { id: 2, name: 'DAMAGE', type: 'damage' },
-                { id: 3, name: 'ITEM GET', type: 'itemGet' },
-                { id: 4, name: 'ENEMY DEFEAT', type: 'enemyDefeat' }
+                { id: 0, name: 'ジャンプ', type: 'jump' },
+                { id: 1, name: '攻撃', type: 'attack' },
+                { id: 2, name: 'ダメージ', type: 'damage' },
+                { id: 3, name: 'ゲット', type: 'itemGet' }
             ];
             // プロジェクトデータに追加
             if (App.projectData) {
@@ -559,7 +558,7 @@ const StageEditor = {
         }
 
         // 選択中のSE名を取得
-        let selectedName = 'OFF';
+        let selectedName = 'なし';
         if (selectedValue >= 0 && selectedValue < sounds.length) {
             selectedName = sounds[selectedValue].name;
         }
@@ -768,7 +767,8 @@ const StageEditor = {
         document.querySelectorAll('.se-select-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const key = btn.dataset.key;
-                const currentValue = parseInt(btn.dataset.value) || -1;
+                const val = parseInt(btn.dataset.value);
+                const currentValue = isNaN(val) ? -1 : val;
                 this.openSeSelectPopup(key, currentValue);
             });
         });
@@ -867,22 +867,21 @@ const StageEditor = {
         let sounds = App.projectData?.sounds;
         if (!sounds || sounds.length === 0) {
             sounds = [
-                { id: 0, name: 'JUMP', type: 'jump' },
-                { id: 1, name: 'ATTACK', type: 'attack' },
-                { id: 2, name: 'DAMAGE', type: 'damage' },
-                { id: 3, name: 'ITEM GET', type: 'itemGet' },
-                { id: 4, name: 'ENEMY DEFEAT', type: 'enemyDefeat' }
+                { id: 0, name: 'ジャンプ', type: 'jump' },
+                { id: 1, name: '攻撃', type: 'attack' },
+                { id: 2, name: 'ダメージ', type: 'damage' },
+                { id: 3, name: 'ゲット', type: 'itemGet' }
             ];
         }
 
         let html = `
-            <div class="se-select-item" data-se-index="-1">
-                <span class="se-name">OFF</span>
+            <div class="se-select-item ${this.selectedSeIndex === -1 ? 'current' : ''}" data-se-index="-1">
+                <span class="se-name">なし</span>
             </div>
         `;
         sounds.forEach((se, idx) => {
             html += `
-                <div class="se-select-item" data-se-index="${idx}">
+                <div class="se-select-item ${this.selectedSeIndex === idx ? 'current' : ''}" data-se-index="${idx}">
                     <span class="se-name">${se.name}</span>
                     <button class="se-preview-btn" data-se-index="${idx}">▶</button>
                 </div>
