@@ -759,14 +759,13 @@ const GameEngine = {
             this.renderLayer(stage.layers.bg, startX, startY, endX, endY);
         }
 
-        // 2. アイテム (blocksの後ろにある場合は隠す)
-        // ブロックがある位置 = layers.bg にタイルがある位置（0以上）
-        // ただし、destroyTileで破壊された場所は breakableTiles から消えるわけではなく、
-        // 描画上は消える必要がある。
-        // renderLayerは destroyedTiles をチェックしていない（stageデータしか見ていない）。
-        // 破壊されたタイルは、stageデータ自体は消さない実装だったが、
-        // 可視性チェックでは「BGレイヤーにタイルがあり、かつ破壊されていないか」を見る必要がある。
+        // 2. FGレイヤー (装飾用・当たり判定なしのブロック)
+        // 当たり判定ありのブロックは後で描画
+        if (stage.layers.fg) {
+            this.renderLayerFiltered(stage.layers.fg, startX, startY, endX, endY, false); // collision=false のみ
+        }
 
+        // 3. アイテム (blocksの後ろにある場合は隠す)
         this.items.forEach(item => {
             if (item.collected) return;
 
@@ -787,49 +786,19 @@ const GameEngine = {
             }
         });
 
-        // 3. ギミックブロック（FGレイヤーのmaterial）
-        // FGレイヤーの静的タイルを描画する代わりに、ギミックブロックとして描画
-        // 静的ブロックもここで描画？
-        // 元の実装では FGレイヤーを renderLayer で描画していた。
-        // ギミックブロックは動くので、元の位置のタイルは描画しないようにする必要がある。
-        // しかし renderLayer は単純に配列を描画する。
-        // ここでは「BG→Items→Enemies→FG(ブロック)」ではなく、
-        // 「BG→Items→Enemies→FG（プレイヤーより奥）→Player→FG（プレイヤーより手前）」のような順序はない。
-        // NES風なのでシンプルに「BG → Obj → FG」で良いが、
-        // ブロックに隠れる敵を実現するためには、
-        // 「BG(ブロック含む)」→「隠れるObj(Item/Enemy)」→「FG」としたいが、
-        // ユーザー指定は「BGにブロック、FGにアイテム」で「ブロックを壊すとアイテム」。
-        // つまりアイテムはBGブロックの【後ろ】にあるべき。
-        // 描画順: Item -> BG Block.
-        // しかしアイテムはFGレイヤー(entities)で配置される。
-        // 通常はBG -> FG(Items/Blocks) -> Player.
-        // 今回の要件: BG(Block) covers FG(Item).
-        // 描画順: FG(Item) -> BG(Block) ?? 逆？
-        // BGレイヤーが手前にあるということはない。
-        // ユーザー「FGレイヤーに壊れるブロック」→ブロックは奥。
-        // 「FGレイヤーにアイテム」→アイテムは手前。
-        // 普通ならアイテムが手前に見える。
-        // ユーザーは「ブロックの後ろにアイテム」と言っている。
-        // なので、アイテムを描画する際に「その位置にBGブロックがあれば描画しない」というロジックで対応する（隠蔽）。
-
         // 4. エネミー（生存中のみ、死亡中はFGの後で描画）
         this.enemies.forEach(enemy => {
             // 死亡中の敵は後で描画（FGレイヤーの手前に表示するため）
             if (enemy.isDying) return;
 
-            // 隠れているエネミー（frozenかつブロックがある）は描画しない
+            // 隠れているエネミー（frozenかつ当たり判定ありブロックがある）は描画しない
             if (enemy.frozen) {
                 const ex = Math.floor(enemy.x);
                 const ey = Math.floor(enemy.y);
-                // BGブロックがあるか確認
-                let covered = false;
-                if (stage.layers.bg) {
-                    // 壁（衝突判定あり）がある場合のみ隠す
-                    if (this.getCollision(ex, ey) === 1) {
-                        covered = true;
-                    }
+                // 当たり判定ありブロックがあるか確認
+                if (this.getCollision(ex, ey) === 1) {
+                    return; // 隠す
                 }
-                if (covered) return;
             }
             enemy.render(this.ctx, this.TILE_SIZE, this.camera);
         });
@@ -839,14 +808,9 @@ const GameEngine = {
             this.player.render(this.ctx, this.TILE_SIZE, this.camera);
         }
 
-        // 6. FGレイヤー (障害物など)
+        // 6. FGレイヤー (当たり判定ありのブロック - プレイヤー/敵より手前)
         if (stage.layers.fg) {
-            // updateGimmickBlocksで移動したブロックは個別に描画が必要
-            // ここでは静的なFGを描画
-            // ただし、ギミックブロックや破壊されたブロックは除外する必要がある？
-            // destroyTileは破壊済みリストに追加するが、layerデータは書き換えない（以前の実装）。
-            // renderLayer内でdestroyedTilesをチェックするように修正する必要がある。
-            this.renderLayer(stage.layers.fg, startX, startY, endX, endY);
+            this.renderLayerFiltered(stage.layers.fg, startX, startY, endX, endY, true); // collision=true のみ
         }
 
         // 7. ギミックブロック（動くブロック）
@@ -2207,6 +2171,73 @@ const GameEngine = {
                         // 旧形式または単純タイル
                         spriteIdx = tileId;
                     }
+
+                    if (spriteIdx !== undefined && spriteIdx >= 0) {
+                        const screenX = (x - this.camera.x) * this.TILE_SIZE;
+                        const screenY = (y - this.camera.y) * this.TILE_SIZE;
+                        this.renderSprite(sprites[spriteIdx], screenX, screenY, App.nesPalette);
+                    }
+                }
+            }
+        }
+    },
+
+    // 当たり判定の有無でフィルタリングして描画
+    renderLayerFiltered(layer, startX, startY, endX, endY, collisionOnly) {
+        if (!layer) return;
+        const templates = App.projectData.templates || [];
+        const stage = App.projectData.stage;
+        const sprites = App.projectData.sprites;
+        const frameSpeed = 10;
+
+        for (let y = startY; y < endY; y++) {
+            if (y < 0 || y >= stage.height) continue;
+            for (let x = startX; x < endX; x++) {
+                if (x < 0 || x >= stage.width) continue;
+
+                // 破壊済みタイルはスキップ
+                if (this.destroyedTiles.has(`${x},${y}`)) continue;
+
+                const tileId = layer[y][x];
+                if (tileId >= 0) {
+                    let template = null;
+                    let spriteIdx = -1;
+                    let hasCollision = false;
+
+                    if (tileId >= 100) {
+                        template = templates[tileId - 100];
+                        // アイテム、敵、プレイヤーは個別のループで描画するためここではスキップ
+                        if (template && (template.type === 'item' || template.type === 'enemy' || template.type === 'player')) continue;
+
+                        // 当たり判定の確認（materialタイプでcollisionがfalseでない場合は当たり判定あり）
+                        if (template && template.type === 'material') {
+                            hasCollision = template.config?.collision !== false;
+                        }
+
+                        // アニメーション対応
+                        const spriteSlots = template?.sprites || {};
+                        const slotNames = ['idle', 'main', 'walk', 'jump', 'attack', 'shot', 'life'];
+                        let frames = [];
+                        for (const slotName of slotNames) {
+                            if (spriteSlots[slotName]?.frames?.length > 0) {
+                                frames = spriteSlots[slotName].frames;
+                                break;
+                            }
+                        }
+                        if (frames.length > 1) {
+                            const frameIndex = Math.floor(this.tileAnimationFrame / frameSpeed) % frames.length;
+                            spriteIdx = frames[frameIndex];
+                        } else if (frames.length === 1) {
+                            spriteIdx = frames[0];
+                        }
+                    } else {
+                        // 旧形式または単純タイル（当たり判定なしとみなす）
+                        spriteIdx = tileId;
+                        hasCollision = false;
+                    }
+
+                    // フィルタリング: collisionOnlyがtrueなら当たり判定ありのみ、falseなら当たり判定なしのみ
+                    if (collisionOnly !== hasCollision) continue;
 
                     if (spriteIdx !== undefined && spriteIdx >= 0) {
                         const screenX = (x - this.camera.x) * this.TILE_SIZE;
