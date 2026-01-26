@@ -856,11 +856,13 @@ const StageEditor = {
 
         const se = sounds[seIndex];
         if (se && se.type) {
-            // NesAudioを使って再生
-            if (typeof NesAudio !== 'undefined' && NesAudio.playSE) {
+            // NesAudioまたはAudioManagerを使って再生
+            const audioEngine = window.NesAudio || window.AudioManager || (typeof NesAudio !== 'undefined' ? NesAudio : null);
+
+            if (audioEngine && audioEngine.playSE) {
                 // コンテキスト再開を試みる（iOS対応）
-                NesAudio.ensureContext();
-                NesAudio.playSE(se.type);
+                if (audioEngine.ensureContext) audioEngine.ensureContext();
+                audioEngine.playSE(se.type);
                 console.log('Playing sound:', se.type);
             } else {
                 console.log('SE Preview (No Audio Engine):', se.type);
@@ -937,7 +939,7 @@ const StageEditor = {
 
         list.querySelectorAll('.se-preview-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                e.preventDefault(); // タッチ環境でのダブルファイア防止
+                // e.preventDefault();
                 e.stopPropagation();
                 const idx = parseInt(btn.dataset.seIndex);
                 this.playSePreview(idx);

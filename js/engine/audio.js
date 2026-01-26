@@ -620,3 +620,7 @@ const NesAudio = {
     playSE_itemGet() { this.playSE_itemGet_01(); },
     playSE_enemyDefeat() { this.playSE_other_05(); }
 };
+
+// グローバル公開と互換性確保
+window.NesAudio = NesAudio;
+window.AudioManager = NesAudio;
