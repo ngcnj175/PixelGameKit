@@ -893,15 +893,22 @@ const GameEngine = {
         const h = this.canvas.height;
         const message = this.easterMessage || '';
 
+        // テキストを10文字ごとに改行
+        const maxCharsPerLine = 10;
+        const lines = [];
+        for (let i = 0; i < message.length; i += maxCharsPerLine) {
+            lines.push(message.slice(i, i + maxCharsPerLine));
+        }
+
         // ウィンドウサイズ計算
         const padding = 16;
-        const lineHeight = 20;
+        const lineHeight = 22;
         const buttonHeight = 24;
-        const charWidth = 12; // 8x8フォントを少し拡大
+        const charWidth = 12;
 
-        const textWidth = Math.min(message.length * charWidth + padding * 2, w - 40);
-        const windowWidth = Math.max(textWidth, 120);
-        const windowHeight = lineHeight + buttonHeight + padding * 3;
+        const textWidth = maxCharsPerLine * charWidth + padding * 2;
+        const windowWidth = Math.max(textWidth, 140);
+        const windowHeight = (lines.length * lineHeight) + buttonHeight + padding * 3;
 
         const windowX = (w - windowWidth) / 2;
         const windowY = (h - windowHeight) / 2;
@@ -914,17 +921,15 @@ const GameEngine = {
         ctx.fillStyle = '#000000';
         ctx.fillRect(windowX, windowY, windowWidth, windowHeight);
 
-        // 内側の白い細枠
-        ctx.strokeStyle = '#FFFFFF';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(windowX + 4, windowY + 4, windowWidth - 8, windowHeight - 8);
-
         // メッセージテキスト（ピクセルフォント風）
         ctx.fillStyle = '#FFFFFF';
         ctx.font = '16px monospace';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(message, w / 2, windowY + padding + lineHeight / 2 + 4);
+        lines.forEach((line, idx) => {
+            const textY = windowY + padding + lineHeight * idx + lineHeight / 2;
+            ctx.fillText(line, w / 2, textY);
+        });
 
         // 「とじる」ボタン
         const buttonWidth = 80;
@@ -934,11 +939,6 @@ const GameEngine = {
         // ボタン背景
         ctx.fillStyle = '#333333';
         ctx.fillRect(buttonX, buttonY, buttonWidth, buttonHeight);
-
-        // ボタン枠
-        ctx.strokeStyle = '#FFFFFF';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(buttonX, buttonY, buttonWidth, buttonHeight);
 
         // ボタンテキスト
         ctx.fillStyle = '#FFFFFF';
