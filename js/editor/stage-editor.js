@@ -728,6 +728,22 @@ const StageEditor = {
                     } else {
                         this.editingTemplate.config[key] = select.value;
                     }
+
+                    // itemTypeが変更された場合はUIリフレッシュ（メッセージ欄の表示/非表示）
+                    if (key === 'itemType') {
+                        this.renderConfigContent();
+                        this.initConfigEvents();
+                    }
+                }
+            });
+        });
+
+        // パラメータテキスト入力（イースターエッグメッセージなど）
+        document.querySelectorAll('.param-input').forEach(input => {
+            input.addEventListener('input', () => {
+                const key = input.dataset.key;
+                if (key && this.editingTemplate?.config) {
+                    this.editingTemplate.config[key] = input.value;
                 }
             });
         });
