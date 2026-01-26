@@ -900,14 +900,14 @@ const GameEngine = {
             lines.push(message.slice(i, i + maxCharsPerLine));
         }
 
-        // ウィンドウサイズ計算
-        const padding = 16;
+        // ウィンドウサイズ計算（ひらがな対応で広めに）
+        const padding = 24;
         const lineHeight = 22;
         const buttonHeight = 24;
-        const charWidth = 12;
+        const charWidth = 16; // ひらがな用に広めに
 
         const textWidth = maxCharsPerLine * charWidth + padding * 2;
-        const windowWidth = Math.max(textWidth, 140);
+        const windowWidth = Math.max(textWidth, 180);
         const windowHeight = (lines.length * lineHeight) + buttonHeight + padding * 3;
 
         const windowX = (w - windowWidth) / 2;
