@@ -308,18 +308,17 @@ const GameEngine = {
                 const stage = this.stageData;
                 let isCovered = false;
 
-                // Helper to check if a tile is a blocking material
+                // Helper to check if a tile is a blocking material (with collision)
                 const isBlock = (tileId) => {
                     if (tileId === undefined || tileId < 0) return false;
                     const { template } = getTemplateFromTileId(tileId);
-                    // materialタイプ、あるいは破壊可能（life設定あり）ならブロックとみなす
-                    // BGレイヤーの場合はテンプレートが見つからない（ただのタイル）場合もブロックとみなす？
-                    // しかし破壊可能ブロックは通常テンプレート化されている。
-                    if (template) {
-                        return template.type === 'material';
+                    // materialタイプで当たり判定ありの場合のみブロックとみなす
+                    if (template && template.type === 'material') {
+                        // collision が false でない場合は当たり判定あり
+                        return template.config?.collision !== false;
                     }
-                    // テンプレートがない場合（ただのタイル）、BGならブロックとみなす（安全策）
-                    return true;
+                    // テンプレートがない場合（ただのタイル）は当たり判定なしとみなす
+                    return false;
                 };
 
                 // Check BG
