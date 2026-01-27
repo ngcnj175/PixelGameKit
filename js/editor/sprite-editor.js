@@ -890,20 +890,32 @@ const SpriteEditor = {
             this.ctx.stroke();
         }
 
-        // 8ピクセル毎のガイド線（白、0.75px）
+        // 8ピクセル毎のガイド線（白、0.75px）- スクロールに追従
         this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
         this.ctx.lineWidth = 0.75;
-        for (let i = 8; i < 16; i += 8) {
-            // 縦線
-            this.ctx.beginPath();
-            this.ctx.moveTo(i * this.pixelSize, 0);
-            this.ctx.lineTo(i * this.pixelSize, this.canvas.height);
-            this.ctx.stroke();
-            // 横線
-            this.ctx.beginPath();
-            this.ctx.moveTo(0, i * this.pixelSize);
-            this.ctx.lineTo(this.canvas.width, i * this.pixelSize);
-            this.ctx.stroke();
+        {
+            const offsetX = Math.floor(this.viewportOffsetX / this.pixelSize);
+            const offsetY = Math.floor(this.viewportOffsetY / this.pixelSize);
+            // 8ピクセル境界線を描画
+            for (let i = 8; i < dimension; i += 8) {
+                // 16の倍数は別のガイド線で描画するのでスキップ（32x32時のみ）
+                if (dimension > 16 && i % 16 === 0) continue;
+                // ビューポート内に表示される位置を計算
+                const screenX = (i - offsetX) * this.pixelSize;
+                const screenY = (i - offsetY) * this.pixelSize;
+                if (screenX > 0 && screenX < this.canvas.width) {
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(screenX, 0);
+                    this.ctx.lineTo(screenX, this.canvas.height);
+                    this.ctx.stroke();
+                }
+                if (screenY > 0 && screenY < this.canvas.height) {
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(0, screenY);
+                    this.ctx.lineTo(this.canvas.width, screenY);
+                    this.ctx.stroke();
+                }
+            }
         }
 
         // 16ピクセル毎のガイド線（赤 - 32x32編集時の視認性向上）
