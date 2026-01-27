@@ -82,6 +82,12 @@ class Player {
     playSE(seKey) {
         if (typeof NesAudio === 'undefined') return;
 
+        // enemyDefeatは常にv2.0.1オリジナルの「ポン」音を再生
+        if (seKey === 'enemyDefeat') {
+            NesAudio.playSE('enemyDefeat');
+            return;
+        }
+
         const sounds = App.projectData?.sounds || [];
         let seIndex = -1;
 
@@ -90,7 +96,6 @@ class Player {
             case 'attack': seIndex = this.seAttack; break;
             case 'damage': seIndex = this.seDamage; break;
             case 'itemGet': seIndex = this.seItemGet; break;
-            case 'enemyDefeat': seIndex = this.seEnemyDefeat; break;
         }
 
         if (seIndex >= 0 && seIndex < sounds.length) {
