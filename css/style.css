@@ -1142,6 +1142,8 @@ body {
     background: #fff;
     border-radius: 8px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+    /* 子要素のスクロールを有効化 */
 }
 
 .se-select-list {

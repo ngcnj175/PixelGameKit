@@ -851,21 +851,43 @@ const StageEditor = {
 
     // SEプレビュー再生
     playSePreview(seIndex) {
+        console.log('[SE Preview] Called with index:', seIndex);
         const sounds = App.projectData?.sounds;
-        if (!sounds || seIndex < 0 || seIndex >= sounds.length) return;
+        console.log('[SE Preview] sounds array:', sounds);
+        if (!sounds || seIndex < 0 || seIndex >= sounds.length) {
+            console.log('[SE Preview] Invalid index or no sounds');
+            return;
+        }
 
         const se = sounds[seIndex];
+        console.log('[SE Preview] SE data:', se);
         if (se && se.type) {
             // NesAudioまたはAudioManagerを使って再生
             const audioEngine = window.NesAudio || window.AudioManager || (typeof NesAudio !== 'undefined' ? NesAudio : null);
+            console.log('[SE Preview] Audio engine found:', !!audioEngine);
 
             if (audioEngine && audioEngine.playSE) {
                 // コンテキスト再開を試みる（iOS対応）
-                if (audioEngine.ensureContext) audioEngine.ensureContext();
-                audioEngine.playSE(se.type);
-                console.log('Playing sound:', se.type);
+                try {
+                    if (audioEngine.ensureContext) {
+                        audioEngine.ensureContext();
+                    }
+                    // AudioContextがsuspendedの場合は resume を待つ
+                    if (audioEngine.ctx && audioEngine.ctx.state === 'suspended') {
+                        console.log('[SE Preview] AudioContext suspended, resuming...');
+                        audioEngine.ctx.resume().then(() => {
+                            console.log('[SE Preview] AudioContext resumed, playing:', se.type);
+                            audioEngine.playSE(se.type);
+                        });
+                    } else {
+                        console.log('[SE Preview] Playing immediately:', se.type);
+                        audioEngine.playSE(se.type);
+                    }
+                } catch (err) {
+                    console.error('[SE Preview] Error:', err);
+                }
             } else {
-                console.log('SE Preview (No Audio Engine):', se.type);
+                console.log('[SE Preview] No audio engine or playSE method');
             }
         }
     },
