@@ -890,6 +890,22 @@ const SpriteEditor = {
             this.ctx.stroke();
         }
 
+        // 8ピクセル毎のガイド線（白、0.75px）
+        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+        this.ctx.lineWidth = 0.75;
+        for (let i = 8; i < 16; i += 8) {
+            // 縦線
+            this.ctx.beginPath();
+            this.ctx.moveTo(i * this.pixelSize, 0);
+            this.ctx.lineTo(i * this.pixelSize, this.canvas.height);
+            this.ctx.stroke();
+            // 横線
+            this.ctx.beginPath();
+            this.ctx.moveTo(0, i * this.pixelSize);
+            this.ctx.lineTo(this.canvas.width, i * this.pixelSize);
+            this.ctx.stroke();
+        }
+
         // 16ピクセル毎のガイド線（赤 - 32x32編集時の視認性向上）
         if (dimension > 16) {
             const offsetX = Math.floor(this.viewportOffsetX / this.pixelSize);

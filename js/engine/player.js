@@ -586,8 +586,9 @@ class Player {
         // 死亡中も落下するスプライトを表示
         if (this.isDead && this.isDying) {
             // 落下演出中はスプライトを表示
-            const screenX = (this.x - camera.x) * tileSize;
-            const screenY = (this.y - camera.y) * tileSize;
+            // 当たり判定の中心座標（下端基準）
+            const hitboxCenterX = this.x + this.width / 2;
+            const hitboxBottom = this.y + this.height;
             const frames = this.template?.sprites?.idle?.frames || [];
             const spriteIdx = frames[0];
             const sprite = App.projectData.sprites[spriteIdx];
@@ -601,17 +602,17 @@ class Player {
                 const pixelSize = renderSize / dimension;
                 const flipX = !this.facingRight;
 
-                // 32x32スプライトは足元を基準に描画（1タイル分上にオフセット）
-                const yOffset = spriteSize === 2 ? -tileSize : 0;
-                const adjustedScreenY = screenY + yOffset;
+                // スプライトを当たり判定に対して下端寄せ＆横軸中央寄せで描画
+                const spriteDrawX = (hitboxCenterX - tileCount / 2 - camera.x) * tileSize;
+                const spriteDrawY = (hitboxBottom - tileCount - camera.y) * tileSize;
 
                 for (let y = 0; y < dimension; y++) {
                     for (let x = 0; x < dimension; x++) {
                         const colorIndex = sprite.data[y]?.[x];
                         if (colorIndex >= 0) {
                             ctx.fillStyle = palette[colorIndex];
-                            const drawX = flipX ? screenX + (dimension - 1 - x) * pixelSize : screenX + x * pixelSize;
-                            ctx.fillRect(drawX, adjustedScreenY + y * pixelSize, pixelSize + 0.5, pixelSize + 0.5);
+                            const drawX = flipX ? spriteDrawX + (dimension - 1 - x) * pixelSize : spriteDrawX + x * pixelSize;
+                            ctx.fillRect(drawX, spriteDrawY + y * pixelSize, pixelSize + 0.5, pixelSize + 0.5);
                         }
                     }
                 }
@@ -629,8 +630,9 @@ class Player {
             return;
         }
 
-        const screenX = (this.x - camera.x) * tileSize;
-        const screenY = (this.y - camera.y) * tileSize;
+        // 当たり判定の中心座標（下端基準）
+        const hitboxCenterX = this.x + this.width / 2;
+        const hitboxBottom = this.y + this.height;
 
         const spriteSlot = this.getSpriteSlot();
         const frames = this.template?.sprites?.[spriteSlot]?.frames || this.template?.sprites?.idle?.frames || [];
@@ -646,9 +648,9 @@ class Player {
             const renderSize = tileSize * tileCount;
             const pixelSize = renderSize / dimension;
 
-            // 32x32スプライトは足元を基準に描画（1タイル分上にオフセット）
-            const yOffset = spriteSize === 2 ? -tileSize : 0;
-            const adjustedScreenY = screenY + yOffset;
+            // スプライトを当たり判定に対して下端寄せ＆横軸中央寄せで描画
+            const spriteDrawX = (hitboxCenterX - tileCount / 2 - camera.x) * tileSize;
+            const spriteDrawY = (hitboxBottom - tileCount - camera.y) * tileSize;
 
             // スターパワー中は虹色
             if (this.starPower) {
@@ -673,8 +675,8 @@ class Player {
                             color = starColors[colorPhase];
                         }
                         ctx.fillStyle = color;
-                        const drawX = flipX ? screenX + (dimension - 1 - x) * pixelSize : screenX + x * pixelSize;
-                        ctx.fillRect(drawX, adjustedScreenY + y * pixelSize, pixelSize + 0.5, pixelSize + 0.5);
+                        const drawX = flipX ? spriteDrawX + (dimension - 1 - x) * pixelSize : spriteDrawX + x * pixelSize;
+                        ctx.fillRect(drawX, spriteDrawY + y * pixelSize, pixelSize + 0.5, pixelSize + 0.5);
                     }
                 }
             }
