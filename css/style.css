@@ -2477,7 +2477,7 @@ body {
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-bottom: 10px;
+    margin-bottom: 6px;
 }
 
 .setting-row:last-child {
@@ -2485,20 +2485,24 @@ body {
 }
 
 .setting-row label {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--color-medium);
-    min-width: 60px;
+    width: 90px;
+    font-size: 11px;
+    font-weight: bold;
+    color: var(--text-dark);
     flex-shrink: 0;
 }
 
 .setting-row input[type="text"] {
-    flex: 1;
-    padding: 6px 10px;
+    width: 50%;
+    flex: none;
+    height: 28px;
+    padding: 4px 8px;
     border: 1px solid var(--border-color);
-    border-radius: 4px;
-    font-size: 13px;
+    border-radius: 0;
+    font-size: 12px;
     background: #fff;
+    color: #000000;
+    box-sizing: border-box;
 }
 
 .setting-row input[type="text"]:focus {
@@ -2507,12 +2511,16 @@ body {
 }
 
 .setting-row select {
-    flex: 1;
-    padding: 6px 10px;
+    width: 50%;
+    flex: none;
+    height: 28px;
+    padding: 4px 8px;
     border: 1px solid var(--border-color);
-    border-radius: 4px;
-    font-size: 13px;
+    border-radius: 0;
+    font-size: 12px;
     background: #fff;
+    color: #000000;
+    box-sizing: border-box;
 }
 
 /* BGM蟄嶺ｸ九￡ */
@@ -2544,7 +2552,7 @@ body {
     width: 28px;
     height: 28px;
     border: 1px solid var(--border-color);
-    border-radius: 4px;
+    border-radius: 0;
     background: #fff;
     font-size: 16px;
     cursor: pointer;
@@ -2559,10 +2567,11 @@ body {
 
 #area-w-value,
 #area-h-value {
-    font-size: 14px;
-    font-weight: 600;
+    font-size: 12px;
+    font-weight: bold;
     min-width: 20px;
     text-align: center;
+    color: var(--text-dark);
 }
 
 .size-separator {
@@ -2577,12 +2586,12 @@ body {
     margin-left: 4px;
 }
 
-/* 繧ｫ繝ｩ繝ｼ繧ｹ繧ｦ繧ｩ繝�メ */
+/* カラースウォッチ */
 .color-swatch {
-    width: 32px;
-    height: 32px;
-    border: 2px solid var(--border-color);
-    border-radius: 4px;
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--border-color);
+    border-radius: 0;
     cursor: pointer;
     background: #3CBCFC;
 }
@@ -2591,11 +2600,11 @@ body {
     opacity: 0.8;
 }
 
-/* 險ｭ螳壹�繧ｿ繝ｳ */
+/* 設定ボタン */
 .setting-btn {
-    padding: 6px 12px;
+    padding: 4px 8px;
     border: 1px solid var(--border-color);
-    border-radius: 4px;
+    border-radius: 0;
     background: #fff;
     font-size: 12px;
     cursor: pointer;
