@@ -1261,6 +1261,20 @@ const GameEngine = {
                     proj.x += proj.vx;
                     proj.y += proj.vy;
                     break;
+                case 'melee':
+                    // 近接: オーナー（プレイヤー/敵）に追従
+                    if (proj.owner === 'player' && this.player) {
+                        const direction = this.player.facingRight ? 1 : -1;
+                        proj.x = this.player.x + direction;
+                        proj.y = this.player.y;
+                        proj.facingRight = this.player.facingRight;
+                    } else if (proj.owner === 'enemy' && proj.ownerEnemy) {
+                        const direction = proj.ownerEnemy.facingRight ? 1 : -1;
+                        proj.x = proj.ownerEnemy.x + direction;
+                        proj.y = proj.ownerEnemy.y;
+                        proj.facingRight = proj.ownerEnemy.facingRight;
+                    }
+                    break;
                 default:
                     // straight, spread: 通常移動
                     proj.x += proj.vx;
