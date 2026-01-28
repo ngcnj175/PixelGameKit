@@ -937,24 +937,28 @@ body {
 .param-select {
     width: 50%;
     flex: none;
+    height: 28px;
     padding: 4px 8px;
     font-size: 12px;
     border: 1px solid var(--border-color);
     border-radius: 0;
     background: #ffffff;
     color: #000000;
+    box-sizing: border-box;
 }
 
 /* テキスト入力（セレクトと同じスタイル） */
 .param-input {
     width: 50%;
     flex: none;
+    height: 28px;
     padding: 4px 8px;
     font-size: 12px;
     border: 1px solid var(--border-color);
     border-radius: 0;
     background: #ffffff;
     color: #000000;
+    box-sizing: border-box;
 }
 
 /* SE驕ｸ謚櫁｡� */
