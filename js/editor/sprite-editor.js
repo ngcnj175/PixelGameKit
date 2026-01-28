@@ -824,32 +824,6 @@ const SpriteEditor = {
         this.ctx.fillStyle = bgColor;
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-        // おてほん（下絵ガイド）を描画（背景色の上、ピクセルの下）
-        if (this.guideImageVisible && this.guideImage) {
-            const viewOffsetX = Math.floor(this.viewportOffsetX / this.pixelSize);
-            const viewOffsetY = Math.floor(this.viewportOffsetY / this.pixelSize);
-
-            // ガイド画像のサイズ（ピクセル単位）
-            const imgW = this.guideImage.width;
-            const imgH = this.guideImage.height;
-
-            // スケール適用後のガイド画像サイズ（スプライトピクセル単位）
-            // guideScale=1 → 画像が16スプライトピクセルに収まる
-            const baseSize = 16;
-            const scaledW = baseSize * this.guideScale;
-            const scaledH = baseSize * this.guideScale * (imgH / imgW);
-
-            // 描画位置（スプライト座標系、ビューポートオフセット考慮）
-            const drawX = (this.guideOffsetX - viewOffsetX) * this.pixelSize;
-            const drawY = (this.guideOffsetY - viewOffsetY) * this.pixelSize;
-            const drawW = scaledW * this.pixelSize;
-            const drawH = scaledH * this.pixelSize;
-
-            this.ctx.globalAlpha = 0.5;
-            this.ctx.drawImage(this.guideImage, drawX, drawY, drawW, drawH);
-            this.ctx.globalAlpha = 1.0;
-        }
-
         const dimension = this.getCurrentSpriteDimension();
 
         // 表示範囲（ビューポート）は常に16x16ピクセル分
@@ -1031,6 +1005,37 @@ const SpriteEditor = {
                 dataH * this.pixelSize
             );
             this.ctx.setLineDash([]);
+        }
+
+        // おてほん（下絵ガイド）を最上位レイヤーに描画
+        if (this.guideImageVisible && this.guideImage) {
+            const viewOffsetX = Math.floor(this.viewportOffsetX / this.pixelSize);
+            const viewOffsetY = Math.floor(this.viewportOffsetY / this.pixelSize);
+
+            // ガイド画像のサイズ（ピクセル単位）
+            const imgW = this.guideImage.width;
+            const imgH = this.guideImage.height;
+
+            // 32x32時は2倍に拡大（キャンバスサイズに合わせる）
+            const spriteDimension = this.getCurrentSpriteDimension();
+            const dimensionMultiplier = spriteDimension / 16;  // 16x16 → 1, 32x32 → 2
+
+            // スケール適用後のガイド画像サイズ（スプライトピクセル単位）
+            // guideScale=1 → 画像が16スプライトピクセルに収まる
+            // 32x32時は dimensionMultiplier=2 で2倍に拡大
+            const baseSize = 16 * dimensionMultiplier;
+            const scaledW = baseSize * this.guideScale;
+            const scaledH = baseSize * this.guideScale * (imgH / imgW);
+
+            // 描画位置（スプライト座標系、ビューポートオフセット考慮）
+            const drawX = (this.guideOffsetX * dimensionMultiplier - viewOffsetX) * this.pixelSize;
+            const drawY = (this.guideOffsetY * dimensionMultiplier - viewOffsetY) * this.pixelSize;
+            const drawW = scaledW * this.pixelSize;
+            const drawH = scaledH * this.pixelSize;
+
+            this.ctx.globalAlpha = 0.5;
+            this.ctx.drawImage(this.guideImage, drawX, drawY, drawW, drawH);
+            this.ctx.globalAlpha = 1.0;
         }
 
         this.canvas.style.backgroundColor = bgColor;
