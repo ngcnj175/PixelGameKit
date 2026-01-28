@@ -41,6 +41,10 @@ const SpriteEditor = {
     pasteOffset: { x: 0, y: 0 },
     pasteDragStart: null,
 
+    // おてほん（下絵ガイド）
+    guideImage: null,        // 読み込んだ画像（Canvas）
+    guideImageVisible: false,// 表示ON/OFF
+
     init() {
         this.canvas = document.getElementById('paint-canvas');
         if (!this.canvas) return;
@@ -593,11 +597,13 @@ const SpriteEditor = {
             const newBtn = btn.cloneNode(true);
             if (btn.parentNode) btn.parentNode.replaceChild(newBtn, btn);
 
-            // 消しゴム長押し検知用
+            // 消しゴム/ガイド長押し検知用
             let pressTimer;
             const startPress = () => {
                 if (newBtn.dataset.tool === 'eraser') {
                     pressTimer = setTimeout(() => this.clearSprite(), 800);
+                } else if (newBtn.dataset.tool === 'guide') {
+                    pressTimer = setTimeout(() => this.resetGuideImage(), 800);
                 }
             };
             const cancelPress = () => {
@@ -630,6 +636,9 @@ const SpriteEditor = {
                     case 'flip-h':
                         this.saveHistory();
                         this.flipHorizontal();
+                        break;
+                    case 'guide':
+                        this.handleGuideButtonClick();
                         break;
                     default:
                         this.currentTool = tool;
@@ -809,6 +818,21 @@ const SpriteEditor = {
 
         this.ctx.fillStyle = bgColor;
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+        // おてほん（下絵ガイド）を描画（背景色の上、ピクセルの下）
+        if (this.guideImageVisible && this.guideImage) {
+            const offsetX = Math.floor(this.viewportOffsetX / this.pixelSize);
+            const offsetY = Math.floor(this.viewportOffsetY / this.pixelSize);
+            // ガイド画像の該当部分を切り出して描画
+            // 表示範囲: ビューポート16x16に対応するガイド画像の領域
+            this.ctx.globalAlpha = 0.5;
+            this.ctx.drawImage(
+                this.guideImage,
+                offsetX, offsetY, 16, 16,  // ソース（ガイド画像の切り出し範囲）
+                0, 0, this.canvas.width, this.canvas.height  // 描画先
+            );
+            this.ctx.globalAlpha = 1.0;
+        }
 
         const dimension = this.getCurrentSpriteDimension();
 
@@ -1594,5 +1618,83 @@ const SpriteEditor = {
         sprite.data.forEach(row => row.reverse());
         this.render();
         this.initSpriteGallery();
+    },
+
+    // ========== おてほん（下絵ガイド） ==========
+    handleGuideButtonClick() {
+        if (!this.guideImage) {
+            // 画像未読込み → 読み込みダイアログ
+            this.loadGuideImage();
+        } else {
+            // 読込み済み → 表示ON/OFF切り替え
+            this.toggleGuideImage();
+        }
+    },
+
+    loadGuideImage() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const img = new Image();
+            img.onload = () => {
+                // 32x32にフィット（アスペクト比保持）
+                const maxSize = 32;
+                let width = img.width;
+                let height = img.height;
+
+                if (width > maxSize || height > maxSize) {
+                    if (width > height) {
+                        height = Math.round(height * maxSize / width);
+                        width = maxSize;
+                    } else {
+                        width = Math.round(width * maxSize / height);
+                        height = maxSize;
+                    }
+                }
+
+                // オフスクリーンキャンバスに描画
+                const canvas = document.createElement('canvas');
+                canvas.width = 32;
+                canvas.height = 32;
+                const ctx = canvas.getContext('2d');
+
+                // センタリング
+                const offsetX = Math.floor((32 - width) / 2);
+                const offsetY = Math.floor((32 - height) / 2);
+                ctx.drawImage(img, offsetX, offsetY, width, height);
+
+                this.guideImage = canvas;
+                this.guideImageVisible = true;
+                this.updateGuideButtonState();
+                this.render();
+            };
+            img.src = URL.createObjectURL(file);
+        };
+        input.click();
+    },
+
+    toggleGuideImage() {
+        this.guideImageVisible = !this.guideImageVisible;
+        this.updateGuideButtonState();
+        this.render();
+    },
+
+    resetGuideImage() {
+        this.guideImage = null;
+        this.guideImageVisible = false;
+        this.updateGuideButtonState();
+        this.render();
+    },
+
+    updateGuideButtonState() {
+        const btn = document.querySelector('#paint-tools .paint-tool-btn[data-tool="guide"]');
+        if (btn) {
+            btn.classList.toggle('guide-active', this.guideImage && this.guideImageVisible);
+            btn.classList.toggle('guide-loaded', this.guideImage !== null);
+        }
     }
 };

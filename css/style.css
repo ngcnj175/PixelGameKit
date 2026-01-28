@@ -538,6 +538,16 @@ body {
     transform: scale(0.9);
 }
 
+/* おてほんボタン状態 */
+.paint-tool-btn.guide-loaded {
+    color: var(--color-medium);
+}
+
+.paint-tool-btn.guide-active {
+    color: var(--color-dark);
+    background: rgba(0, 0, 0, 0.1);
+}
+
 .tool-divider {
     flex-shrink: 0;
     border: none;
