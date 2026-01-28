@@ -173,20 +173,7 @@ body {
     padding: 4px;
 }
 
-#game-subtitle {
-    display: block;
-    width: 100%;
-    text-align: center;
-    font-size: 12px;
-    color: var(--color-medium);
-    border: none;
-    background: transparent;
-    outline: none;
-    padding: 2px;
-}
-
-#game-title:focus,
-#game-subtitle:focus {
+#game-title:focus {
     background: rgba(0, 0, 0, 0.05);
     border-radius: 4px;
 }

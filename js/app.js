@@ -48,7 +48,7 @@ const App = {
         return {
             version: 1,
             meta: {
-                name: '新規プロジェクト',
+                name: 'NEW GAME',
                 author: '',
                 locked: false,
                 createdAt: Date.now()
@@ -468,33 +468,21 @@ const App = {
             });
         });
 
-        // タイトル・サブタイトル編集
+        // タイトル編集
         const titleInput = document.getElementById('game-title');
-        const subtitleInput = document.getElementById('game-subtitle');
 
         titleInput?.addEventListener('change', (e) => {
             if (this.projectData) {
                 this.projectData.meta.name = e.target.value;
             }
         });
-
-        subtitleInput?.addEventListener('change', (e) => {
-            if (this.projectData) {
-                // サブタイトルはauthor扱い（または拡張）
-                this.projectData.meta.author = e.target.value;
-            }
-        });
     },
 
     updateGameInfo() {
         const titleInput = document.getElementById('game-title');
-        const subtitleInput = document.getElementById('game-subtitle');
 
         if (titleInput && this.projectData) {
             titleInput.value = this.projectData.meta.name || 'My Game';
-        }
-        if (subtitleInput && this.projectData) {
-            subtitleInput.value = this.projectData.meta.author || 'Stage 1';
         }
     },
 

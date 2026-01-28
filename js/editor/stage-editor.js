@@ -2180,7 +2180,7 @@ const StageEditor = {
                     App.projectData.stage.name = nameInput.value;
                     // ゲーム画面タイトルと連動
                     if (App.projectData.meta) {
-                        App.projectData.meta.name = nameInput.value || '新規プロジェクト';
+                        App.projectData.meta.name = nameInput.value || 'NEW GAME';
                     }
                 }
 
@@ -2220,7 +2220,7 @@ const StageEditor = {
         const bgmBoss = document.getElementById('bgm-boss');
 
         // 名前（ステージ名またはプロジェクト名）
-        if (nameInput) nameInput.value = stage.name || App.projectData.meta?.name || '新規プロジェクト';
+        if (nameInput) nameInput.value = stage.name || App.projectData.meta?.name || 'NEW GAME';
 
         // サイズ
         this.pendingAreaW = Math.floor(stage.width / 16);
