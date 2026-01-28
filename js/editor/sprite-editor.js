@@ -42,8 +42,13 @@ const SpriteEditor = {
     pasteDragStart: null,
 
     // おてほん（下絵ガイド）
-    guideImage: null,        // 読み込んだ画像（Canvas）
-    guideImageVisible: false,// 表示ON/OFF
+    guideImage: null,          // 読み込んだ画像（Image object）
+    guideImageVisible: false,  // 表示ON/OFF
+    guideScale: 1,             // ズーム倍率
+    guideOffsetX: 0,           // 位置オフセット（ピクセル単位）
+    guideOffsetY: 0,
+    guideAdjustMode: false,    // 調整モード（初回読込み時のみtrue）
+    guideAdjustData: null,     // 調整中の2本指操作用データ
 
     init() {
         this.canvas = document.getElementById('paint-canvas');
@@ -821,16 +826,27 @@ const SpriteEditor = {
 
         // おてほん（下絵ガイド）を描画（背景色の上、ピクセルの下）
         if (this.guideImageVisible && this.guideImage) {
-            const offsetX = Math.floor(this.viewportOffsetX / this.pixelSize);
-            const offsetY = Math.floor(this.viewportOffsetY / this.pixelSize);
-            // ガイド画像の該当部分を切り出して描画
-            // 表示範囲: ビューポート16x16に対応するガイド画像の領域
+            const viewOffsetX = Math.floor(this.viewportOffsetX / this.pixelSize);
+            const viewOffsetY = Math.floor(this.viewportOffsetY / this.pixelSize);
+
+            // ガイド画像のサイズ（ピクセル単位）
+            const imgW = this.guideImage.width;
+            const imgH = this.guideImage.height;
+
+            // スケール適用後のガイド画像サイズ（スプライトピクセル単位）
+            // guideScale=1 → 画像が16スプライトピクセルに収まる
+            const baseSize = 16;
+            const scaledW = baseSize * this.guideScale;
+            const scaledH = baseSize * this.guideScale * (imgH / imgW);
+
+            // 描画位置（スプライト座標系、ビューポートオフセット考慮）
+            const drawX = (this.guideOffsetX - viewOffsetX) * this.pixelSize;
+            const drawY = (this.guideOffsetY - viewOffsetY) * this.pixelSize;
+            const drawW = scaledW * this.pixelSize;
+            const drawH = scaledH * this.pixelSize;
+
             this.ctx.globalAlpha = 0.5;
-            this.ctx.drawImage(
-                this.guideImage,
-                offsetX, offsetY, 16, 16,  // ソース（ガイド画像の切り出し範囲）
-                0, 0, this.canvas.width, this.canvas.height  // 描画先
-            );
+            this.ctx.drawImage(this.guideImage, drawX, drawY, drawW, drawH);
             this.ctx.globalAlpha = 1.0;
         }
 
@@ -1205,64 +1221,91 @@ const SpriteEditor = {
                 this.touchStartTimer = null;
             }
 
-            // 2本指の場合は即座にパン開始
-            if (e.touches.length === 2 && this.getCurrentSpriteSize() === 2) {
-                this.isPanning = true;
-                this.pendingTouch = null; // 保留中のタッチをキャンセル
+            // 2本指の場合
+            if (e.touches.length === 2) {
                 const touch1 = e.touches[0];
                 const touch2 = e.touches[1];
-                this.panStartX = (touch1.clientX + touch2.clientX) / 2;
-                this.panStartY = (touch1.clientY + touch2.clientY) / 2;
+                const centerX = (touch1.clientX + touch2.clientX) / 2;
+                const centerY = (touch1.clientY + touch2.clientY) / 2;
+                const dist = Math.hypot(touch2.clientX - touch1.clientX, touch2.clientY - touch1.clientY);
+
+                // おてほん調整モードの場合
+                if (this.guideAdjustMode && this.guideImage) {
+                    this.guideAdjustData = {
+                        startCenterX: centerX,
+                        startCenterY: centerY,
+                        startDist: dist,
+                        startScale: this.guideScale,
+                        startOffsetX: this.guideOffsetX,
+                        startOffsetY: this.guideOffsetY
+                    };
+                    this.pendingTouch = null;
+                } else if (this.getCurrentSpriteSize() === 2) {
+                    // 通常の32x32パン
+                    this.isPanning = true;
+                    this.pendingTouch = null;
+                    this.panStartX = centerX;
+                    this.panStartY = centerY;
+                }
             } else if (e.touches.length === 1) {
                 // 1本指の場合、少し待ってから描画開始（2本指検出のため）
                 this.pendingTouch = e.touches[0];
                 this.touchStartTimer = setTimeout(() => {
-                    if (this.pendingTouch && !this.isPanning) {
+                    if (this.pendingTouch && !this.isPanning && !this.guideAdjustData) {
                         this.onPointerDown(this.pendingTouch);
                     }
                     this.pendingTouch = null;
                     this.touchStartTimer = null;
-                }, 50); // 50ms待機
+                }, 50);
             }
         }, { passive: false });
 
         this.canvas.addEventListener('touchmove', (e) => {
             e.preventDefault();
 
-            // 2本指パン処理
-            if (e.touches.length === 2 && this.isPanning && this.getCurrentSpriteSize() === 2) {
+            if (e.touches.length === 2) {
                 const touch1 = e.touches[0];
                 const touch2 = e.touches[1];
                 const centerX = (touch1.clientX + touch2.clientX) / 2;
                 const centerY = (touch1.clientY + touch2.clientY) / 2;
+                const dist = Math.hypot(touch2.clientX - touch1.clientX, touch2.clientY - touch1.clientY);
 
-                // ピアノロールと同じ方式: ピクセル単位でスクロール
-                // 開始位置が不正ならリセット
-                if (!Number.isFinite(this.panStartX) || !Number.isFinite(this.panStartY)) {
+                // おてほん調整モード
+                if (this.guideAdjustData && this.guideAdjustMode) {
+                    const data = this.guideAdjustData;
+                    // ピンチズーム（スケール調整）
+                    const scaleFactor = dist / data.startDist;
+                    this.guideScale = Math.max(0.5, Math.min(4, data.startScale * scaleFactor));
+                    // ドラッグ（位置調整）
+                    const deltaX = (centerX - data.startCenterX) / this.pixelSize;
+                    const deltaY = (centerY - data.startCenterY) / this.pixelSize;
+                    this.guideOffsetX = data.startOffsetX + deltaX;
+                    this.guideOffsetY = data.startOffsetY + deltaY;
+                    this.render();
+                } else if (this.isPanning && this.getCurrentSpriteSize() === 2) {
+                    // 通常の32x32パン処理
+                    if (!Number.isFinite(this.panStartX) || !Number.isFinite(this.panStartY)) {
+                        this.panStartX = centerX;
+                        this.panStartY = centerY;
+                        return;
+                    }
+
+                    const deltaX = this.panStartX - centerX;
+                    const deltaY = this.panStartY - centerY;
+                    const maxScroll = 16 * this.pixelSize;
+
+                    if (!Number.isFinite(this.viewportOffsetX)) this.viewportOffsetX = 0;
+                    if (!Number.isFinite(this.viewportOffsetY)) this.viewportOffsetY = 0;
+
+                    this.viewportOffsetX = Math.max(0, Math.min(maxScroll, this.viewportOffsetX + deltaX));
+                    this.viewportOffsetY = Math.max(0, Math.min(maxScroll, this.viewportOffsetY + deltaY));
+
                     this.panStartX = centerX;
                     this.panStartY = centerY;
-                    return;
+                    this.render();
                 }
-
-                const deltaX = this.panStartX - centerX;
-                const deltaY = this.panStartY - centerY;
-
-                // ピクセル単位でオフセットを更新（16ピクセル分 = 16タイル分 = 320pxが最大）
-                const maxScroll = 16 * this.pixelSize;  // 320px
-
-                // 現在のオフセットの正当性チェック
-                if (!Number.isFinite(this.viewportOffsetX)) this.viewportOffsetX = 0;
-                if (!Number.isFinite(this.viewportOffsetY)) this.viewportOffsetY = 0;
-
-                this.viewportOffsetX = Math.max(0, Math.min(maxScroll, this.viewportOffsetX + deltaX));
-                this.viewportOffsetY = Math.max(0, Math.min(maxScroll, this.viewportOffsetY + deltaY));
-
-                this.panStartX = centerX;
-                this.panStartY = centerY;
-
-                this.render();
-            } else if (e.touches.length === 1 && !this.isPanning) {
-                // 2本指パン中でなければ、描画を続行
+            } else if (e.touches.length === 1 && !this.isPanning && !this.guideAdjustData) {
+                // 2本指パン/調整中でなければ、描画を続行
                 if (this.isDrawing) {
                     this.onPointerMove(e.touches[0]);
                 }
@@ -1277,6 +1320,12 @@ const SpriteEditor = {
             }
             this.pendingTouch = null;
             this.isPanning = false;
+            // おてほん調整終了 → 調整モードを解除
+            if (this.guideAdjustData) {
+                this.guideAdjustData = null;
+                this.guideAdjustMode = false;
+                this.updateGuideButtonState();
+            }
             this.onPointerUp();
         });
     },
@@ -1641,8 +1690,8 @@ const SpriteEditor = {
 
             const img = new Image();
             img.onload = () => {
-                // 32x32にフィット（アスペクト比保持）
-                const maxSize = 32;
+                // 高解像度で保存（256pxにフィット、アスペクト比保持）
+                const maxSize = 256;
                 let width = img.width;
                 let height = img.height;
 
@@ -1658,17 +1707,19 @@ const SpriteEditor = {
 
                 // オフスクリーンキャンバスに描画
                 const canvas = document.createElement('canvas');
-                canvas.width = 32;
-                canvas.height = 32;
+                canvas.width = width;
+                canvas.height = height;
                 const ctx = canvas.getContext('2d');
-
-                // センタリング
-                const offsetX = Math.floor((32 - width) / 2);
-                const offsetY = Math.floor((32 - height) / 2);
-                ctx.drawImage(img, offsetX, offsetY, width, height);
+                ctx.drawImage(img, 0, 0, width, height);
 
                 this.guideImage = canvas;
                 this.guideImageVisible = true;
+                // 初期位置・スケールをリセット
+                this.guideScale = 1;
+                this.guideOffsetX = 0;
+                this.guideOffsetY = 0;
+                // 調整モードON（初回読込み時のみ）
+                this.guideAdjustMode = true;
                 this.updateGuideButtonState();
                 this.render();
             };
@@ -1686,6 +1737,11 @@ const SpriteEditor = {
     resetGuideImage() {
         this.guideImage = null;
         this.guideImageVisible = false;
+        this.guideScale = 1;
+        this.guideOffsetX = 0;
+        this.guideOffsetY = 0;
+        this.guideAdjustMode = false;
+        this.guideAdjustData = null;
         this.updateGuideButtonState();
         this.render();
     },
